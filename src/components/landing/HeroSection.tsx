@@ -43,10 +43,10 @@ const HeroSection = () => {
               visible ? "opacity-100 translate-y-0 blur-0" : "opacity-0 translate-y-4 blur-sm"
             }`}
           >
-            <Button variant="hero" size="lg">
+            <Button variant="hero" size="lg" onClick={() => navigate("/auth")}>
               Explore Apps
             </Button>
-            <Button variant="hero-outline" size="lg">
+            <Button variant="hero-outline" size="lg" onClick={() => navigate("/auth")}>
               Learn More
             </Button>
           </div>
