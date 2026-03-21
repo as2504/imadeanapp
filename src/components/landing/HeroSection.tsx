@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 const HeroSection = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 100);
