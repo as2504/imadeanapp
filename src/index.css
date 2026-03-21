@@ -105,3 +105,12 @@
 .animate-reveal-delay-1 { animation-delay: 80ms; }
 .animate-reveal-delay-2 { animation-delay: 160ms; }
 .animate-reveal-delay-3 { animation-delay: 240ms; }
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

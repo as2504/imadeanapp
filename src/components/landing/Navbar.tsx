@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
@@ -11,6 +12,7 @@ const navLinks = [
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
@@ -30,7 +32,7 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <Button variant="nav" size="sm" className="ml-4">
+          <Button variant="nav" size="sm" className="ml-4" onClick={() => navigate("/auth")}>
             Join Now
           </Button>
         </div>
@@ -57,7 +59,7 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <Button variant="nav" size="sm" className="w-full mt-2">
+          <Button variant="nav" size="sm" className="w-full mt-2" onClick={() => navigate("/auth")}>
             Join Now
           </Button>
         </div>
