@@ -204,7 +204,9 @@ const FeedNavbar = () => {
           </button>
           <button
             onClick={() => navigate("/account")}
-            className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 ${
+              location.pathname === "/account" ? "text-primary" : "text-muted-foreground"
+            }`}
           >
             <User size={20} />
             <span className="text-[10px] font-medium">Account</span>
