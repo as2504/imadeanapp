@@ -32,7 +32,7 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <Button variant="nav" size="sm" className="ml-4">
+          <Button variant="nav" size="sm" className="ml-4" onClick={() => navigate("/auth")}>
             Join Now
           </Button>
         </div>
