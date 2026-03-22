@@ -85,7 +85,7 @@ const FeedNavbar = () => {
             <Button
               size="sm"
               className="ml-2 rounded-full h-8 px-3 text-xs gap-1.5"
-              onClick={() => {}}
+              onClick={() => navigate("/publish")}
             >
               <Plus size={14} />
               <span className="hidden lg:inline">Publish</span>
@@ -193,7 +193,7 @@ const FeedNavbar = () => {
             <TrendingUp size={20} />
             <span className="text-[10px] font-medium">Trending</span>
           </button>
-          <button className="flex flex-col items-center gap-0.5 px-3 py-1 text-primary">
+          <button onClick={() => navigate("/publish")} className="flex flex-col items-center gap-0.5 px-3 py-1 text-primary">
             <div className="w-10 h-10 -mt-4 rounded-full bg-primary flex items-center justify-center shadow-md">
               <Plus size={20} className="text-primary-foreground" />
             </div>
