@@ -24,9 +24,7 @@ const FeedLayout = ({ children, sidebar }: FeedLayoutProps) => {
         <div className="flex gap-8">
           {/* Primary column */}
           <div className="flex-1 min-w-0 max-w-[720px]">
-            {typeof children === "function"
-              ? (children as any)({ onOpenSidebar: () => setSidebarOpen(true) })
-              : children}
+            {renderedChildren}
           </div>
 
           {/* Desktop sidebar */}
