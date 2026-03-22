@@ -1,75 +1,69 @@
 
 
-# Plan: Build App Detail Page
+# Plan: Layout Consistency & Mobile Sidebar Panel
 
-## Overview
+## Summary
 
-Create an `/app/:id` page that opens when users click "Try" or tap an app card. The page follows the reference screenshots: hero header with identity + CTA, stats bar, screenshot carousel, description, tech stack, comments section, and related apps.
+Standardize the two-column layout across Home and Trending pages, remove the Trending header text, align filter positioning, and add a mobile slide-in panel for the secondary sidebar content.
 
-## 1. Page & Routing
+## 1. Create Shared Layout Wrapper
 
-- Create `src/pages/AppDetail.tsx`
-- Add route `/app/:id` in `App.tsx` (protected)
-- Update `AppCard.tsx` and `TrendingCard.tsx` "Try" buttons to navigate to `/app/:id`
+Create `src/components/layout/FeedLayout.tsx` — a reusable two-column layout component used by both Home and Trending pages.
 
-## 2. Page Layout (Top → Bottom)
+- Desktop: primary column (~70%, max-width ~720px) on left, sidebar (~280px) on right, centered in a max-width container (~1080px)
+- Mobile: full-width primary column only, with a slide-in panel for sidebar content
+- Accepts `sidebar` as a React node prop and `children` for the primary column
 
-Based on the uploaded reference screenshots:
+## 2. Mobile Sidebar Panel
 
-**Header/Hero:**
-- Left: squircle app icon, app name (large bold), tagline, publisher name (clickable link), posted time, tag pills
-- Right: "Try App" primary CTA button, platform icons (web/android/ios)
+Create `src/components/layout/SidebarPanel.tsx` — a slide-in panel component for mobile.
 
-**Quick Stats Bar:**
-- Inline row: `👍 1.2K Likes · 💬 320 Comments · 👁 5.6K Visits · Published 2 days ago`
+- Triggered by a left-arrow icon (`ChevronLeft`) placed inline with the filter tabs row
+- Slides in from the right covering 80% of screen width
+- Remaining 20% is a dark overlay — tapping it closes the panel
+- X button at top-right of the panel to close
+- Renders the sidebar content passed as children
+- Uses CSS transitions for smooth slide animation
 
-**Screenshots Carousel:**
-- Horizontal scrollable row of screenshots with rounded corners
-- Click to expand (optional for MVP)
+## 3. Update FeedFilters & TrendingFilters
 
-**Description Section:**
-- Two-column on desktop: left = full description text, right = tech stack chips + platform availability
-- Matches the reference layout exactly
+- Both filter components accept an optional `onOpenSidebar` callback prop
+- On mobile, render a `ChevronLeft` arrow button at the end of the tabs row (same line as "For You"/"Today" tabs)
+- Clicking it triggers the sidebar panel open
 
-**Social Action Bar:**
-- Like (heart + count), Share, Save buttons — clean inline row
+## 4. Update Trending Page
 
-**Comments Section ("Community Feedback"):**
-- List of comments with avatar, name, time, text, like count, reply link
-- Add comment input at top
+- Remove the "Trending Apps" heading and subtitle entirely
+- Use the shared `FeedLayout` wrapper
+- Filters and content align to the same positions as Home page
 
-**Related Apps ("You may also like"):**
-- 3 small app cards at bottom with icon, name, tagline
+## 5. Update Home Page
 
-## 3. Components
+- Use the shared `FeedLayout` wrapper
+- Same container, same column widths as Trending
 
-- `src/pages/AppDetail.tsx` — main page, fetches app from DB by ID
-- `src/components/app-detail/AppDetailHeader.tsx` — hero with icon, name, tagline, CTA
-- `src/components/app-detail/AppDetailStats.tsx` — stats bar
-- `src/components/app-detail/AppDetailScreenshots.tsx` — screenshot carousel
-- `src/components/app-detail/AppDetailDescription.tsx` — description + tech stack + platforms
-- `src/components/app-detail/AppDetailActions.tsx` — like/share/save bar
-- `src/components/app-detail/AppDetailComments.tsx` — comments list + add comment
-- `src/components/app-detail/RelatedApps.tsx` — similar apps row
+## 6. Profile Page
 
-## 4. Data
+- Already centered with `max-w-4xl` — keep as-is (no sidebar needed)
+- No changes required
 
-- Fetch app from `apps` table by ID, join with `profiles` for publisher info
-- Comments: For MVP, use mock comments (no comments table yet). Can add DB table later.
-- Related apps: query apps with matching tags, exclude current app, limit 3
+## Files to Create/Edit
 
-## 5. Navigation Integration
-
-- `AppCard` "Try" button → navigates to `/app/:id` instead of external link
-- `TrendingCard` "Try" button → same
-- Add back button in detail page header to return to previous page
-- Mobile: sticky "Try App" button at bottom
+| File | Action |
+|---|---|
+| `src/components/layout/FeedLayout.tsx` | Create — shared two-column layout |
+| `src/components/layout/SidebarPanel.tsx` | Create — mobile slide-in panel |
+| `src/components/feed/FeedFilters.tsx` | Edit — add mobile arrow trigger |
+| `src/components/trending/TrendingFilters.tsx` | Edit — add mobile arrow trigger |
+| `src/pages/HomeFeed.tsx` | Edit — use FeedLayout, remove inline flex layout |
+| `src/pages/Trending.tsx` | Edit — remove header, use FeedLayout |
 
 ## Technical Details
 
-- Uses existing `apps` table schema (no migration needed)
-- Fetches publisher profile via separate query on `profiles` table using `user_id`
-- Screenshot carousel uses horizontal scroll with `scrollbar-hide` utility
-- Skeleton loaders while data loads
-- Responsive: stacked layout on mobile, two-column description area on desktop
+- Layout container: `max-w-[1080px] mx-auto px-4 lg:px-6`
+- Primary column: `flex-1 max-w-[720px]`
+- Sidebar: `w-[280px] shrink-0 sticky top-20` (hidden on `<lg`, shown on `lg+`)
+- Gap between columns: `gap-8`
+- Mobile panel: fixed positioning, `right-0`, `w-[80vw]`, backdrop with `bg-black/20`, `z-50`, transition `transform 300ms ease`
+- Arrow icon visible only on `lg:hidden` screens, placed at the right end of the tabs row
 
