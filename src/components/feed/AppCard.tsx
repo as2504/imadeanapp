@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Heart,
   MessageCircle,
@@ -40,6 +41,7 @@ const platformIcons = {
 };
 
 const AppCard = ({ post }: { post: AppPost }) => {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(post.liked);
   const [saved, setSaved] = useState(post.saved);
   const [likeCount, setLikeCount] = useState(post.likes);
@@ -172,6 +174,7 @@ const AppCard = ({ post }: { post: AppPost }) => {
         <Button
           size="sm"
           className="rounded-full h-8 px-4 text-xs font-semibold gap-1.5"
+          onClick={() => navigate(`/app/${post.id}`)}
         >
           <ExternalLink size={12} />
           Try
