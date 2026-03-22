@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      apps: {
+        Row: {
+          app_icon_url: string | null
+          app_name: string
+          app_store_url: string | null
+          caption: string | null
+          comments_count: number | null
+          created_at: string
+          demo_video_url: string | null
+          full_description: string | null
+          github_url: string | null
+          id: string
+          likes_count: number | null
+          platforms: string[] | null
+          play_store_url: string | null
+          pricing: string | null
+          screenshots: string[] | null
+          short_description: string | null
+          status: string
+          tagline: string | null
+          tags: string[] | null
+          tech_stack: string[] | null
+          updated_at: string
+          user_id: string
+          views_count: number | null
+          website_url: string | null
+        }
+        Insert: {
+          app_icon_url?: string | null
+          app_name: string
+          app_store_url?: string | null
+          caption?: string | null
+          comments_count?: number | null
+          created_at?: string
+          demo_video_url?: string | null
+          full_description?: string | null
+          github_url?: string | null
+          id?: string
+          likes_count?: number | null
+          platforms?: string[] | null
+          play_store_url?: string | null
+          pricing?: string | null
+          screenshots?: string[] | null
+          short_description?: string | null
+          status?: string
+          tagline?: string | null
+          tags?: string[] | null
+          tech_stack?: string[] | null
+          updated_at?: string
+          user_id: string
+          views_count?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          app_icon_url?: string | null
+          app_name?: string
+          app_store_url?: string | null
+          caption?: string | null
+          comments_count?: number | null
+          created_at?: string
+          demo_video_url?: string | null
+          full_description?: string | null
+          github_url?: string | null
+          id?: string
+          likes_count?: number | null
+          platforms?: string[] | null
+          play_store_url?: string | null
+          pricing?: string | null
+          screenshots?: string[] | null
+          short_description?: string | null
+          status?: string
+          tagline?: string | null
+          tags?: string[] | null
+          tech_stack?: string[] | null
+          updated_at?: string
+          user_id?: string
+          views_count?: number | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
