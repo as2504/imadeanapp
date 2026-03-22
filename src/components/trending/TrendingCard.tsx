@@ -146,7 +146,7 @@ const TrendingCard = ({ app }: { app: TrendingApp }) => {
                 <Bookmark size={15} fill={saved ? "currentColor" : "none"} />
               </button>
             </div>
-            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-semibold gap-1.5">
+            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-semibold gap-1.5" onClick={() => navigate(`/app/${app.id}`)}>
               <ExternalLink size={12} />
               Try
             </Button>
