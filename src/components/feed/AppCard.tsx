@@ -41,6 +41,7 @@ const platformIcons = {
 };
 
 const AppCard = ({ post }: { post: AppPost }) => {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(post.liked);
   const [saved, setSaved] = useState(post.saved);
   const [likeCount, setLikeCount] = useState(post.likes);
