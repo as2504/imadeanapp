@@ -1,69 +1,151 @@
 
 
-# Plan: Layout Consistency & Mobile Sidebar Panel
+# Plan: Multi-Feature Update
 
 ## Summary
 
-Standardize the two-column layout across Home and Trending pages, remove the Trending header text, align filter positioning, and add a mobile slide-in panel for the secondary sidebar content.
+This is a large batch of changes covering: profile page width alignment, real database feed, comments system, screenshot/icon uploads, avatar dropdown menu, landing page cleanup, "Explore" removal, and seeding 10 users with 30 apps and comments.
 
-## 1. Create Shared Layout Wrapper
+---
 
-Create `src/components/layout/FeedLayout.tsx` — a reusable two-column layout component used by both Home and Trending pages.
+## 1. Database Changes (Migration)
 
-- Desktop: primary column (~70%, max-width ~720px) on left, sidebar (~280px) on right, centered in a max-width container (~1080px)
-- Mobile: full-width primary column only, with a slide-in panel for sidebar content
-- Accepts `sidebar` as a React node prop and `children` for the primary column
+### Comments table
+```sql
+CREATE TABLE public.comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  app_id UUID NOT NULL REFERENCES public.apps(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  text TEXT NOT NULL,
+  likes_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+-- Everyone can read comments on published apps
+-- Authenticated users can insert their own comments
+-- Users can delete their own comments
+```
 
-## 2. Mobile Sidebar Panel
+### Storage RLS for app-assets bucket
+Add policies allowing authenticated users to upload to `app-assets` and public read access.
 
-Create `src/components/layout/SidebarPanel.tsx` — a slide-in panel component for mobile.
+---
 
-- Triggered by a left-arrow icon (`ChevronLeft`) placed inline with the filter tabs row
-- Slides in from the right covering 80% of screen width
-- Remaining 20% is a dark overlay — tapping it closes the panel
-- X button at top-right of the panel to close
-- Renders the sidebar content passed as children
-- Uses CSS transitions for smooth slide animation
+## 2. Seed Dummy Data (Migration)
 
-## 3. Update FeedFilters & TrendingFilters
+Insert 10 fake users into `profiles` table and 30 apps (3 per user) with:
+- Unique vibe-coding SaaS ideas (e.g., "VibeShip - AI deployment pipeline", "PromptForge - prompt engineering IDE", "CodeMood - developer wellness tracker")
+- Varied `created_at` dates (today, this week, this month) for filter testing
+- Mix of platforms: some web-only, some web+android, some all three, with dummy URLs
+- Tags, tech stacks, captions, taglines
+- Varied likes/comments/views counts
+- Status: `published`
 
-- Both filter components accept an optional `onOpenSidebar` callback prop
-- On mobile, render a `ChevronLeft` arrow button at the end of the tabs row (same line as "For You"/"Today" tabs)
-- Clicking it triggers the sidebar panel open
+Insert ~90 comments across the 30 apps (3 per app), mix of genuine positive and constructive negative feedback, with different `created_at` dates.
 
-## 4. Update Trending Page
+---
 
-- Remove the "Trending Apps" heading and subtitle entirely
-- Use the shared `FeedLayout` wrapper
-- Filters and content align to the same positions as Home page
+## 3. Profile Page Width Alignment
 
-## 5. Update Home Page
+**File:** `src/pages/Profile.tsx`
 
-- Use the shared `FeedLayout` wrapper
-- Same container, same column widths as Trending
+Change `max-w-4xl` to `max-w-[1080px]` and use `px-4 lg:px-6` to match the `FeedLayout` container width exactly.
 
-## 6. Profile Page
+---
 
-- Already centered with `max-w-4xl` — keep as-is (no sidebar needed)
-- No changes required
+## 4. Connect Home Feed to Real Database
 
-## Files to Create/Edit
+**File:** `src/pages/HomeFeed.tsx`
+
+- Replace `mockPosts` import with a `useEffect` that fetches from `supabase.from("apps").select("*").eq("status", "published").order("created_at", { ascending: false })`
+- Also fetch publisher profiles for display names
+- Map DB rows to the `AppPost` interface used by `AppCard`
+
+**File:** `src/pages/Trending.tsx`
+
+- Replace `mockTrending` with real DB query ordered by `likes_count` descending
+- Map to `TrendingApp` interface
+
+**File:** `src/components/profile/ProfilePublishedApps.tsx`
+
+- Fetch current user's apps from DB instead of `mockPosts`
+
+**File:** `src/components/profile/ProfileSavedApps.tsx`
+
+- For now, show empty state (saved apps require a separate saved_apps table — future feature)
+
+---
+
+## 5. Real Comments System
+
+**File:** `src/components/app-detail/AppDetailComments.tsx`
+
+- Replace mock comments with real DB fetch: `supabase.from("comments").select("*, profiles(display_name, username)").eq("app_id", appId)`
+- Add comment insertion: `supabase.from("comments").insert({ app_id, user_id, text })`
+- Accept `appId` prop from `AppDetail.tsx`
+
+**File:** `src/pages/AppDetail.tsx`
+
+- Pass `app.id` to `AppDetailComments`
+
+---
+
+## 6. Screenshot & Icon Uploads
+
+**File:** `src/components/publish/PublishForm.tsx`
+
+- Add screenshot upload section (1-5 images)
+- Upload screenshots to `app-assets` storage bucket under `{user_id}/screenshots/`
+- Store public URLs in the `screenshots` array column
+- Icon upload already exists — ensure it saves properly
+
+---
+
+## 7. Avatar Dropdown Menu (Floating Nav)
+
+**File:** `src/components/feed/FeedNavbar.tsx`
+
+- Replace the avatar click (`navigate("/account")`) with a `Popover` or `DropdownMenu` containing:
+  - "Account" — navigates to `/account`
+  - Dark mode toggle (switch component, toggles `dark` class on `<html>`)
+  - Separator line
+  - "Log out" button — calls `signOut()`
+- Remove the standalone `LogOut` button from the navbar
+
+---
+
+## 8. Remove "Explore" Option
+
+**Files:** `src/components/feed/FeedNavbar.tsx`, `src/components/landing/Navbar.tsx`
+
+- Remove "Explore" from `navItems` array in FeedNavbar
+- Remove "Explore" from `navLinks` in landing Navbar
+- Remove `/explore` references if any exist in routing
+
+---
+
+## 9. Landing Page Nav Cleanup
+
+**File:** `src/components/landing/Navbar.tsx`
+
+- Update `navLinks` to only show pre-login relevant links: "Home", "About", "Contact" (remove "Explore")
+- Keep "Join Now" button
+
+---
+
+## Files Summary
 
 | File | Action |
 |---|---|
-| `src/components/layout/FeedLayout.tsx` | Create — shared two-column layout |
-| `src/components/layout/SidebarPanel.tsx` | Create — mobile slide-in panel |
-| `src/components/feed/FeedFilters.tsx` | Edit — add mobile arrow trigger |
-| `src/components/trending/TrendingFilters.tsx` | Edit — add mobile arrow trigger |
-| `src/pages/HomeFeed.tsx` | Edit — use FeedLayout, remove inline flex layout |
-| `src/pages/Trending.tsx` | Edit — remove header, use FeedLayout |
-
-## Technical Details
-
-- Layout container: `max-w-[1080px] mx-auto px-4 lg:px-6`
-- Primary column: `flex-1 max-w-[720px]`
-- Sidebar: `w-[280px] shrink-0 sticky top-20` (hidden on `<lg`, shown on `lg+`)
-- Gap between columns: `gap-8`
-- Mobile panel: fixed positioning, `right-0`, `w-[80vw]`, backdrop with `bg-black/20`, `z-50`, transition `transform 300ms ease`
-- Arrow icon visible only on `lg:hidden` screens, placed at the right end of the tabs row
+| Migration SQL | Create `comments` table, storage policies, seed data |
+| `src/pages/Profile.tsx` | Align width to `max-w-[1080px]` |
+| `src/pages/HomeFeed.tsx` | Fetch apps from DB |
+| `src/pages/Trending.tsx` | Fetch trending from DB |
+| `src/pages/AppDetail.tsx` | Pass appId to comments |
+| `src/components/feed/FeedNavbar.tsx` | Remove Explore, avatar dropdown |
+| `src/components/landing/Navbar.tsx` | Remove Explore |
+| `src/components/app-detail/AppDetailComments.tsx` | Real comments CRUD |
+| `src/components/profile/ProfilePublishedApps.tsx` | Fetch from DB |
+| `src/components/profile/ProfileSavedApps.tsx` | Show empty state |
+| `src/components/publish/PublishForm.tsx` | Add screenshot uploads |
 
