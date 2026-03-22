@@ -95,6 +95,41 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          text: string
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          text: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
