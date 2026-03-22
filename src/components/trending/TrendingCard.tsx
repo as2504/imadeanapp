@@ -23,6 +23,7 @@ const platformIcons = {
 };
 
 const TrendingCard = ({ app }: { app: TrendingApp }) => {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(app.liked);
   const [saved, setSaved] = useState(app.saved);
   const [likeCount, setLikeCount] = useState(app.likes);
