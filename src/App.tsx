@@ -10,6 +10,7 @@ import HomeFeed from "./pages/HomeFeed.tsx";
 import Profile from "./pages/Profile.tsx";
 import Trending from "./pages/Trending.tsx";
 import PublishApp from "./pages/PublishApp.tsx";
+import AppDetail from "./pages/AppDetail.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PublishApp />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/:id"
+              element={
+                <ProtectedRoute>
+                  <AppDetail />
                 </ProtectedRoute>
               }
             />
