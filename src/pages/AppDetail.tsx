@@ -88,7 +88,7 @@ const AppDetail = () => {
           githubUrl={app.github_url}
         />
         <AppDetailActions likes={app.likes_count || 0} />
-        <AppDetailComments />
+        <AppDetailComments appId={app.id} />
         <RelatedApps currentAppId={app.id} tags={app.tags || []} />
       </div>
 

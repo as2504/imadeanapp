@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, ChevronDown, Loader2, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ const PublishForm = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const screenshotInputRef = useRef<HTMLInputElement>(null);
 
   const [appName, setAppName] = useState("");
   const [tagline, setTagline] = useState("");
@@ -36,6 +37,8 @@ const PublishForm = () => {
   const [pricing, setPricing] = useState("free");
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -51,11 +54,24 @@ const PublishForm = () => {
     setIconPreview(URL.createObjectURL(file));
   };
 
-  const uploadIcon = async (): Promise<string | null> => {
-    if (!iconFile || !user) return null;
-    const ext = iconFile.name.split(".").pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("app-assets").upload(path, iconFile);
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = 5 - screenshotFiles.length;
+    const toAdd = files.slice(0, remaining);
+    setScreenshotFiles((prev) => [...prev, ...toAdd]);
+    setScreenshotPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removeScreenshot = (index: number) => {
+    setScreenshotFiles((prev) => prev.filter((_, i) => i !== index));
+    setScreenshotPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${user!.id}/${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("app-assets").upload(path, file);
     if (error) throw error;
     const { data } = supabase.storage.from("app-assets").getPublicUrl(path);
     return data.publicUrl;
@@ -79,7 +95,13 @@ const PublishForm = () => {
     setLoading(true);
     try {
       let iconUrl: string | null = null;
-      if (iconFile) iconUrl = await uploadIcon();
+      if (iconFile) iconUrl = await uploadFile(iconFile, "icons");
+
+      const screenshotUrls: string[] = [];
+      for (const file of screenshotFiles) {
+        const url = await uploadFile(file, "screenshots");
+        screenshotUrls.push(url);
+      }
 
       const payload = {
         user_id: user!.id,
@@ -97,6 +119,7 @@ const PublishForm = () => {
         demo_video_url: demoVideoUrl || null,
         pricing,
         app_icon_url: iconUrl,
+        screenshots: screenshotUrls,
         status,
       };
 
@@ -220,7 +243,35 @@ const PublishForm = () => {
               <p className="text-xs text-muted-foreground text-right -mt-2">{caption.length}/300</p>
             </section>
 
-            {/* 6. Advanced */}
+            {/* 6. Screenshots */}
+            <section className="space-y-4">
+              <h2 className="text-base font-semibold text-foreground">Screenshots</h2>
+              <p className="text-xs text-muted-foreground -mt-2">Upload 1–5 screenshots of your app.</p>
+              <div className="flex flex-wrap gap-3">
+                {screenshotPreviews.map((url, i) => (
+                  <div key={i} className="relative w-28 h-20 rounded-xl overflow-hidden border border-border/50 group">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeScreenshot(i)}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+                {screenshotFiles.length < 5 && (
+                  <button
+                    onClick={() => screenshotInputRef.current?.click()}
+                    className="w-28 h-20 rounded-xl border border-dashed border-border hover:border-primary/40 flex items-center justify-center transition-colors"
+                  >
+                    <ImagePlus size={20} className="text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+              <input ref={screenshotInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleScreenshotChange} />
+            </section>
+
+            {/* 7. Advanced */}
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown size={16} className={`transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""}`} />
