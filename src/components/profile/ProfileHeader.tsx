@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Settings, Share2, CheckCircle2, Zap } from "lucide-react";
@@ -10,6 +11,7 @@ const stats = [
 ];
 
 const ProfileHeader = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
   const username = user?.email?.split("@")[0] || "user";
@@ -65,7 +67,7 @@ const ProfileHeader = () => {
               <Settings size={14} />
               Edit Profile
             </Button>
-            <Button size="sm" className="rounded-full gap-1.5 h-9 text-xs">
+            <Button size="sm" className="rounded-full gap-1.5 h-9 text-xs" onClick={() => navigate("/publish")}>
               + Publish App
             </Button>
             <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-colors">

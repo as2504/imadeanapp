@@ -9,6 +9,7 @@ import Auth from "./pages/Auth.tsx";
 import HomeFeed from "./pages/HomeFeed.tsx";
 import Profile from "./pages/Profile.tsx";
 import Trending from "./pages/Trending.tsx";
+import PublishApp from "./pages/PublishApp.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Trending />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/publish"
+              element={
+                <ProtectedRoute>
+                  <PublishApp />
                 </ProtectedRoute>
               }
             />
