@@ -16,7 +16,7 @@ const Profile = () => {
     <div className="min-h-screen bg-background">
       <FeedNavbar />
 
-      <main className="container mx-auto max-w-4xl px-4 pt-20 pb-24 md:pb-12">
+      <main className="max-w-[1080px] mx-auto px-4 lg:px-6 pt-20 pb-24 md:pb-12">
         <ProfileHeader />
 
         {/* Tabs */}

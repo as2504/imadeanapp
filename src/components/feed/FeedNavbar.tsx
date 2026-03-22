@@ -3,11 +3,18 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Search,
   Home,
   TrendingUp,
-  Compass,
   Bell,
   Bookmark,
   User,
@@ -15,20 +22,28 @@ import {
   LogOut,
   Menu,
   X,
+  Moon,
 } from "lucide-react";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/home" },
   { label: "Trending", icon: TrendingUp, href: "/trending" },
-  { label: "Explore", icon: Compass, href: "/explore" },
 ];
 
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const [darkMode, setDarkMode] = useState(
+    document.documentElement.classList.contains("dark")
+  );
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const toggleDarkMode = (checked: boolean) => {
+    setDarkMode(checked);
+    document.documentElement.classList.toggle("dark", checked);
+  };
 
   return (
     <>
@@ -93,22 +108,41 @@ const FeedNavbar = () => {
 
             <div className="w-px h-5 bg-border/60 mx-1" />
 
-            <button
-              onClick={() => navigate("/account")}
-              className="p-1.5 rounded-full hover:bg-surface transition-colors"
-            >
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <User size={14} className="text-primary" />
-              </div>
-            </button>
-
-            <button
-              onClick={signOut}
-              className="p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={16} />
-            </button>
+            {/* Avatar Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 rounded-full hover:bg-surface transition-colors">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User size={14} className="text-primary" />
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate("/account")}>
+                  <User size={14} className="mr-2" />
+                  Account
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Moon size={14} />
+                    <span>Dark Mode</span>
+                  </div>
+                  <Switch
+                    checked={darkMode}
+                    onCheckedChange={toggleDarkMode}
+                    className="scale-75"
+                  />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                  <LogOut size={14} className="mr-2" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile: search + menu */}
@@ -161,13 +195,22 @@ const FeedNavbar = () => {
                 {item.label}
               </button>
             ))}
-            <button
-              onClick={signOut}
-              className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg"
-            >
-              <LogOut size={16} />
-              Sign Out
-            </button>
+            <div className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Moon size={16} />
+                Dark Mode
+              </div>
+              <Switch checked={darkMode} onCheckedChange={toggleDarkMode} className="scale-75" />
+            </div>
+            <div className="border-t border-border/40 pt-2 mt-2">
+              <button
+                onClick={signOut}
+                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-lg"
+              >
+                <LogOut size={16} />
+                Log out
+              </button>
+            </div>
           </div>
         )}
       </nav>
