@@ -1,96 +1,75 @@
 
 
-# Plan: Build Publish App Page
+# Plan: Build App Detail Page
 
 ## Overview
 
-Create a "Publish App" page with a 2-column layout (form + live preview), backed by a new `apps` database table. The page opens from "Publish App" button on profile and the "+" icon on mobile bottom nav.
+Create an `/app/:id` page that opens when users click "Try" or tap an app card. The page follows the reference screenshots: hero header with identity + CTA, stats bar, screenshot carousel, description, tech stack, comments section, and related apps.
 
-## 1. Database Migration
+## 1. Page & Routing
 
-Create an `apps` table with RLS policies:
+- Create `src/pages/AppDetail.tsx`
+- Add route `/app/:id` in `App.tsx` (protected)
+- Update `AppCard.tsx` and `TrendingCard.tsx` "Try" buttons to navigate to `/app/:id`
 
-```sql
-CREATE TABLE public.apps (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  app_name TEXT NOT NULL,
-  tagline TEXT,
-  short_description TEXT,
-  full_description TEXT,
-  app_icon_url TEXT,
-  tags TEXT[] DEFAULT '{}',
-  tech_stack TEXT[] DEFAULT '{}',
-  platforms TEXT[] DEFAULT '{}',
-  website_url TEXT,
-  play_store_url TEXT,
-  app_store_url TEXT,
-  github_url TEXT,
-  demo_video_url TEXT,
-  pricing TEXT DEFAULT 'free',
-  caption TEXT,
-  screenshots TEXT[] DEFAULT '{}',
-  status TEXT NOT NULL DEFAULT 'draft',  -- 'draft' or 'published'
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  likes_count INT DEFAULT 0,
-  comments_count INT DEFAULT 0,
-  views_count INT DEFAULT 0
-);
-```
+## 2. Page Layout (Top → Bottom)
 
-RLS: Users can CRUD their own apps; everyone can SELECT published apps.
+Based on the uploaded reference screenshots:
 
-Also create a storage bucket `app-assets` (public) for app icons and screenshots.
+**Header/Hero:**
+- Left: squircle app icon, app name (large bold), tagline, publisher name (clickable link), posted time, tag pills
+- Right: "Try App" primary CTA button, platform icons (web/android/ios)
 
-## 2. Publish Page (`src/pages/PublishApp.tsx`)
+**Quick Stats Bar:**
+- Inline row: `👍 1.2K Likes · 💬 320 Comments · 👁 5.6K Visits · Published 2 days ago`
 
-**Layout:** Two-column on desktop (form left, live preview right), stacked on mobile.
+**Screenshots Carousel:**
+- Horizontal scrollable row of screenshots with rounded corners
+- Click to expand (optional for MVP)
 
-**Header:** "Publish your creation." heading + subtitle + back button.
+**Description Section:**
+- Two-column on desktop: left = full description text, right = tech stack chips + platform availability
+- Matches the reference layout exactly
 
-**Form sections** (left column):
-1. **App Identity** - Icon upload (squircle preview), app name input, one-line tagline
-2. **Description** - Full description textarea
-3. **Tech Stack & Tags** - Searchable chip input for tech stack; tag selection (max 5)
-4. **Platform Selection** - 3 toggleable platform icons (Web/Android/iOS), conditional URL inputs
-5. **Feed Presentation** - Caption textarea, screenshot uploads (1-5 images)
-6. **Advanced Settings** - Collapsible section: GitHub link, pricing, demo video
+**Social Action Bar:**
+- Like (heart + count), Share, Save buttons — clean inline row
 
-**Live Preview** (right column):
-- Real-time feed card preview matching `AppCard` design
-- Shows icon, name, publisher, caption, tags, platform icons
-- Updates as user types
+**Comments Section ("Community Feedback"):**
+- List of comments with avatar, name, time, text, like count, reply link
+- Add comment input at top
 
-**Actions:** "Save Draft" (secondary) and "Publish App" (primary CTA) at bottom.
+**Related Apps ("You may also like"):**
+- 3 small app cards at bottom with icon, name, tagline
 
 ## 3. Components
 
-- `src/components/publish/PublishForm.tsx` - Main form with all sections
-- `src/components/publish/LivePreview.tsx` - Real-time card preview
-- `src/components/publish/PlatformSelector.tsx` - Platform icon toggles + URL inputs
-- `src/components/publish/TagInput.tsx` - Reusable chip/tag input component
-- `src/components/publish/ScreenshotUploader.tsx` - Multi-image upload with preview
+- `src/pages/AppDetail.tsx` — main page, fetches app from DB by ID
+- `src/components/app-detail/AppDetailHeader.tsx` — hero with icon, name, tagline, CTA
+- `src/components/app-detail/AppDetailStats.tsx` — stats bar
+- `src/components/app-detail/AppDetailScreenshots.tsx` — screenshot carousel
+- `src/components/app-detail/AppDetailDescription.tsx` — description + tech stack + platforms
+- `src/components/app-detail/AppDetailActions.tsx` — like/share/save bar
+- `src/components/app-detail/AppDetailComments.tsx` — comments list + add comment
+- `src/components/app-detail/RelatedApps.tsx` — similar apps row
 
-## 4. Routing & Navigation
+## 4. Data
 
-- Add `/publish` route in `App.tsx` (protected)
-- Wire "Publish App" button in `ProfileHeader.tsx` to navigate to `/publish`
-- Wire mobile bottom nav "+" / publish icon to `/publish`
-- Wire navbar "Publish" button to `/publish`
+- Fetch app from `apps` table by ID, join with `profiles` for publisher info
+- Comments: For MVP, use mock comments (no comments table yet). Can add DB table later.
+- Related apps: query apps with matching tags, exclude current app, limit 3
 
-## 5. Behavior
+## 5. Navigation Integration
 
-- Form state managed with React state (not react-hook-form for simplicity)
-- Save Draft: inserts/updates app with `status: 'draft'`
-- Publish: sets `status: 'published'`, shows success toast, redirects to profile
-- Soft validation: highlights missing required fields (name, icon, at least 1 platform + URL)
-- File uploads go to `app-assets` storage bucket via Supabase storage API
+- `AppCard` "Try" button → navigates to `/app/:id` instead of external link
+- `TrendingCard` "Try" button → same
+- Add back button in detail page header to return to previous page
+- Mobile: sticky "Try App" button at bottom
 
 ## Technical Details
 
-- Images uploaded to Supabase storage `app-assets` bucket, public URLs stored in the apps table
-- `updated_at` trigger reused from existing `update_updated_at_column` function
-- Tags use a predefined list: AI, Productivity, Developer Tools, Design, Automation, SaaS, Mobile, No-Code
-- Tech stack suggestions: React, Next.js, Supabase, Firebase, OpenAI, Flutter, Tailwind, Node.js (with custom entry support)
+- Uses existing `apps` table schema (no migration needed)
+- Fetches publisher profile via separate query on `profiles` table using `user_id`
+- Screenshot carousel uses horizontal scroll with `scrollbar-hide` utility
+- Skeleton loaders while data loads
+- Responsive: stacked layout on mobile, two-column description area on desktop
 
