@@ -1,19 +1,23 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Heart,
-  MessageCircle,
-  Share2,
   ExternalLink,
   Bookmark,
+  Share2,
   CheckCircle2,
   Globe,
   Smartphone,
   Monitor,
   TrendingUp,
   ArrowUp,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { TrendingApp } from "@/data/mockTrending";
 
 const platformIcons = {
@@ -22,16 +26,10 @@ const platformIcons = {
   ios: Monitor,
 };
 
+const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
+
 const TrendingCard = ({ app }: { app: TrendingApp }) => {
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(app.liked);
-  const [saved, setSaved] = useState(app.saved);
-  const [likeCount, setLikeCount] = useState(app.likes);
-
-  const toggleLike = () => {
-    setLiked(!liked);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
-  };
 
   return (
     <article className="bg-background border border-border/50 rounded-2xl p-5 hover:shadow-md transition-shadow duration-300 group">
@@ -45,8 +43,12 @@ const TrendingCard = ({ app }: { app: TrendingApp }) => {
         </div>
 
         {/* Icon */}
-        <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-xl shrink-0">
-          <span>{app.appIcon}</span>
+        <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-xl shrink-0 overflow-hidden">
+          {isUrl(app.appIcon) ? (
+            <img src={app.appIcon} alt={app.appName} className="w-full h-full object-cover" />
+          ) : (
+            <span>{app.appIcon}</span>
+          )}
         </div>
 
         {/* Content */}
@@ -76,12 +78,39 @@ const TrendingCard = ({ app }: { app: TrendingApp }) => {
               </div>
             </div>
 
-            {/* Trend badge */}
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 shrink-0">
-              <TrendingUp size={11} />
-              <span className="text-[10px] font-semibold whitespace-nowrap">
-                {app.trendLabel}
-              </span>
+            {/* Trend badge + platforms + menu */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                <TrendingUp size={11} />
+                <span className="text-[10px] font-semibold whitespace-nowrap">
+                  {app.trendLabel}
+                </span>
+              </div>
+              {app.platforms.map((p) => {
+                const Icon = platformIcons[p];
+                return (
+                  <div key={p} className="text-muted-foreground/50">
+                    <Icon size={14} />
+                  </div>
+                );
+              })}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1 text-muted-foreground/40 hover:text-muted-foreground rounded-md transition-colors">
+                    <MoreHorizontal size={16} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem className="gap-2 cursor-pointer">
+                    <Bookmark size={14} />
+                    Save
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 cursor-pointer">
+                    <Share2 size={14} />
+                    Share
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -90,9 +119,12 @@ const TrendingCard = ({ app }: { app: TrendingApp }) => {
             {app.caption}
           </p>
 
-          {/* Tags + platforms */}
-          <div className="mt-2.5 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex flex-wrap gap-1.5">
+          {/* Divider */}
+          <div className="mt-2.5 border-t border-border/30" />
+
+          {/* Tags + Try */}
+          <div className="mt-2.5 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5 min-w-0">
               {app.tags.slice(0, 3).map((tag) => (
                 <span
                   key={tag}
@@ -102,51 +134,11 @@ const TrendingCard = ({ app }: { app: TrendingApp }) => {
                 </span>
               ))}
             </div>
-            <div className="flex items-center gap-2">
-              {app.platforms.map((p) => {
-                const Icon = platformIcons[p];
-                return (
-                  <div key={p} className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
-                    <Icon size={12} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={toggleLike}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 active:scale-95 ${
-                  liked
-                    ? "text-red-500 bg-red-50"
-                    : "text-muted-foreground hover:text-foreground hover:bg-surface"
-                }`}
-              >
-                <Heart size={15} fill={liked ? "currentColor" : "none"} />
-                <span>{likeCount}</span>
-              </button>
-              <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface transition-colors active:scale-95">
-                <MessageCircle size={15} />
-                <span>{app.comments}</span>
-              </button>
-              <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface transition-colors active:scale-95">
-                <Share2 size={15} />
-              </button>
-              <button
-                onClick={() => setSaved(!saved)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
-                  saved
-                    ? "text-primary bg-primary/5"
-                    : "text-muted-foreground hover:text-foreground hover:bg-surface"
-                }`}
-              >
-                <Bookmark size={15} fill={saved ? "currentColor" : "none"} />
-              </button>
-            </div>
-            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-semibold gap-1.5" onClick={() => navigate(`/app/${app.id}`)}>
+            <Button
+              size="sm"
+              className="rounded-full h-8 px-4 text-xs font-semibold gap-1.5 shrink-0"
+              onClick={() => navigate(`/app/${app.id}`)}
+            >
               <ExternalLink size={12} />
               Try
             </Button>
