@@ -1,151 +1,58 @@
-
-
-# Plan: Multi-Feature Update
+# Plan: Redesign AppCard Layout + Fix Icon Rendering
 
 ## Summary
 
-This is a large batch of changes covering: profile page width alignment, real database feed, comments system, screenshot/icon uploads, avatar dropdown menu, landing page cleanup, "Explore" removal, and seeding 10 users with 30 apps and comments.
+Redesign the AppCard, and fix the icon rendering bug where uploaded icon URLs display as text instead of images.
 
----
+## Changes to `src/components/feed/AppCard.tsx`
 
-## 1. Database Changes (Migration)
+### 1. Fix Icon Rendering
 
-### Comments table
-```sql
-CREATE TABLE public.comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  app_id UUID NOT NULL REFERENCES public.apps(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  text TEXT NOT NULL,
-  likes_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
--- Everyone can read comments on published apps
--- Authenticated users can insert their own comments
--- Users can delete their own comments
+The `appIcon` field contains either an emoji (e.g. "📱") or a URL (e.g. `https://...`). Currently it always renders as `<span>{post.appIcon}</span>`. Fix: detect if it's a URL and render `<img>` instead.
+
+### 2. Three-dot menu → Dropdown with Save & Share
+
+Replace the plain `<button>` with a `DropdownMenu` containing two options: "Save" and "Share". And Keep the three dots always visible.
+
+### 3. Remove tech stack chips
+
+Delete the tech stack section entirely from the card.
+
+### 4. Remove bottom action bar (like, comment, share, save, try)
+
+Delete the divider and the entire actions row at the bottom.
+
+### 5. New layout for tags row
+
+On the same row as tags, place the "Try" button on the right side (where tech stack used to be). This replaces the bottom action bar. and add a divider above that.
+
+### 6. Move platform icons
+
+Place platform icons (Web/Android/iOS) on the same line as the three-dot menu, to its left, in the header area.
+
+### 7. Remove comment preview section
+
+### Final card structure:
+
+```
+Header:  [icon] [name + publisher + time]  [platform icons] [⋯ dropdown]
+Caption: text
+Tags row: [tag pills ...]                              [Try button]
 ```
 
-### Storage RLS for app-assets bucket
-Add policies allowing authenticated users to upload to `app-assets` and public read access.
+## Changes to `src/components/trending/TrendingCard.tsx`
 
----
+Apply the same icon fix (URL vs emoji detection). Keep the trending-specific layout but apply the same structural changes:
 
-## 2. Seed Dummy Data (Migration)
+- Remove bottom action bar
+- Move Try button to tags row and add a divider above it [this row]
+- Three-dot menu with Save/Share
+- Platform icons near the top-right area
 
-Insert 10 fake users into `profiles` table and 30 apps (3 per user) with:
-- Unique vibe-coding SaaS ideas (e.g., "VibeShip - AI deployment pipeline", "PromptForge - prompt engineering IDE", "CodeMood - developer wellness tracker")
-- Varied `created_at` dates (today, this week, this month) for filter testing
-- Mix of platforms: some web-only, some web+android, some all three, with dummy URLs
-- Tags, tech stacks, captions, taglines
-- Varied likes/comments/views counts
-- Status: `published`
+## Files to Edit
 
-Insert ~90 comments across the 30 apps (3 per app), mix of genuine positive and constructive negative feedback, with different `created_at` dates.
 
----
-
-## 3. Profile Page Width Alignment
-
-**File:** `src/pages/Profile.tsx`
-
-Change `max-w-4xl` to `max-w-[1080px]` and use `px-4 lg:px-6` to match the `FeedLayout` container width exactly.
-
----
-
-## 4. Connect Home Feed to Real Database
-
-**File:** `src/pages/HomeFeed.tsx`
-
-- Replace `mockPosts` import with a `useEffect` that fetches from `supabase.from("apps").select("*").eq("status", "published").order("created_at", { ascending: false })`
-- Also fetch publisher profiles for display names
-- Map DB rows to the `AppPost` interface used by `AppCard`
-
-**File:** `src/pages/Trending.tsx`
-
-- Replace `mockTrending` with real DB query ordered by `likes_count` descending
-- Map to `TrendingApp` interface
-
-**File:** `src/components/profile/ProfilePublishedApps.tsx`
-
-- Fetch current user's apps from DB instead of `mockPosts`
-
-**File:** `src/components/profile/ProfileSavedApps.tsx`
-
-- For now, show empty state (saved apps require a separate saved_apps table — future feature)
-
----
-
-## 5. Real Comments System
-
-**File:** `src/components/app-detail/AppDetailComments.tsx`
-
-- Replace mock comments with real DB fetch: `supabase.from("comments").select("*, profiles(display_name, username)").eq("app_id", appId)`
-- Add comment insertion: `supabase.from("comments").insert({ app_id, user_id, text })`
-- Accept `appId` prop from `AppDetail.tsx`
-
-**File:** `src/pages/AppDetail.tsx`
-
-- Pass `app.id` to `AppDetailComments`
-
----
-
-## 6. Screenshot & Icon Uploads
-
-**File:** `src/components/publish/PublishForm.tsx`
-
-- Add screenshot upload section (1-5 images)
-- Upload screenshots to `app-assets` storage bucket under `{user_id}/screenshots/`
-- Store public URLs in the `screenshots` array column
-- Icon upload already exists — ensure it saves properly
-
----
-
-## 7. Avatar Dropdown Menu (Floating Nav)
-
-**File:** `src/components/feed/FeedNavbar.tsx`
-
-- Replace the avatar click (`navigate("/account")`) with a `Popover` or `DropdownMenu` containing:
-  - "Account" — navigates to `/account`
-  - Dark mode toggle (switch component, toggles `dark` class on `<html>`)
-  - Separator line
-  - "Log out" button — calls `signOut()`
-- Remove the standalone `LogOut` button from the navbar
-
----
-
-## 8. Remove "Explore" Option
-
-**Files:** `src/components/feed/FeedNavbar.tsx`, `src/components/landing/Navbar.tsx`
-
-- Remove "Explore" from `navItems` array in FeedNavbar
-- Remove "Explore" from `navLinks` in landing Navbar
-- Remove `/explore` references if any exist in routing
-
----
-
-## 9. Landing Page Nav Cleanup
-
-**File:** `src/components/landing/Navbar.tsx`
-
-- Update `navLinks` to only show pre-login relevant links: "Home", "About", "Contact" (remove "Explore")
-- Keep "Join Now" button
-
----
-
-## Files Summary
-
-| File | Action |
-|---|---|
-| Migration SQL | Create `comments` table, storage policies, seed data |
-| `src/pages/Profile.tsx` | Align width to `max-w-[1080px]` |
-| `src/pages/HomeFeed.tsx` | Fetch apps from DB |
-| `src/pages/Trending.tsx` | Fetch trending from DB |
-| `src/pages/AppDetail.tsx` | Pass appId to comments |
-| `src/components/feed/FeedNavbar.tsx` | Remove Explore, avatar dropdown |
-| `src/components/landing/Navbar.tsx` | Remove Explore |
-| `src/components/app-detail/AppDetailComments.tsx` | Real comments CRUD |
-| `src/components/profile/ProfilePublishedApps.tsx` | Fetch from DB |
-| `src/components/profile/ProfileSavedApps.tsx` | Show empty state |
-| `src/components/publish/PublishForm.tsx` | Add screenshot uploads |
-
+| File                                       | Changes                            |
+| ------------------------------------------ | ---------------------------------- |
+| `src/components/feed/AppCard.tsx`          | Full redesign as described         |
+| `src/components/trending/TrendingCard.tsx` | Icon fix + same structural updates |
