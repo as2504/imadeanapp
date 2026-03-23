@@ -48,7 +48,7 @@ const FeedNavbar = () => {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/40">
-        <div className="container mx-auto flex items-center justify-between h-14 px-4 lg:px-6">
+        <div className="max-w-[1080px] w-full mx-auto flex items-center justify-between h-14 px-4 lg:px-6">
           {/* Left: logo */}
           <button
             onClick={() => navigate("/home")}

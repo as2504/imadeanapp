@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronLeft } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const feedTabs = ["For You", "Following", "Trending", "New"];
 const categories = [
@@ -22,26 +28,28 @@ const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
 
   return (
     <div className="space-y-3">
-      {/* Feed tabs */}
-      <div className="flex items-center border-b border-border/30 pb-1">
-        <div className="flex items-center gap-1 flex-1">
-          {feedTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 relative ${
-                activeTab === tab
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
-              )}
+      {/* Feed tab dropdown + sidebar arrow */}
+      <div className="flex items-center justify-between border-b border-border/30 pb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors focus:outline-none">
+              {activeTab}
+              <ChevronDown size={15} className="text-muted-foreground" />
             </button>
-          ))}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[140px]">
+            {feedTabs.map((tab) => (
+              <DropdownMenuItem
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={activeTab === tab ? "bg-accent font-medium" : ""}
+              >
+                {tab}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}

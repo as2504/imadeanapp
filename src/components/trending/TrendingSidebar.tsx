@@ -8,7 +8,7 @@ const topCreators = [
 
 const TrendingSidebar = () => {
   return (
-    <aside className="hidden lg:block w-72 shrink-0 space-y-5 sticky top-20">
+    <div className="space-y-5">
       {/* Top Creators */}
       <div className="bg-background border border-border/50 rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
@@ -88,7 +88,7 @@ const TrendingSidebar = () => {
           ))}
         </div>
       </div>
-    </aside>
+    </div>
   );
 };
 

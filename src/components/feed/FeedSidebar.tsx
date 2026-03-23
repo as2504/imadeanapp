@@ -16,7 +16,7 @@ const suggestedCreators = [
 ];
 
 const FeedSidebar = () => (
-  <aside className="hidden lg:block w-72 shrink-0 space-y-6">
+  <div className="space-y-6">
     {/* Trending tags */}
     <div className="bg-background border border-border/40 rounded-2xl p-4">
       <div className="flex items-center gap-2 mb-3">
@@ -87,7 +87,7 @@ const FeedSidebar = () => (
         Publish Your App
       </Button>
     </div>
-  </aside>
+  </div>
 );
 
 export default FeedSidebar;

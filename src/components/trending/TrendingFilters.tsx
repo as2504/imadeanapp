@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronLeft } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const timeFilters = ["Today", "This Week", "This Month", "All Time"];
 const categoryFilters = ["All", "Web Apps", "Mobile", "AI Tools", "Productivity", "Design", "Dev Tools"];
@@ -14,26 +20,28 @@ const TrendingFilters = ({ onOpenSidebar }: TrendingFiltersProps) => {
 
   return (
     <div className="space-y-3">
-      {/* Time filters */}
-      <div className="flex items-center border-b border-border/30 pb-1">
-        <div className="flex items-center gap-1 flex-1">
-          {timeFilters.map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTime(t)}
-              className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 relative ${
-                activeTime === t
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t}
-              {activeTime === t && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
-              )}
+      {/* Time filter dropdown + sidebar arrow */}
+      <div className="flex items-center justify-between border-b border-border/30 pb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors focus:outline-none">
+              {activeTime}
+              <ChevronDown size={15} className="text-muted-foreground" />
             </button>
-          ))}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[140px]">
+            {timeFilters.map((t) => (
+              <DropdownMenuItem
+                key={t}
+                onClick={() => setActiveTime(t)}
+                className={activeTime === t ? "bg-accent font-medium" : ""}
+              >
+                {t}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
