@@ -1,58 +1,57 @@
-# Plan: Redesign AppCard Layout + Fix Icon Rendering
+# Plan: Search Bar Alignment, Feed Tab Dropdown, Mobile Sidebar Fix
 
 ## Summary
 
-Redesign the AppCard, and fix the icon rendering bug where uploaded icon URLs display as text instead of images.
+Three fixes: (1) align the navbar search bar with the primary content column, (2) convert feed tabs into a dropdown selector, (3) fix mobile sidebar panels not showing content.
 
-## Changes to `src/components/feed/AppCard.tsx`
+---
 
-### 1. Fix Icon Rendering
+## 1. Fix Mobile Sidebar — Content Not Visible
 
-The `appIcon` field contains either an emoji (e.g. "📱") or a URL (e.g. `https://...`). Currently it always renders as `<span>{post.appIcon}</span>`. Fix: detect if it's a URL and render `<img>` instead.
+**Root cause:** Both `FeedSidebar` and `TrendingSidebar` have `className="hidden lg:block ..."` on their root `<aside>` element. When rendered inside `SidebarPanel` on mobile, they remain hidden because of their own `hidden lg:block` class.
 
-### 2. Three-dot menu → Dropdown with Save & Share
+**Fix:** Remove `hidden lg:block` and the outer `<aside>` wrapper from both components. Make them plain `<div>` containers. The show/hide logic is already handled by `FeedLayout` (desktop `<aside>`) and `SidebarPanel` (mobile drawer).
 
-Replace the plain `<button>` with a `DropdownMenu` containing two options: "Save" and "Share". And Keep the three dots always visible.
+**Files:** `src/components/feed/FeedSidebar.tsx`, `src/components/trending/TrendingSidebar.tsx`
 
-### 3. Remove tech stack chips
+---
 
-Delete the tech stack section entirely from the card.
+## 2. Align Search Bar with Primary Content Column
 
-### 4. Remove bottom action bar (like, comment, share, save, try)
+**Current:** Search bar is centered in the full-width navbar using `flex-1 max-w-md mx-8`.
 
-Delete the divider and the entire actions row at the bottom.
+**Fix:** Constrain the navbar inner container to the same `max-w-[1080px]` used by `FeedLayout`. This ensures the search bar visually aligns with the feed content below it.
 
-### 5. New layout for tags row
+**File:** `src/components/feed/FeedNavbar.tsx` — change `container mx-auto` to `max-w-[1080px] mx-auto`
 
-On the same row as tags, place the "Try" button on the right side (where tech stack used to be). This replaces the bottom action bar. and add a divider above that.
+---
 
-### 6. Move platform icons
+## 3. Convert Feed Tabs to Dropdown Menu
 
-Place platform icons (Web/Android/iOS) on the same line as the three-dot menu, to its left, in the header area.
+**Current:** "For You", "Following", "Trending", "New" rendered as inline tab buttons.
 
-### 7. Remove comment preview section
+**Change:** Replace with a dropdown button showing the active selection + a `ChevronDown` icon. Clicking opens a dropdown menu with the options. Selecting one updates the active tab and closes the menu.
 
-### Final card structure:
+Same approach for `TrendingFilters` — convert "Today", "This Week", "This Month", "All Time" into a dropdown.
+
+**Files:** `src/components/feed/FeedFilters.tsx`, `src/components/trending/TrendingFilters.tsx`
+
+**Layout after change:**
 
 ```
-Header:  [icon] [name + publisher + time]  [platform icons] [⋯ dropdown]
-Caption: text
-Tags row: [tag pills ...]                              [Try button]
+[For You ▾]  [sidebar arrow]
+[All] [Web Apps] [Mobile Apps] [AI Tools] ...
 ```
 
-## Changes to `src/components/trending/TrendingCard.tsx`
-
-Apply the same icon fix (URL vs emoji detection). Keep the trending-specific layout but apply the same structural changes:
-
-- Remove bottom action bar
-- Move Try button to tags row and add a divider above it [this row]
-- Three-dot menu with Save/Share
-- Platform icons near the top-right area
+---
 
 ## Files to Edit
 
 
-| File                                       | Changes                            |
-| ------------------------------------------ | ---------------------------------- |
-| `src/components/feed/AppCard.tsx`          | Full redesign as described         |
-| `src/components/trending/TrendingCard.tsx` | Icon fix + same structural updates |
+| File                                          | Change                                         |
+| --------------------------------------------- | ---------------------------------------------- |
+| `src/components/feed/FeedSidebar.tsx`         | Remove `hidden lg:block` and `<aside>` wrapper |
+| `src/components/trending/TrendingSidebar.tsx` | Remove `hidden lg:block` and `<aside>` wrapper |
+| `src/components/feed/FeedNavbar.tsx`          | Align navbar container to `max-w-[1080px]`     |
+| `src/components/feed/FeedFilters.tsx`         | Convert tabs to dropdown menu                  |
+| `src/components/trending/TrendingFilters.tsx` | Convert time filters to dropdown menu          |
