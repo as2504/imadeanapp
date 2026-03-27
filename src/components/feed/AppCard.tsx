@@ -1,27 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  MoreHorizontal,
-  Globe,
-  Smartphone,
-  Monitor,
-  Bookmark,
-  Share2,
-  ExternalLink,
-  CheckCircle2,
-  Heart,
-  Star,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { CheckCircle2, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface AppPost {
   id: string;
+  slug?: string;
   appName: string;
   appIcon: string;
   publisherName: string;
@@ -32,7 +16,6 @@ export interface AppPost {
   tags: string[];
   platforms: ("web" | "android" | "ios")[];
   techStack?: string[];
-  rating?: number;
   likes: number;
   comments: number;
   views: number;
@@ -51,13 +34,27 @@ const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
 
 const AppCard = ({ post }: { post: AppPost }) => {
   const navigate = useNavigate();
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchRating = async () => {
+      const { data } = await supabase
+        .from("ratings")
+        .select("rating")
+        .eq("app_id", post.id);
+      if (data && data.length > 0) {
+        const avg = data.reduce((s, r) => s + r.rating, 0) / data.length;
+        setAvgRating(Math.round(avg * 10) / 10);
+      }
+    };
+    fetchRating();
+  }, [post.id]);
 
   return (
-    <article 
-      onClick={() => navigate(`/app/${post.id}`)}
+    <article
+      onClick={() => navigate(`/app/${post.slug || post.id}`)}
       className="bg-card hover:bg-accent/5 border border-border/40 rounded-xl p-3 sm:p-4 transition-all duration-300 group cursor-pointer flex flex-row gap-3 sm:gap-5 hover:shadow-lg hover:-translate-y-0.5 h-fit"
     >
-      {/* Icon Area - Even Smaller */}
       <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center text-xl shrink-0 overflow-hidden shadow-sm group-hover:shadow-md transition-all">
         {isUrl(post.appIcon) ? (
           <img src={post.appIcon} alt={post.appName} className="w-full h-full object-cover" />
@@ -65,8 +62,7 @@ const AppCard = ({ post }: { post: AppPost }) => {
           <span className="group-hover:scale-110 transition-transform">{post.appIcon}</span>
         )}
       </div>
-      
-      {/* Content Area */}
+
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -95,10 +91,12 @@ const AppCard = ({ post }: { post: AppPost }) => {
                 return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-50 group-hover:opacity-100 transition-opacity dark:invert dark:opacity-90" alt={config.label} />;
               })}
             </div>
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-primary/5 border border-primary/10">
-              <Star size={10} className="text-primary fill-primary sm:w-3 sm:h-3" />
-              <span className="text-[9px] sm:text-xs font-black text-foreground">{post.rating || 4.8}</span>
-            </div>
+            {avgRating !== null && avgRating > 0 && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-primary/5 border border-primary/10">
+                <Star size={10} className="text-primary fill-primary sm:w-3 sm:h-3" />
+                <span className="text-[9px] sm:text-xs font-black text-foreground">{avgRating.toFixed(1)}</span>
+              </div>
+            )}
           </div>
         </div>
 

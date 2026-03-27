@@ -1,17 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import FeedFilters from "@/components/feed/FeedFilters";
+import type { FeedFilterState } from "@/components/feed/FeedFilters";
 import FeedSidebar from "@/components/feed/FeedSidebar";
 import FeedLayout from "@/components/layout/FeedLayout";
 import AppCard from "@/components/feed/AppCard";
 import type { AppPost } from "@/components/feed/AppCard";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const HomeFeed = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<AppPost[]>([]);
+  const [filters, setFilters] = useState<FeedFilterState>({
+    feed: "for-you", sort: "", platform: "all", techStack: "", category: "",
+  });
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showFilters, setShowFilters] = useState(true);
   const lastScrollY = useRef(0);
@@ -26,64 +32,116 @@ const HomeFeed = () => {
       }
       lastScrollY.current = currentScrollY;
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const fetchApps = async () => {
-      setLoading(true);
-      const { data: apps } = await supabase
-        .from("apps")
-        .select("*")
-        .eq("status", "published")
-        .order("created_at", { ascending: false });
+  const fetchApps = useCallback(async () => {
+    setLoading(true);
 
-      if (!apps || apps.length === 0) {
+    // If "following" feed, get followed user IDs first
+    let followedIds: string[] = [];
+    if (filters.feed === "following" && user) {
+      const { data: follows } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id);
+      followedIds = (follows || []).map((f) => f.following_id);
+      if (followedIds.length === 0) {
         setPosts([]);
         setLoading(false);
         return;
       }
+    }
 
-      const userIds = [...new Set(apps.map((a) => a.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name, username")
-        .in("user_id", userIds);
+    let query = supabase
+      .from("apps")
+      .select("*")
+      .eq("status", "published");
 
-      const profileMap = new Map(
-        (profiles || []).map((p) => [p.user_id, p])
-      );
+    // Apply following filter
+    if (filters.feed === "following" && followedIds.length > 0) {
+      query = query.in("user_id", followedIds);
+    }
 
-      const mapped: AppPost[] = apps.map((app) => {
-        const profile = profileMap.get(app.user_id);
-        return {
-          id: app.id,
-          appName: app.app_name,
-          appIcon: app.app_icon_url || "📱",
-          publisherName: profile?.display_name || profile?.username || "Unknown",
-          publisherAvatar: (profile?.display_name || "U").charAt(0),
-          verified: false,
-          timeAgo: getTimeAgo(app.created_at),
-          caption: app.caption || app.tagline || "",
-          tags: app.tags || [],
-          platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
-          techStack: app.tech_stack || [],
-          likes: app.likes_count || 0,
-          comments: app.comments_count || 0,
-          views: app.views_count || 0,
-          liked: false,
-          saved: false,
-        };
-      });
+    // Apply platform filter
+    if (filters.platform && filters.platform !== "all") {
+      query = query.contains("platforms", [filters.platform]);
+    }
 
-      setPosts(mapped);
+    // Apply tech stack filter
+    if (filters.techStack) {
+      query = query.contains("tech_stack", [filters.techStack]);
+    }
+
+    // Apply category filter (match against tags)
+    if (filters.category) {
+      // Map category names to potential tag values
+      const categoryTag = filters.category.toLowerCase().replace(/\s+/g, "-");
+      query = query.contains("tags", [categoryTag]);
+    }
+
+    // Sort
+    if (filters.sort === "liked") {
+      query = query.order("likes_count", { ascending: false });
+    } else if (filters.sort === "viewed") {
+      query = query.order("views_count", { ascending: false });
+    } else if (filters.sort === "recent" || filters.feed === "for-you") {
+      query = query.order("created_at", { ascending: false });
+    } else if (filters.feed === "trending") {
+      query = query.order("views_count", { ascending: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    const { data: apps } = await query.limit(50);
+
+    if (!apps || apps.length === 0) {
+      setPosts([]);
       setLoading(false);
-    };
+      return;
+    }
 
+    const userIds = [...new Set(apps.map((a) => a.user_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, username")
+      .in("user_id", userIds);
+
+    const profileMap = new Map(
+      (profiles || []).map((p) => [p.user_id, p])
+    );
+
+    const mapped: AppPost[] = apps.map((app) => {
+      const profile = profileMap.get(app.user_id);
+      return {
+        id: app.id,
+        slug: (app as any).slug || undefined,
+        appName: app.app_name,
+        appIcon: app.app_icon_url || "📱",
+        publisherName: profile?.display_name || profile?.username || "Unknown",
+        publisherAvatar: (profile?.display_name || "U").charAt(0),
+        verified: false,
+        timeAgo: getTimeAgo(app.created_at),
+        caption: app.caption || app.tagline || "",
+        tags: app.tags || [],
+        platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
+        techStack: app.tech_stack || [],
+        likes: app.likes_count || 0,
+        comments: app.comments_count || 0,
+        views: app.views_count || 0,
+        liked: false,
+        saved: false,
+      };
+    });
+
+    setPosts(mapped);
+    setLoading(false);
+  }, [filters, user]);
+
+  useEffect(() => {
     fetchApps();
-  }, []);
+  }, [fetchApps]);
 
   useEffect(() => {
     if (loading) return;
@@ -114,7 +172,7 @@ const HomeFeed = () => {
                 "sticky top-[64px] z-30 bg-background/80 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all duration-300",
                 showFilters ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
               )}>
-                <FeedFilters onOpenSidebar={onOpenSidebar} />
+                <FeedFilters onOpenSidebar={onOpenSidebar} onFilterChange={setFilters} />
               </div>
 
               <div className="mt-4">
@@ -136,7 +194,7 @@ const HomeFeed = () => {
                     ))}
                   </div>
                 )}
-                
+
                 {!loading && posts.length === 0 && (
                   <div className="text-center py-20">
                     <p className="text-muted-foreground">No apps found matching your criteria.</p>

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import TrendingFilters from "@/components/trending/TrendingFilters";
+import type { TrendingFilterState } from "@/components/trending/TrendingFilters";
 import TrendingSidebar from "@/components/trending/TrendingSidebar";
 import TrendingCard from "@/components/trending/TrendingCard";
 import FeedLayout from "@/components/layout/FeedLayout";
@@ -11,7 +12,8 @@ import { cn } from "@/lib/utils";
 
 const Trending = () => {
   const [loading, setLoading] = useState(true);
-  const [apps, setApps] = useState<TrendingApp[]>([]);
+  const [apps, setApps] = useState<(TrendingApp & { slug?: string })[]>([]);
+  const [filters, setFilters] = useState<TrendingFilterState>({ time: "This Week", category: "" });
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showFilters, setShowFilters] = useState(true);
   const lastScrollY = useRef(0);
@@ -26,68 +28,90 @@ const Trending = () => {
       }
       lastScrollY.current = currentScrollY;
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const fetchTrending = async () => {
-      setLoading(true);
-      const { data: rawApps } = await supabase
-        .from("apps")
-        .select("*")
-        .eq("status", "published")
-        .order("likes_count", { ascending: false })
-        .limit(20);
+  const fetchTrending = useCallback(async () => {
+    setLoading(true);
 
-      if (!rawApps || rawApps.length === 0) {
-        setApps([]);
-        setLoading(false);
-        return;
-      }
+    let query = supabase
+      .from("apps")
+      .select("*")
+      .eq("status", "published");
 
-      const userIds = [...new Set(rawApps.map((a) => a.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name, username")
-        .in("user_id", userIds);
+    // Time filter
+    const now = new Date();
+    if (filters.time === "Today") {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      query = query.gte("created_at", today);
+    } else if (filters.time === "This Week") {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gte("created_at", weekAgo);
+    } else if (filters.time === "This Month") {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gte("created_at", monthAgo);
+    }
 
-      const profileMap = new Map(
-        (profiles || []).map((p) => [p.user_id, p])
-      );
+    // Category filter
+    if (filters.category) {
+      const tag = filters.category.toLowerCase().replace(/\s+/g, "-");
+      query = query.contains("tags", [tag]);
+    }
 
-      const mapped: TrendingApp[] = rawApps.map((app, i) => {
-        const profile = profileMap.get(app.user_id);
-        return {
-          id: app.id,
-          rank: i + 1,
-          appName: app.app_name,
-          appIcon: app.app_icon_url || "📱",
-          publisherName: profile?.display_name || profile?.username || "Unknown",
-          publisherAvatar: (profile?.display_name || "U").charAt(0),
-          verified: false,
-          timeAgo: getTimeAgo(app.created_at),
-          caption: app.caption || app.tagline || "",
-          tags: app.tags || [],
-          platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
-          techStack: app.tech_stack || [],
-          likes: app.likes_count || 0,
-          comments: app.comments_count || 0,
-          views: app.views_count || 0,
-          liked: false,
-          saved: false,
-          trendLabel: getTrendLabel(i),
-          growthPercent: Math.floor(Math.random() * 80) + 10,
-        };
-      });
+    query = query.order("views_count", { ascending: false }).limit(20);
 
-      setApps(mapped);
+    const { data: rawApps } = await query;
+
+    if (!rawApps || rawApps.length === 0) {
+      setApps([]);
       setLoading(false);
-    };
+      return;
+    }
 
+    const userIds = [...new Set(rawApps.map((a) => a.user_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, username")
+      .in("user_id", userIds);
+
+    const profileMap = new Map(
+      (profiles || []).map((p) => [p.user_id, p])
+    );
+
+    const mapped = rawApps.map((app, i) => {
+      const profile = profileMap.get(app.user_id);
+      return {
+        id: app.id,
+        slug: (app as any).slug || undefined,
+        rank: i + 1,
+        appName: app.app_name,
+        appIcon: app.app_icon_url || "📱",
+        publisherName: profile?.display_name || profile?.username || "Unknown",
+        publisherAvatar: (profile?.display_name || "U").charAt(0),
+        verified: false,
+        timeAgo: getTimeAgo(app.created_at),
+        caption: app.caption || app.tagline || "",
+        tags: app.tags || [],
+        platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
+        techStack: app.tech_stack || [],
+        likes: app.likes_count || 0,
+        comments: app.comments_count || 0,
+        views: app.views_count || 0,
+        liked: false,
+        saved: false,
+        trendLabel: getTrendLabel(i),
+        growthPercent: Math.floor(Math.random() * 80) + 10,
+      };
+    });
+
+    setApps(mapped);
+    setLoading(false);
+  }, [filters]);
+
+  useEffect(() => {
     fetchTrending();
-  }, []);
+  }, [fetchTrending]);
 
   useEffect(() => {
     if (loading) return;
@@ -118,7 +142,7 @@ const Trending = () => {
                 "sticky top-[64px] z-30 bg-background/80 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all duration-300",
                 showFilters ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
               )}>
-                <TrendingFilters onOpenSidebar={onOpenSidebar} />
+                <TrendingFilters onOpenSidebar={onOpenSidebar} onFilterChange={setFilters} />
               </div>
 
               <div className="mt-4">
