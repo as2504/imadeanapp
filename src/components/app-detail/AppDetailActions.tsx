@@ -1,38 +1,24 @@
 import { useState } from "react";
-import { Heart, Share2, Bookmark } from "lucide-react";
+import { Share2, Bookmark } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface AppDetailActionsProps {
-  likes: number;
+  slug?: string;
 }
 
-const AppDetailActions = ({ likes }: AppDetailActionsProps) => {
-  const [liked, setLiked] = useState(false);
+const AppDetailActions = ({ slug }: AppDetailActionsProps) => {
   const [saved, setSaved] = useState(false);
-  const [likeCount, setLikeCount] = useState(likes);
-
-  const toggleLike = () => {
-    setLiked(!liked);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
-  };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const url = slug
+      ? `${window.location.origin}/app/${slug}`
+      : window.location.href;
+    navigator.clipboard.writeText(url);
     toast({ title: "Link copied", description: "App link copied to clipboard." });
   };
 
   return (
     <div className="flex items-center gap-2 py-5 border-b border-border/40">
-      <button
-        onClick={toggleLike}
-        className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 active:scale-[0.96] ${
-          liked ? "text-red-500 bg-red-50" : "text-muted-foreground hover:text-foreground hover:bg-surface"
-        }`}
-      >
-        <Heart size={16} fill={liked ? "currentColor" : "none"} />
-        <span>{likeCount}</span>
-      </button>
-
       <button
         onClick={handleShare}
         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface transition-colors active:scale-[0.96]"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronLeft, Globe, Smartphone, Clock, Heart, Eye, Filter, Code2, Layers } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,27 +47,48 @@ const categories = [
   "Dev Tools",
 ];
 
-interface FeedFiltersProps {
-  onOpenSidebar?: () => void;
+export interface FeedFilterState {
+  feed: string;
+  sort: string;
+  platform: string;
+  techStack: string;
+  category: string;
 }
 
-const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
+interface FeedFiltersProps {
+  onOpenSidebar?: () => void;
+  onFilterChange?: (filters: FeedFilterState) => void;
+}
+
+const FeedFilters = ({ onOpenSidebar, onFilterChange }: FeedFiltersProps) => {
   const [activeTab, setActiveTab] = useState(feedTabs[0]);
   const [activePlatform, setActivePlatform] = useState(platforms[0]);
   const [activeTech, setActiveTech] = useState("Any Stack");
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const getActiveStyles = (isActive: boolean) => 
-    isActive 
-      ? "text-primary bg-transparent font-bold focus:bg-transparent focus:text-primary" 
+  useEffect(() => {
+    if (!onFilterChange) return;
+    // Map tab to feed/sort
+    const feedIds = ["for-you", "following", "trending"];
+    const isFeed = feedIds.includes(activeTab.id);
+    onFilterChange({
+      feed: isFeed ? activeTab.id : "for-you",
+      sort: !isFeed ? activeTab.id : "",
+      platform: activePlatform.id,
+      techStack: activeTech === "Any Stack" ? "" : activeTech,
+      category: activeCategory === "All" ? "" : activeCategory,
+    });
+  }, [activeTab, activePlatform, activeTech, activeCategory]);
+
+  const getActiveStyles = (isActive: boolean) =>
+    isActive
+      ? "text-primary bg-transparent font-bold focus:bg-transparent focus:text-primary"
       : "font-medium focus:bg-transparent focus:text-primary";
 
   return (
     <div className="space-y-3">
-      {/* Feed tab dropdowns + sidebar arrow */}
       <div className="flex items-center justify-between border-b border-border/30 pb-2">
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Tab Selector (Unified) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-black text-foreground hover:text-primary transition-colors focus:outline-none shrink-0 uppercase tracking-widest">
@@ -108,7 +129,6 @@ const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
 
           <div className="w-px h-4 bg-border/40 mx-1" />
 
-          {/* Filter Dropdown (Nested) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1.5 px-2 py-1.5 text-sm font-black text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0 uppercase tracking-widest">
@@ -121,8 +141,7 @@ const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
               <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-black px-3 py-2">
                 Refine Feed
               </DropdownMenuLabel>
-              
-              {/* Submenu: Platform */}
+
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="rounded-xl gap-3 py-2.5 px-3 text-xs uppercase tracking-wider font-bold">
                   <Globe size={14} className="opacity-70" />
@@ -144,7 +163,6 @@ const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
                 </DropdownMenuPortal>
               </DropdownMenuSub>
 
-              {/* Submenu: Tech Stack */}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="rounded-xl gap-3 py-2.5 px-3 text-xs uppercase tracking-wider font-bold">
                   <Code2 size={14} className="opacity-70" />
@@ -173,7 +191,7 @@ const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
               </DropdownMenuSub>
 
               <DropdownMenuSeparator className="my-2 opacity-50" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => {
                   setActivePlatform(platforms[0]);
                   setActiveTech("Any Stack");
@@ -197,7 +215,6 @@ const FeedFilters = ({ onOpenSidebar }: FeedFiltersProps) => {
         )}
       </div>
 
-      {/* Category chips */}
       <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
         {categories.map((cat) => (
           <button

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import {
   DropdownMenu,
@@ -10,17 +10,30 @@ import {
 const timeFilters = ["Today", "This Week", "This Month", "All Time"];
 const categoryFilters = ["All", "Web Apps", "Mobile", "AI Tools", "Productivity", "Design", "Dev Tools"];
 
-interface TrendingFiltersProps {
-  onOpenSidebar?: () => void;
+export interface TrendingFilterState {
+  time: string;
+  category: string;
 }
 
-const TrendingFilters = ({ onOpenSidebar }: TrendingFiltersProps) => {
+interface TrendingFiltersProps {
+  onOpenSidebar?: () => void;
+  onFilterChange?: (filters: TrendingFilterState) => void;
+}
+
+const TrendingFilters = ({ onOpenSidebar, onFilterChange }: TrendingFiltersProps) => {
   const [activeTime, setActiveTime] = useState("This Week");
   const [activeCategory, setActiveCategory] = useState("All");
 
+  useEffect(() => {
+    if (!onFilterChange) return;
+    onFilterChange({
+      time: activeTime,
+      category: activeCategory === "All" ? "" : activeCategory,
+    });
+  }, [activeTime, activeCategory]);
+
   return (
     <div className="space-y-4">
-      {/* Time filter dropdown + sidebar arrow */}
       <div className="flex items-center justify-between border-b border-border/30 pb-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -35,8 +48,8 @@ const TrendingFilters = ({ onOpenSidebar }: TrendingFiltersProps) => {
                 key={t}
                 onClick={() => setActiveTime(t)}
                 className={`rounded-xl py-2.5 px-4 cursor-pointer font-bold text-xs uppercase tracking-wider ${
-                  activeTime === t 
-                    ? "text-primary bg-transparent focus:bg-transparent focus:text-primary" 
+                  activeTime === t
+                    ? "text-primary bg-transparent focus:bg-transparent focus:text-primary"
                     : "text-muted-foreground focus:text-primary focus:bg-transparent"
                 }`}
               >
@@ -57,7 +70,6 @@ const TrendingFilters = ({ onOpenSidebar }: TrendingFiltersProps) => {
         )}
       </div>
 
-      {/* Category chips - High Fidelity */}
       <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
         {categoryFilters.map((cat) => (
           <button
