@@ -6,33 +6,57 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppCard from "@/components/feed/AppCard";
 import type { AppPost } from "@/components/feed/AppCard";
 
-const ProfilePublishedApps = () => {
+interface ProfilePublishedAppsProps {
+  profileUserId?: string;
+}
+
+const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [apps, setApps] = useState<AppPost[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const targetUserId = profileUserId || user?.id;
+  const isOwnProfile = !profileUserId || profileUserId === user?.id;
+
   useEffect(() => {
-    if (!user) return;
-    const fetch = async () => {
-      const { data } = await supabase
+    if (!targetUserId) return;
+    const fetchApps = async () => {
+      let query = supabase
         .from("apps")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", targetUserId)
         .order("created_at", { ascending: false });
-      
+
+      // For other users, only show published apps
+      if (!isOwnProfile) {
+        query = query.eq("status", "published");
+      }
+
+      const { data } = await query;
+
       if (!data) {
         setApps([]);
         setLoading(false);
         return;
       }
 
+      // Fetch profile for the publisher name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, username, avatar_url")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+      const publisherName = profile?.display_name || profile?.username || "User";
+
       const mapped: AppPost[] = data.map((app) => ({
         id: app.id,
+        slug: app.slug || undefined,
         appName: app.app_name,
         appIcon: app.app_icon_url || "📱",
-        publisherName: user.user_metadata?.display_name || user.email?.split("@")[0] || "User",
-        publisherAvatar: (user.user_metadata?.display_name || "U").charAt(0),
+        publisherName,
+        publisherAvatar: publisherName.charAt(0),
         verified: true,
         timeAgo: getTimeAgo(app.created_at),
         caption: app.caption || app.tagline || "",
@@ -49,8 +73,8 @@ const ProfilePublishedApps = () => {
       setApps(mapped);
       setLoading(false);
     };
-    fetch();
-  }, [user]);
+    fetchApps();
+  }, [targetUserId, isOwnProfile]);
 
   if (loading) {
     return <div className="py-20 text-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" /></div>;
@@ -60,9 +84,19 @@ const ProfilePublishedApps = () => {
     return (
       <div className="text-center py-20 px-6 bg-card border border-border/40 rounded-[2rem] shadow-sm">
         <p className="text-6xl mb-6">🚀</p>
-        <h3 className="text-2xl font-black text-foreground mb-2 uppercase tracking-tight">Time to launch?</h3>
-        <p className="text-muted-foreground max-w-sm mx-auto mb-8 font-medium">You haven't published anything yet. Share your first vibe-coded app with the world today.</p>
-        <Button size="lg" className="rounded-2xl px-10 h-14 font-black uppercase tracking-widest bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all active:scale-95" onClick={() => navigate("/publish")}>Publish Your First App</Button>
+        <h3 className="text-2xl font-black text-foreground mb-2 uppercase tracking-tight">
+          {isOwnProfile ? "Time to launch?" : "No apps yet"}
+        </h3>
+        <p className="text-muted-foreground max-w-sm mx-auto mb-8 font-medium">
+          {isOwnProfile
+            ? "You haven't published anything yet. Share your first vibe-coded app with the world today."
+            : "This creator hasn't published any apps yet."}
+        </p>
+        {isOwnProfile && (
+          <Button size="lg" className="rounded-2xl px-10 h-14 font-black uppercase tracking-widest bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all active:scale-95" onClick={() => navigate("/publish")}>
+            Publish Your First App
+          </Button>
+        )}
       </div>
     );
   }

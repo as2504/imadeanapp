@@ -1,103 +1,153 @@
-import { Github, Twitter, ExternalLink, CheckCircle2, Circle, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Github, Twitter, Linkedin, ExternalLink, Globe, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-const socialLinks = [
-  { icon: Github, label: "GitHub", handle: "julian-codes", url: "#" },
-  { icon: Twitter, label: "Twitter", handle: "@jblack_vibe", url: "#" },
-];
+interface ProfileSidebarProps {
+  profileUserId?: string;
+}
 
-const completionItems = [
-  { label: "Verified Email", done: true },
-  { label: "Creator Bio Added", done: true },
-  { label: "Connect GitHub Account", done: false },
-];
+const ProfileSidebar = ({ profileUserId }: ProfileSidebarProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<any>(null);
 
-const ProfileSidebar = () => {
-  const completionPercent = Math.round(
-    (completionItems.filter((i) => i.done).length / completionItems.length) * 100
-  );
+  const targetUserId = profileUserId || user?.id;
+  const isOwnProfile = !profileUserId || profileUserId === user?.id;
+
+  useEffect(() => {
+    if (!targetUserId) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+      setProfile(data);
+    };
+    fetchProfile();
+  }, [targetUserId]);
+
+  const socialLinks = [
+    profile?.github_url && { icon: Github, label: "GitHub", url: profile.github_url },
+    profile?.twitter_url && { icon: Twitter, label: "Twitter", url: profile.twitter_url },
+    profile?.linkedin_url && { icon: Linkedin, label: "LinkedIn", url: profile.linkedin_url },
+    profile?.website && { icon: Globe, label: "Website", url: profile.website },
+    profile?.portfolio_url && { icon: ExternalLink, label: "Portfolio", url: profile.portfolio_url },
+  ].filter(Boolean) as { icon: any; label: string; url: string }[];
+
+  // Completion items for own profile
+  const completionItems = isOwnProfile
+    ? [
+        { label: "Display Name", done: !!profile?.display_name },
+        { label: "Bio Added", done: !!profile?.bio },
+        { label: "Avatar Uploaded", done: !!profile?.avatar_url },
+        { label: "Social Link Added", done: socialLinks.length > 0 },
+      ]
+    : [];
+
+  const completionPercent = completionItems.length
+    ? Math.round((completionItems.filter((i) => i.done).length / completionItems.length) * 100)
+    : 0;
 
   return (
-    <div className="space-y-10">
-      {/* Profile Strength — AT THE TOP */}
-      <section className="bg-card border border-border/40 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-5 scale-150 rotate-12 group-hover:scale-175 transition-transform duration-700">
-          <Zap size={100} className="text-primary fill-primary" />
-        </div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-6">
-            <Zap size={16} className="text-primary" />
-            <h3 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">
+    <div className="space-y-6">
+      {/* Profile Strength — only for own profile */}
+      {isOwnProfile && (
+        <section className="bg-card border border-border/40 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap size={14} className="text-primary" />
+            <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
               Profile Strength
             </h3>
           </div>
-          
-          <div className="flex items-end justify-between mb-4">
-            <div className="space-y-1">
-              <span className="text-4xl font-black text-foreground">{completionPercent}%</span>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Complete</p>
-            </div>
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black">
-              {completionItems.filter(i => i.done).length}/{completionItems.length}
-            </div>
+
+          <div className="flex items-end justify-between mb-3">
+            <span className="text-3xl font-black text-foreground">{completionPercent}%</span>
+            <span className="text-xs font-bold text-muted-foreground">
+              {completionItems.filter((i) => i.done).length}/{completionItems.length}
+            </span>
           </div>
-          
-          <Progress value={completionPercent} className="h-2 mb-6 bg-surface" />
-          
-          <div className="space-y-3">
+
+          <Progress value={completionPercent} className="h-2 mb-4 bg-surface" />
+
+          <div className="space-y-2">
             {completionItems.map((item) => (
-              <div key={item.label} className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface/50 transition-colors">
-                <div className={`p-1 rounded-lg ${item.done ? "bg-emerald-500/10" : "bg-muted"}`}>
-                  {item.done ? (
-                    <CheckCircle2 size={14} className="text-emerald-500" />
-                  ) : (
-                    <Circle size={14} className="text-muted-foreground/30" />
-                  )}
-                </div>
-                <span className={`text-xs font-bold ${item.done ? "text-foreground" : "text-muted-foreground"}`}>
+              <div key={item.label} className="flex items-center gap-2 text-xs">
+                <div className={`w-1.5 h-1.5 rounded-full ${item.done ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
+                <span className={item.done ? "text-foreground font-bold" : "text-muted-foreground"}>
                   {item.label}
                 </span>
               </div>
             ))}
           </div>
-          
-          <Button className="w-full mt-8 h-12 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-black text-[10px] uppercase tracking-widest shadow-lg transition-all active:scale-95">
+
+          <Button
+            onClick={() => navigate("/edit-profile")}
+            className="w-full mt-4 h-10 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-black text-[10px] uppercase tracking-widest"
+          >
             Complete Profile
           </Button>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Social Connections */}
-      <section className="px-2">
-        <div className="flex items-center gap-2 mb-6">
-          <Github size={16} className="text-muted-foreground" />
-          <h3 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">
+      {socialLinks.length > 0 && (
+        <section className="bg-card border border-border/40 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">
             Connections
           </h3>
-        </div>
-        <div className="grid grid-cols-1 gap-3">
-          {socialLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.url}
-              className="flex items-center gap-4 p-4 rounded-[1.5rem] bg-card border border-border/40 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center border border-border/20 group-hover:scale-110 transition-transform">
-                <link.icon size={20} className="text-foreground/70 group-hover:text-primary transition-colors" />
+          <div className="space-y-2">
+            {socialLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/10 transition-colors group"
+              >
+                <link.icon size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-sm font-bold text-foreground">{link.label}</span>
+                <ExternalLink size={12} className="text-muted-foreground/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* About section for other profiles */}
+      {!isOwnProfile && profile && (
+        <section className="bg-card border border-border/40 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">
+            About
+          </h3>
+          <div className="space-y-3 text-sm">
+            {profile.professional_title && (
+              <p className="font-bold text-foreground">{profile.professional_title}</p>
+            )}
+            {profile.location && (
+              <p className="text-muted-foreground">📍 {profile.location}</p>
+            )}
+            {profile.primary_skill && (
+              <p className="text-muted-foreground">💡 {profile.primary_skill}</p>
+            )}
+            {profile.open_to_collaboration && (
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-bold">
+                Open to collaborate
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-black text-foreground">{link.label}</p>
-                <p className="text-[11px] font-bold text-muted-foreground mt-1 truncate uppercase tracking-tighter">{link.handle}</p>
-              </div>
-              <div className="p-2 rounded-lg bg-surface opacity-0 group-hover:opacity-100 transition-all">
-                <ExternalLink size={14} className="text-primary" />
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
+            )}
+          </div>
+        </section>
+      )}
+
+      {socialLinks.length === 0 && !isOwnProfile && (
+        <section className="bg-card border border-border/40 rounded-2xl p-6 shadow-sm text-center">
+          <p className="text-sm text-muted-foreground">No social links added yet.</p>
+        </section>
+      )}
     </div>
   );
 };
