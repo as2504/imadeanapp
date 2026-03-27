@@ -1,67 +1,35 @@
-import { useEffect, useRef, useState } from "react";
-import { Users, Tag, TrendingUp } from "lucide-react";
+import { Zap, ShieldCheck, BarChart3 } from "lucide-react";
 
-const features = [
+const benefits = [
   {
-    icon: Users,
-    label: "Follow Creators",
-    description: "Connect with the minds behind the most innovative AI experiments.",
-    bg: "bg-primary/10",
-    iconColor: "text-primary",
+    icon: Zap,
+    title: "Fast Discovery",
+    description: "Our trending algorithm surfaces high-quality vibe-coded apps in real-time."
   },
   {
-    icon: Tag,
-    label: "Filter by Tag",
-    description: "Narrow down your search by category, technology, or platform.",
-    bg: "bg-hero-accent/20",
-    iconColor: "text-hero-accent",
+    icon: ShieldCheck,
+    title: "Verified Identity",
+    description: "Build trust with profiles that showcase your actual technical work and tech stack."
   },
   {
-    icon: TrendingUp,
-    label: "See Trending",
-    description: "Stay updated with the tools and apps currently leading the pack.",
-    bg: "bg-primary/8",
-    iconColor: "text-primary/70",
-  },
+    icon: BarChart3,
+    title: "Deep Analytics",
+    description: "Understand your impact with detailed views, engagement, and conversion tracking."
+  }
 ];
 
 const FeaturesSection = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
-      },
-      { threshold: 0.2 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section ref={ref} className="py-24 bg-surface">
-      <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-6">
-          {features.map((feature, i) => (
-            <div
-              key={feature.label}
-              className={`bg-background rounded-2xl p-8 shadow-sm hover:shadow-md transition-all duration-300 ${
-                visible
-                  ? `animate-reveal animate-reveal-delay-${i + 1}`
-                  : "opacity-0"
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
-                <feature.icon size={22} className={feature.iconColor} />
+    <section className="py-24 bg-white border-t border-black/[0.03]">
+      <div className="container mx-auto max-w-7xl px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          {benefits.map((benefit, i) => (
+            <div key={i} className="space-y-4 text-center md:text-left animate-reveal" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className="w-10 h-10 rounded-xl bg-[#4285F4]/5 flex items-center justify-center mx-auto md:mx-0">
+                <benefit.icon size={20} className="text-[#4285F4]" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                {feature.label}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
+              <h3 className="text-lg font-bold text-foreground tracking-tight">{benefit.title}</h3>
+              <p className="text-sm text-black/40 leading-relaxed font-medium">{benefit.description}</p>
             </div>
           ))}
         </div>

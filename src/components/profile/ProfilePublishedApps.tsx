@@ -1,21 +1,15 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageSquare, Eye, Globe, Smartphone, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Tables } from "@/integrations/supabase/types";
-
-const platformIcon: Record<string, React.ReactNode> = {
-  web: <Globe size={12} />,
-  ios: <Smartphone size={12} />,
-  android: <Smartphone size={12} />,
-};
+import AppCard from "@/components/feed/AppCard";
+import type { AppPost } from "@/components/feed/AppCard";
 
 const ProfilePublishedApps = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [apps, setApps] = useState<Tables<"apps">[]>([]);
+  const [apps, setApps] = useState<AppPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,83 +20,76 @@ const ProfilePublishedApps = () => {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      setApps(data || []);
+      
+      if (!data) {
+        setApps([]);
+        setLoading(false);
+        return;
+      }
+
+      const mapped: AppPost[] = data.map((app) => ({
+        id: app.id,
+        appName: app.app_name,
+        appIcon: app.app_icon_url || "📱",
+        publisherName: user.user_metadata?.display_name || user.email?.split("@")[0] || "User",
+        publisherAvatar: (user.user_metadata?.display_name || "U").charAt(0),
+        verified: true,
+        timeAgo: getTimeAgo(app.created_at),
+        caption: app.caption || app.tagline || "",
+        tags: app.tags || [],
+        platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
+        techStack: app.tech_stack || [],
+        likes: app.likes_count || 0,
+        comments: app.comments_count || 0,
+        views: app.views_count || 0,
+        liked: false,
+        saved: false,
+      }));
+
+      setApps(mapped);
       setLoading(false);
     };
     fetch();
   }, [user]);
 
   if (loading) {
-    return <div className="py-10 text-center text-muted-foreground text-sm">Loading...</div>;
+    return <div className="py-20 text-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" /></div>;
   }
 
   if (apps.length === 0) {
     return (
-      <div className="text-center py-20 space-y-3">
-        <p className="text-4xl">📦</p>
-        <p className="text-foreground font-medium">You haven't published anything yet</p>
-        <p className="text-sm text-muted-foreground">Share your first vibe-coded app with the world.</p>
-        <Button size="sm" className="rounded-full mt-2" onClick={() => navigate("/publish")}>Publish Your First App</Button>
+      <div className="text-center py-20 px-6 bg-card border border-border/40 rounded-[2rem] shadow-sm">
+        <p className="text-6xl mb-6">🚀</p>
+        <h3 className="text-2xl font-black text-foreground mb-2 uppercase tracking-tight">Time to launch?</h3>
+        <p className="text-muted-foreground max-w-sm mx-auto mb-8 font-medium">You haven't published anything yet. Share your first vibe-coded app with the world today.</p>
+        <Button size="lg" className="rounded-2xl px-10 h-14 font-black uppercase tracking-widest bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all active:scale-95" onClick={() => navigate("/publish")}>Publish Your First App</Button>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {apps.map((app) => (
-        <div
-          key={app.id}
-          className="rounded-xl border border-border/50 p-5 hover:shadow-sm transition-shadow group cursor-pointer"
-          onClick={() => navigate(`/app/${app.id}`)}
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-surface flex items-center justify-center text-xl shrink-0 overflow-hidden">
-              {app.app_icon_url ? (
-                <img src={app.app_icon_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                "📱"
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-foreground truncate">{app.app_name}</h3>
-              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
-                {app.caption || app.tagline}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {(app.tags || []).map((tag) => (
-              <span key={tag} className="px-2 py-0.5 rounded-full bg-surface text-[11px] font-medium text-muted-foreground">
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/40">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Heart size={12} /> {app.likes_count || 0}</span>
-              <span className="flex items-center gap-1"><MessageSquare size={12} /> {app.comments_count || 0}</span>
-              <span className="flex items-center gap-1"><Eye size={12} /> {app.views_count || 0}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-muted-foreground/60">
-                {(app.platforms || []).map((p) => (
-                  <span key={p}>{platformIcon[p]}</span>
-                ))}
-              </div>
-              <button
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors opacity-0 group-hover:opacity-100"
-                onClick={(e) => { e.stopPropagation(); }}
-              >
-                <Pencil size={13} />
-              </button>
-            </div>
-          </div>
-        </div>
+        <AppCard key={app.id} post={app} />
       ))}
     </div>
   );
 };
+
+function getTimeAgo(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  const diffWeek = Math.floor(diffDay / 7);
+  if (diffWeek < 4) return `${diffWeek}w ago`;
+  return `${Math.floor(diffDay / 30)}mo ago`;
+}
 
 export default ProfilePublishedApps;

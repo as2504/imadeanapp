@@ -6,13 +6,30 @@ import FeedLayout from "@/components/layout/FeedLayout";
 import AppCard from "@/components/feed/AppCard";
 import type { AppPost } from "@/components/feed/AppCard";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
-import EmptyFeed from "@/components/feed/EmptyFeed";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 const HomeFeed = () => {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<AppPost[]>([]);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [showFilters, setShowFilters] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setShowFilters(false);
+      } else {
+        setShowFilters(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchApps = async () => {
@@ -29,7 +46,6 @@ const HomeFeed = () => {
         return;
       }
 
-      // Get unique user_ids and fetch profiles
       const userIds = [...new Set(apps.map((a) => a.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -87,35 +103,46 @@ const HomeFeed = () => {
   }, [loading, posts]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       <FeedNavbar />
 
-      <main className="pt-20 pb-24 md:pb-8">
+      <main className="pt-20 pb-24 md:pb-8 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <FeedLayout sidebar={<FeedSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
-            <div className="space-y-5">
-              <FeedFilters onOpenSidebar={onOpenSidebar} />
+            <div className="space-y-6">
+              <div className={cn(
+                "sticky top-[64px] z-30 bg-background/80 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all duration-300",
+                showFilters ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+              )}>
+                <FeedFilters onOpenSidebar={onOpenSidebar} />
+              </div>
 
-              {loading ? (
-                <FeedSkeleton />
-              ) : posts.length === 0 ? (
-                <EmptyFeed />
-              ) : (
-                <div className="space-y-4">
-                  {posts.map((post, i) => (
-                    <div
-                      key={post.id}
-                      ref={(el) => {
-                        if (el) cardRefs.current.set(post.id, el);
-                      }}
-                      className="opacity-0"
-                      style={{ animationDelay: `${i * 80}ms` }}
-                    >
-                      <AppCard post={post} />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="mt-4">
+                {loading ? (
+                  <FeedSkeleton />
+                ) : (
+                  <div className="grid grid-cols-1 gap-6">
+                    {posts.map((post, i) => (
+                      <div
+                        key={post.id}
+                        ref={(el) => {
+                          if (el) cardRefs.current.set(post.id, el);
+                        }}
+                        className="opacity-0"
+                        style={{ animationDelay: `${i * 100}ms` }}
+                      >
+                        <AppCard post={post} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {!loading && posts.length === 0 && (
+                  <div className="text-center py-20">
+                    <p className="text-muted-foreground">No apps found matching your criteria.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </FeedLayout>

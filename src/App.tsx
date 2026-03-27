@@ -11,7 +11,9 @@ import Profile from "./pages/Profile.tsx";
 import Trending from "./pages/Trending.tsx";
 import PublishApp from "./pages/PublishApp.tsx";
 import AppDetail from "./pages/AppDetail.tsx";
+import EditProfile from "./pages/EditProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ScrollToTop from "./components/layout/ScrollToTop.tsx";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -83,6 +86,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit-profile"
+              element={
+                <ProtectedRoute>
+                  <EditProfile />
                 </ProtectedRoute>
               }
             />

@@ -1,157 +1,157 @@
-import { useState, useEffect } from "react";
-import { Heart } from "lucide-react";
+import { useState } from "react";
+import { Star, MessageSquare, Send, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
-interface Comment {
-  id: string;
-  text: string;
-  likes_count: number;
-  created_at: string;
-  user_id: string;
-  display_name: string | null;
-  initials: string;
+interface AppDetailCommentsProps {
+  appId: string;
+  userTried: boolean;
 }
 
-const AppDetailComments = ({ appId }: { appId: string }) => {
-  const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuth();
-  const { toast } = useToast();
+const comments = [
+  {
+    id: "1",
+    user: "Julian Black",
+    avatar: "JB",
+    rating: 5,
+    date: "2 days ago",
+    text: "The Vibe-Engine actually feels different. Most fluid AI interface I've used this year. Great work on the sync features."
+  },
+  {
+    id: "2",
+    user: "Sarah Chen",
+    avatar: "SC",
+    rating: 4,
+    date: "1 week ago",
+    text: "Love the dark mode palette. Looking forward to the API integration in the next version."
+  }
+];
 
-  useEffect(() => {
-    const fetchComments = async () => {
-      const { data } = await supabase
-        .from("comments")
-        .select("*")
-        .eq("app_id", appId)
-        .order("created_at", { ascending: false });
+const AppDetailComments = ({ appId, userTried }: AppDetailCommentsProps) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
-      if (!data) return;
-
-      // Get profiles for comment authors
-      const userIds = [...new Set(data.map((c) => c.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name, username")
-        .in("user_id", userIds);
-
-      const profileMap = new Map(
-        (profiles || []).map((p) => [p.user_id, p])
-      );
-
-      setComments(
-        data.map((c) => {
-          const profile = profileMap.get(c.user_id);
-          const name = profile?.display_name || profile?.username || "Anonymous";
-          return {
-            id: c.id,
-            text: c.text,
-            likes_count: c.likes_count || 0,
-            created_at: c.created_at,
-            user_id: c.user_id,
-            display_name: name,
-            initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-          };
-        })
-      );
-    };
-
-    fetchComments();
-  }, [appId]);
-
-  const handleSubmit = async () => {
-    if (!newComment.trim() || !user) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("comments").insert({
-      app_id: appId,
-      user_id: user.id,
-      text: newComment.trim(),
-    });
-    if (error) {
-      toast({ title: "Failed to post comment", variant: "destructive" });
-    } else {
-      const displayName = user.user_metadata?.display_name || user.email?.split("@")[0] || "You";
-      setComments((prev) => [
-        {
-          id: crypto.randomUUID(),
-          text: newComment.trim(),
-          likes_count: 0,
-          created_at: new Date().toISOString(),
-          user_id: user.id,
-          display_name: displayName,
-          initials: displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-        },
-        ...prev,
-      ]);
-      setNewComment("");
-    }
-    setSubmitting(false);
-  };
-
-  const getTimeAgo = (dateStr: string) => {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin} min ago`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 7) return `${diffDay}d ago`;
-    return `${Math.floor(diffDay / 7)}w ago`;
+  const handleSubmit = () => {
+    if (rating === 0) return;
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
-    <section className="py-6 border-b border-border/40">
-      <h2 className="text-sm font-semibold text-foreground mb-5">Community Feedback</h2>
+    <div className="space-y-12">
+      {/* 1. Rating & Input Section */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-black text-foreground tracking-tight uppercase tracking-[0.1em]">
+          Ratings & Reviews
+        </h2>
 
-      {/* Add comment */}
-      <div className="flex gap-3 mb-6">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
-          You
-        </div>
-        <div className="flex-1 flex gap-2">
-          <input
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Share your thoughts…"
-            className="flex-1 bg-surface rounded-full px-4 py-2 text-sm outline-none placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-shadow"
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          />
-          <Button size="sm" className="rounded-full h-9 px-5 text-xs" disabled={!newComment.trim() || submitting} onClick={handleSubmit}>
-            Post
-          </Button>
-        </div>
-      </div>
+        <div className={cn(
+          "p-8 rounded-[2rem] border border-border/40 bg-card transition-all",
+          !userTried ? "opacity-40 grayscale pointer-events-none" : "shadow-xl"
+        )}>
+          {!userTried && (
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">
+              Try the app to leave a review
+            </p>
+          )}
 
-      {/* Comments list */}
-      <div className="space-y-5">
-        {comments.map((c) => (
-          <div key={c.id} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
-              {c.initials}
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button 
+                  key={s} 
+                  onClick={() => setRating(s)}
+                  className="transition-transform active:scale-90"
+                >
+                  <Star 
+                    size={28} 
+                    className={cn(
+                      "transition-colors",
+                      s <= rating ? "fill-primary text-primary" : "fill-muted text-muted-foreground/20"
+                    )} 
+                  />
+                </button>
+              ))}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold text-foreground">{c.display_name}</span>
-                <span className="text-muted-foreground/50">{getTimeAgo(c.created_at)}</span>
+
+            <div className="relative">
+              <Textarea 
+                placeholder="Share your experience..." 
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="min-h-[100px] rounded-2xl border-border/40 bg-surface focus:bg-background transition-all p-5 placeholder:text-muted-foreground/30 font-medium"
+              />
+              <div className="flex justify-between items-center mt-4">
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
+                  Reviewing as Anonymous
+                </p>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={rating === 0}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl px-8 h-11 font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95"
+                >
+                  Submit Review <Send size={14} className="ml-2" />
+                </Button>
               </div>
-              <p className="text-sm text-foreground/80 mt-1 leading-relaxed">{c.text}</p>
-              <button className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <Heart size={12} />
-                <span>{c.likes_count}</span>
-              </button>
             </div>
           </div>
-        ))}
-        {comments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No comments yet. Be the first to share your thoughts!</p>
-        )}
-      </div>
-    </section>
+
+          {/* Success Micro-interaction */}
+          {submitted && (
+            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-500 z-[100]">
+              <div className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-full text-xs font-black uppercase tracking-widest shadow-2xl">
+                <CheckCircle2 size={16} /> Review submitted successfully
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 2. Comments List */}
+      <section className="space-y-8">
+        <div className="flex items-center justify-between border-b border-border/40 pb-4">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+            {comments.length} Comments
+          </span>
+        </div>
+
+        <div className="space-y-10">
+          {comments.map((c) => (
+            <div key={c.id} className="flex gap-5 group">
+              <div className="w-12 h-12 rounded-2xl bg-surface border border-border/20 flex items-center justify-center text-sm font-black text-primary shrink-0 uppercase tracking-tighter shadow-sm">
+                {c.avatar}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-black text-foreground uppercase tracking-tight">
+                    {c.user}
+                  </h4>
+                  <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest bg-surface px-2 py-1 rounded-lg">
+                    {c.date}
+                  </span>
+                </div>
+                <div className="flex items-center gap-0.5 mt-1.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star 
+                      key={s} 
+                      size={10} 
+                      className={cn(
+                        s <= c.rating ? "fill-primary text-primary" : "fill-muted text-muted-foreground/20"
+                      )} 
+                    />
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground leading-relaxed font-medium">
+                  {c.text}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 };
 

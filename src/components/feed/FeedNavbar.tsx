@@ -32,7 +32,6 @@ const navItems = [
 
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(
     document.documentElement.classList.contains("dark")
   );
@@ -43,173 +42,133 @@ const FeedNavbar = () => {
   const toggleDarkMode = (checked: boolean) => {
     setDarkMode(checked);
     document.documentElement.classList.toggle("dark", checked);
+    localStorage.setItem("theme", checked ? "dark" : "light");
   };
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/40">
-        <div className="max-w-[1080px] w-full mx-auto flex items-center justify-between h-14 px-4 lg:px-6">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 transition-all duration-300">
+        <div className="max-w-[1400px] w-full mx-auto flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
           {/* Left: logo */}
           <button
             onClick={() => navigate("/home")}
-            className="text-lg font-bold text-foreground tracking-tight shrink-0"
+            className="flex items-center gap-2 group shrink-0"
           >
-            Showcase
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+              <Plus size={20} className="text-white" />
+            </div>
+            <span className="text-xl font-black text-foreground tracking-tight hidden sm:inline-block">
+              Showcase
+            </span>
           </button>
 
           {/* Center: search (desktop) */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
+          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+            <div className="relative w-full group">
               <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
               />
               <Input
-                placeholder="Search apps, creators, tags..."
-                className="h-9 rounded-full bg-surface border-0 pl-9 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary/30"
+                placeholder="Search for apps, creators, or inspiration..."
+                className="h-11 rounded-2xl bg-surface border-0 pl-12 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all w-full"
               />
             </div>
           </div>
 
           {/* Right: nav icons */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.href)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  location.pathname === item.href
-                    ? "text-primary bg-primary/5"
-                    : "text-muted-foreground hover:text-foreground hover:bg-surface"
-                }`}
-              >
-                <item.icon size={16} />
-                <span className="hidden lg:inline">{item.label}</span>
-              </button>
-            ))}
-
-            <div className="w-px h-5 bg-border/60 mx-1" />
-
-            <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-colors">
-              <Bell size={18} />
-            </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-colors">
-              <Bookmark size={18} />
-            </button>
-
-            <Button
-              size="sm"
-              className="ml-2 rounded-full h-8 px-3 text-xs gap-1.5"
-              onClick={() => navigate("/publish")}
+          <div className="flex items-center gap-2">
+            {/* Mobile search toggle */}
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="md:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-xl transition-all"
             >
-              <Plus size={14} />
-              <span className="hidden lg:inline">Publish</span>
-            </Button>
+              <Search size={22} />
+            </button>
 
-            <div className="w-px h-5 bg-border/60 mx-1" />
+            <div className="hidden lg:flex items-center gap-1 mr-2">
+              {navItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => navigate(item.href)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                    location.pathname === item.href
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                  }`}
+                >
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <button className="hidden sm:flex p-2.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-xl transition-all">
+              <Bell size={20} />
+            </button>
+
+            <div className="w-px h-6 bg-border/60 mx-1 hidden sm:block" />
 
             {/* Avatar Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded-full hover:bg-surface transition-colors">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User size={14} className="text-primary" />
+                <button className="p-1 rounded-2xl hover:bg-surface transition-all outline-none">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
+                    <User size={18} className="text-primary" />
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate("/account")}>
-                  <User size={14} className="mr-2" />
-                  Account
+              <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-xl border-border/40">
+                <div className="px-2 py-3 mb-1">
+                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Account</p>
+                </div>
+                <DropdownMenuItem onClick={() => navigate("/account")} className="rounded-xl py-2.5 gap-3 cursor-pointer">
+                  <User size={18} className="text-muted-foreground" />
+                  <span className="font-bold">My Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <Moon size={14} />
-                    <span>Dark Mode</span>
+                <DropdownMenuItem onClick={() => navigate("/publish")} className="rounded-xl py-2.5 gap-3 cursor-pointer">
+                  <Plus size={18} className="text-muted-foreground" />
+                  <span className="font-bold">Publish App</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator className="my-2" />
+                
+                <div className="flex items-center justify-between px-2 py-2">
+                  <div className="flex items-center gap-3">
+                    <Moon size={18} className="text-muted-foreground" />
+                    <span className="text-sm font-bold">Dark Mode</span>
                   </div>
                   <Switch
                     checked={darkMode}
                     onCheckedChange={toggleDarkMode}
-                    className="scale-75"
+                    className="data-[state=checked]:bg-primary"
                   />
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
-                  <LogOut size={14} className="mr-2" />
-                  Log out
+                </div>
+                
+                <DropdownMenuSeparator className="my-2" />
+                
+                <DropdownMenuItem onClick={signOut} className="rounded-xl py-2.5 gap-3 text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
+                  <LogOut size={18} />
+                  <span className="font-bold">Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
-          {/* Mobile: search + menu */}
-          <div className="flex md:hidden items-center gap-1">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-muted-foreground"
-            >
-              <Search size={18} />
-            </button>
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 text-foreground"
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
         </div>
 
-        {/* Mobile search bar */}
+        {/* Mobile search bar (only on mobile when toggled) */}
         {searchOpen && (
-          <div className="md:hidden px-4 pb-3">
-            <div className="relative">
+          <div className="md:hidden px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
+            <div className="relative group">
               <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
               />
               <Input
-                placeholder="Search..."
-                className="h-9 rounded-full bg-surface border-0 pl-9 text-sm"
+                placeholder="Search for apps..."
+                className="h-11 rounded-2xl bg-surface border-0 pl-12 text-sm placeholder:text-muted-foreground/50 w-full"
                 autoFocus
               />
-            </div>
-          </div>
-        )}
-
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="md:hidden bg-background border-b border-border px-4 pb-4 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => {
-                  navigate(item.href);
-                  setMobileOpen(false);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg"
-              >
-                <item.icon size={16} />
-                {item.label}
-              </button>
-            ))}
-            <div className="flex items-center justify-between px-3 py-2.5">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Moon size={16} />
-                Dark Mode
-              </div>
-              <Switch checked={darkMode} onCheckedChange={toggleDarkMode} className="scale-75" />
-            </div>
-            <div className="border-t border-border/40 pt-2 mt-2">
-              <button
-                onClick={signOut}
-                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-lg"
-              >
-                <LogOut size={16} />
-                Log out
-              </button>
             </div>
           </div>
         )}

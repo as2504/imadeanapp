@@ -3,13 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Settings, Share2, CheckCircle2, Zap } from "lucide-react";
 
-const stats = [
-  { value: "12", label: "Apps" },
-  { value: "2.3K", label: "Likes" },
-  { value: "540", label: "Followers" },
-  { value: "8.1K", label: "Views" },
-];
-
 const ProfileHeader = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -17,62 +10,66 @@ const ProfileHeader = () => {
   const username = user?.email?.split("@")[0] || "user";
 
   return (
-    <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
-      {/* Avatar — squircle */}
-      <div className="relative group shrink-0 self-center sm:self-start">
-        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[28%] bg-surface border border-border/60 flex items-center justify-center text-3xl font-bold text-primary shadow-sm overflow-hidden">
-          {displayName.charAt(0).toUpperCase()}
+    <div className="relative rounded-[2rem] bg-card border border-border/40 overflow-hidden shadow-xl">
+      {/* Background/Banner Area */}
+      <div className="h-32 sm:h-40 bg-gradient-to-br from-primary/20 via-primary/5 to-background relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-10 scale-125 rotate-12">
+          <Zap size={120} className="text-primary fill-primary" />
         </div>
-        <button className="absolute inset-0 rounded-[28%] bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <span className="text-xs font-medium text-white bg-foreground/60 px-2 py-0.5 rounded-full">Edit</span>
-        </button>
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            {/* Username row */}
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{username}</h1>
-              <CheckCircle2 size={18} className="text-primary fill-primary/10" />
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold">
-                <Zap size={10} />
-                Builder
-              </span>
+      {/* Profile Info Area */}
+      <div className="px-6 sm:px-8 pb-8 -mt-12 relative z-10">
+        <div className="flex flex-col sm:flex-row items-end gap-5">
+          {/* Avatar - Improved Squircle */}
+          <div className="relative group shrink-0">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-background border-4 border-card flex items-center justify-center text-4xl font-black text-primary shadow-xl overflow-hidden">
+              {displayName.charAt(0).toUpperCase()}
             </div>
-
-            {/* Full name */}
-            <p className="text-sm text-muted-foreground mt-0.5">{displayName}</p>
-
-            {/* Bio */}
-            <p className="text-sm text-foreground/80 mt-2 max-w-md leading-relaxed">
-              Building the next generation of vibe-coded AI tools. ⚡
-            </p>
-
-            {/* Stats */}
-            <div className="flex items-center gap-5 mt-4">
-              {stats.map((s) => (
-                <div key={s.label} className="flex items-baseline gap-1.5">
-                  <span className="text-base font-bold text-foreground">{s.value}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">{s.label}</span>
-                </div>
-              ))}
-            </div>
+            <button 
+              onClick={() => navigate("/edit-profile")}
+              className="absolute bottom-1 right-1 p-2 bg-primary text-white rounded-xl shadow-lg hover:scale-110 active:scale-95 transition-all group/edit"
+            >
+              <Settings size={16} className="group-hover/edit:rotate-90 transition-transform duration-500" />
+            </button>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-9 text-xs">
-              <Settings size={14} />
-              Edit Profile
-            </Button>
-            <Button size="sm" className="rounded-full gap-1.5 h-9 text-xs" onClick={() => navigate("/publish")}>
-              + Publish App
-            </Button>
-            <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-colors">
-              <Share2 size={16} />
-            </button>
+          {/* Info & Actions */}
+          <div className="flex-1 min-w-0 pb-1">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight leading-none uppercase">
+                    {username}
+                  </h1>
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                    <CheckCircle2 size={12} className="text-primary" />
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest">
+                      Verified Builder
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-base font-bold text-muted-foreground">{displayName}</p>
+                
+                <p className="text-sm text-muted-foreground/80 max-w-xl leading-relaxed font-medium">
+                  Building the next generation of vibe-coded AI tools. Empowering creators through high-fidelity design. ⚡
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button 
+                  onClick={() => navigate("/publish")}
+                  className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/10 transition-all active:scale-95"
+                >
+                  Publish App
+                </Button>
+                <button className="p-2.5 bg-surface hover:bg-surface-hover text-muted-foreground hover:text-foreground rounded-xl border border-border/40 transition-all active:scale-95">
+                  <Share2 size={18} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

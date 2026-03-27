@@ -7,11 +7,29 @@ import FeedLayout from "@/components/layout/FeedLayout";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import type { TrendingApp } from "@/data/mockTrending";
+import { cn } from "@/lib/utils";
 
 const Trending = () => {
   const [loading, setLoading] = useState(true);
   const [apps, setApps] = useState<TrendingApp[]>([]);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [showFilters, setShowFilters] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setShowFilters(false);
+      } else {
+        setShowFilters(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -89,33 +107,40 @@ const Trending = () => {
   }, [loading, apps]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       <FeedNavbar />
 
       <main className="pt-20 pb-24 md:pb-8">
         <FeedLayout sidebar={<TrendingSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
-            <div className="space-y-5">
-              <TrendingFilters onOpenSidebar={onOpenSidebar} />
+            <div className="space-y-6">
+              <div className={cn(
+                "sticky top-[64px] z-30 bg-background/80 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all duration-300",
+                showFilters ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+              )}>
+                <TrendingFilters onOpenSidebar={onOpenSidebar} />
+              </div>
 
-              {loading ? (
-                <FeedSkeleton />
-              ) : (
-                <div className="space-y-4">
-                  {apps.map((app, i) => (
-                    <div
-                      key={app.id}
-                      ref={(el) => {
-                        if (el) cardRefs.current.set(app.id, el);
-                      }}
-                      className="opacity-0"
-                      style={{ animationDelay: `${i * 80}ms` }}
-                    >
-                      <TrendingCard app={app} />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="mt-4">
+                {loading ? (
+                  <FeedSkeleton />
+                ) : (
+                  <div className="grid grid-cols-1 gap-6 w-full">
+                    {apps.map((app, i) => (
+                      <div
+                        key={app.id}
+                        ref={(el) => {
+                          if (el) cardRefs.current.set(app.id, el);
+                        }}
+                        className="opacity-0 w-full"
+                        style={{ animationDelay: `${i * 100}ms` }}
+                      >
+                        <TrendingCard app={app} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </FeedLayout>

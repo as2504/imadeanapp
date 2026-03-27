@@ -1,123 +1,95 @@
-import { ArrowLeft, Globe, Smartphone, Monitor, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Star, Eye, Info, Globe, Smartphone, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface AppDetailHeaderProps {
   app: {
-    app_name: string;
-    tagline?: string | null;
-    app_icon_url?: string | null;
-    tags?: string[] | null;
-    platforms?: string[] | null;
-    website_url?: string | null;
-    play_store_url?: string | null;
-    app_store_url?: string | null;
-    created_at: string;
+    name: string;
+    publisher: string;
+    icon: string;
+    rating: number;
+    reviews: string;
+    views: string;
+    version: string;
+    platforms: string[];
   };
-  publisherName: string;
-  publisherUserId: string;
 }
 
-const platformConfig: Record<string, { icon: React.ElementType; label: string; urlKey: string }> = {
-  web: { icon: Globe, label: "Web", urlKey: "website_url" },
-  android: { icon: Smartphone, label: "Android", urlKey: "play_store_url" },
-  ios: { icon: Monitor, label: "iOS", urlKey: "app_store_url" },
+const platformConfig: Record<string, { label: string; icon: string }> = {
+  web: { label: "Web App", icon: "/world-wide-web.png" },
+  android: { label: "Android", icon: "/android.png" },
+  ios: { label: "iOS", icon: "/app-store.png" },
 };
 
-const AppDetailHeader = ({ app, publisherName }: AppDetailHeaderProps) => {
-  const navigate = useNavigate();
-
-  const timeAgo = (() => {
-    const diff = Date.now() - new Date(app.created_at).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
-  })();
-
-  const primaryUrl = app.website_url || app.play_store_url || app.app_store_url;
-
+const AppDetailHeader = ({ app }: AppDetailHeaderProps) => {
   return (
-    <section className="py-8 border-b border-border/40">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors active:scale-[0.97]"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
-
-      <div className="flex flex-col sm:flex-row gap-6 sm:items-start sm:justify-between">
-        {/* Left: identity */}
-        <div className="flex gap-5 items-start">
-          <div className="w-20 h-20 rounded-2xl bg-surface flex items-center justify-center text-3xl shrink-0 overflow-hidden shadow-sm">
-            {app.app_icon_url ? (
-              <img src={app.app_icon_url} alt={app.app_name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-muted-foreground/40">📦</span>
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground leading-tight">{app.app_name}</h1>
-              <CheckCircle2 size={18} className="text-primary shrink-0" />
-            </div>
-            {app.tagline && (
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-md">{app.tagline}</p>
-            )}
-            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground/70">by {publisherName}</span>
-              <span>·</span>
-              <span>{timeAgo}</span>
-            </div>
-            {app.tags && app.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {app.tags.map((tag) => (
-                  <span key={tag} className="px-2.5 py-0.5 text-[11px] font-medium bg-surface text-muted-foreground rounded-full">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="flex flex-col md:flex-row items-center md:items-start gap-5 md:gap-8">
+      {/* App Icon & Primary Info — Horizontal on Mobile */}
+      <div className="flex items-center md:items-start gap-5 w-full md:w-auto">
+        {/* App Icon — Squircle, smaller on mobile */}
+        <div className="w-20 h-20 md:w-40 md:h-40 rounded-[2rem] bg-card border border-border/40 shadow-2xl shadow-black/5 flex items-center justify-center overflow-hidden shrink-0">
+          <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
         </div>
 
-        {/* Right: CTA */}
-        <div className="flex flex-col items-start sm:items-end gap-3 shrink-0">
-          {primaryUrl && (
-            <Button
-              size="lg"
-              className="gap-2"
-              onClick={() => window.open(primaryUrl, "_blank")}
-            >
-              <ExternalLink size={16} />
-              Try App
-            </Button>
-          )}
-          <div className="flex items-center gap-3">
-            {(app.platforms || []).map((p) => {
-              const config = platformConfig[p];
-              if (!config) return null;
-              const Icon = config.icon;
-              const url = (app as Record<string, unknown>)[config.urlKey] as string | undefined;
-              return (
-                <button
-                  key={p}
-                  onClick={() => url && window.open(url, "_blank")}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Icon size={14} />
-                  <span>{config.label}</span>
-                </button>
-              );
-            })}
+        {/* Text Block — Side by side with icon on mobile */}
+        <div className="flex-1 min-w-0 text-left">
+          <h1 className="text-xl md:text-4xl font-black text-foreground tracking-tight leading-tight md:leading-[1.2] truncate">
+            {app.name}
+          </h1>
+          <button className="text-primary text-xs md:text-sm font-bold hover:underline mt-1 block truncate">
+            {app.publisher}
+          </button>
+          
+          {/* Rating/Stats row — Compact on mobile */}
+          <div className="flex items-center gap-2 md:gap-4 mt-3 text-[11px] md:text-sm text-muted-foreground font-medium">
+            <div className="flex items-center gap-1">
+              <Star size={14} className="fill-primary/20 text-primary md:w-4 md:h-4" />
+              <span className="font-bold text-foreground">{app.rating}</span>
+            </div>
+            <span className="opacity-30">·</span>
+            <div className="flex items-center gap-1">
+              <Eye size={14} className="md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{app.views} views</span>
+              <span className="sm:hidden">{app.views}</span>
+            </div>
+            <span className="opacity-30">·</span>
+            <div className="flex items-center gap-1">
+              <Info size={14} className="md:w-4 md:h-4" />
+              <span>v{app.version}</span>
+            </div>
           </div>
         </div>
       </div>
-    </section>
+
+      {/* Actions — Center aligned on mobile, Right aligned on desktop */}
+      <div className="flex flex-col items-center md:items-end gap-3 w-full md:w-auto md:ml-auto md:pt-2">
+        <Button 
+          size="lg" 
+          className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-10 h-12 md:h-14 font-black text-sm md:text-base uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95"
+        >
+          Try App
+        </Button>
+        
+        {/* Multi-platform Icons */}
+        <div className="flex items-center justify-center gap-4 mt-1">
+          {app.platforms.map((p) => {
+            const config = platformConfig[p];
+            if (!config) return null;
+            return (
+              <div 
+                key={p} 
+                className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <img src={config.icon} className="w-4 h-4 md:w-5 md:h-5 object-contain dark:invert" alt={config.label} />
+                <span className="text-[10px] md:text-xs font-black text-muted-foreground uppercase tracking-widest">
+                  {config.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 };
 

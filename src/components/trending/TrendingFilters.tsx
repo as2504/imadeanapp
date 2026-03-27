@@ -19,22 +19,26 @@ const TrendingFilters = ({ onOpenSidebar }: TrendingFiltersProps) => {
   const [activeCategory, setActiveCategory] = useState("All");
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Time filter dropdown + sidebar arrow */}
       <div className="flex items-center justify-between border-b border-border/30 pb-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors focus:outline-none">
+            <button className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-black text-foreground hover:text-primary transition-colors focus:outline-none uppercase tracking-widest">
               {activeTime}
-              <ChevronDown size={15} className="text-muted-foreground" />
+              <ChevronDown size={14} className="text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-[140px]">
+          <DropdownMenuContent align="start" className="min-w-[160px] rounded-2xl p-2 border-border/40 shadow-xl">
             {timeFilters.map((t) => (
               <DropdownMenuItem
                 key={t}
                 onClick={() => setActiveTime(t)}
-                className={activeTime === t ? "bg-accent font-medium" : ""}
+                className={`rounded-xl py-2.5 px-4 cursor-pointer font-bold text-xs uppercase tracking-wider ${
+                  activeTime === t 
+                    ? "text-primary bg-transparent focus:bg-transparent focus:text-primary" 
+                    : "text-muted-foreground focus:text-primary focus:bg-transparent"
+                }`}
               >
                 {t}
               </DropdownMenuItem>
@@ -53,16 +57,16 @@ const TrendingFilters = ({ onOpenSidebar }: TrendingFiltersProps) => {
         )}
       </div>
 
-      {/* Category chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      {/* Category chips - High Fidelity */}
+      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
         {categoryFilters.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all duration-200 active:scale-95 ${
+            className={`px-5 py-2 text-[11px] font-black rounded-xl whitespace-nowrap transition-all duration-300 active:scale-90 border border-border/40 uppercase tracking-widest ${
               activeCategory === cat
-                ? "bg-foreground text-background"
-                : "bg-surface text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                : "bg-surface text-muted-foreground hover:bg-surface-hover hover:text-foreground hover:border-border"
             }`}
           >
             {cat}
