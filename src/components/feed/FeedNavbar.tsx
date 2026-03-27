@@ -24,6 +24,7 @@ import {
   X,
   Moon,
 } from "lucide-react";
+import SearchBar from "@/components/feed/SearchBar";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/home" },
@@ -64,16 +65,7 @@ const FeedNavbar = () => {
 
           {/* Center: search (desktop) */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="relative w-full group">
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
-              />
-              <Input
-                placeholder="Search for apps, creators, or inspiration..."
-                className="h-11 rounded-2xl bg-surface border-0 pl-12 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all w-full"
-              />
-            </div>
+            <SearchBar className="w-full" />
           </div>
 
           {/* Right: nav icons */}
@@ -159,17 +151,7 @@ const FeedNavbar = () => {
         {/* Mobile search bar (only on mobile when toggled) */}
         {searchOpen && (
           <div className="md:hidden px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
-            <div className="relative group">
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
-              />
-              <Input
-                placeholder="Search for apps..."
-                className="h-11 rounded-2xl bg-surface border-0 pl-12 text-sm placeholder:text-muted-foreground/50 w-full"
-                autoFocus
-              />
-            </div>
+            <SearchBar className="w-full" mobile />
           </div>
         )}
       </nav>
