@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_tries: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_tries_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       apps: {
         Row: {
           app_icon_url: string | null
@@ -134,43 +163,129 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          collaboration_looking_for: string[] | null
           created_at: string
+          date_of_birth: string | null
           display_name: string | null
+          education: Json | null
+          gender: string | null
           github_url: string | null
           id: string
+          instagram_url: string | null
+          leetcode_url: string | null
+          linkedin_url: string | null
+          location: string | null
+          looking_for_work: boolean | null
+          open_to_collaboration: boolean | null
+          portfolio_url: string | null
+          preferred_platforms: string[] | null
+          primary_skill: string | null
+          professional_title: string | null
+          secondary_tools: string[] | null
+          social_links: Json | null
           twitter_url: string | null
           updated_at: string
           user_id: string
           username: string | null
           website: string | null
+          work_experience_years: number | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          collaboration_looking_for?: string[] | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
+          education?: Json | null
+          gender?: string | null
           github_url?: string | null
           id?: string
+          instagram_url?: string | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for_work?: boolean | null
+          open_to_collaboration?: boolean | null
+          portfolio_url?: string | null
+          preferred_platforms?: string[] | null
+          primary_skill?: string | null
+          professional_title?: string | null
+          secondary_tools?: string[] | null
+          social_links?: Json | null
           twitter_url?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
           website?: string | null
+          work_experience_years?: number | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          collaboration_looking_for?: string[] | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
+          education?: Json | null
+          gender?: string | null
           github_url?: string | null
           id?: string
+          instagram_url?: string | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for_work?: boolean | null
+          open_to_collaboration?: boolean | null
+          portfolio_url?: string | null
+          preferred_platforms?: string[] | null
+          primary_skill?: string | null
+          professional_title?: string | null
+          secondary_tools?: string[] | null
+          social_links?: Json | null
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
           website?: string | null
+          work_experience_years?: number | null
         }
         Relationships: []
+      }
+      ratings: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
