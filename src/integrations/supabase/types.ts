@@ -61,6 +61,7 @@ export type Database = {
           pricing: string | null
           screenshots: string[] | null
           short_description: string | null
+          slug: string | null
           status: string
           tagline: string | null
           tags: string[] | null
@@ -87,6 +88,7 @@ export type Database = {
           pricing?: string | null
           screenshots?: string[] | null
           short_description?: string | null
+          slug?: string | null
           status?: string
           tagline?: string | null
           tags?: string[] | null
@@ -113,6 +115,7 @@ export type Database = {
           pricing?: string | null
           screenshots?: string[] | null
           short_description?: string | null
+          slug?: string | null
           status?: string
           tagline?: string | null
           tags?: string[] | null
@@ -158,6 +161,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
