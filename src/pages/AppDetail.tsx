@@ -53,9 +53,9 @@ const AppDetail = () => {
           pricing: "Free",
           platforms: app.platforms || ["web"],
           tags: app.tags || [],
-          description: app.description || app.tagline || "No description provided.",
+          description: app.full_description || app.tagline || "No description provided.",
           whatsNew: "Initial launch!",
-          screenshots: app.screenshot_urls || [
+          screenshots: app.screenshots || [
             "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800",
           ]
         });
