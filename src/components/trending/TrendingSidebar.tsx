@@ -9,8 +9,7 @@ const topCreators = [
 const TrendingSidebar = () => {
   return (
     <div className="space-y-5">
-      {/* Top Creators */}
-      <div className="bg-background border border-border/50 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Trophy size={14} className="text-amber-500" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -35,8 +34,7 @@ const TrendingSidebar = () => {
         </div>
       </div>
 
-      {/* Most Liked */}
-      <div className="bg-background border border-border/50 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Heart size={14} className="text-red-400" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -52,10 +50,9 @@ const TrendingSidebar = () => {
         </div>
       </div>
 
-      {/* Most Discussed */}
-      <div className="bg-background border border-border/50 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
-          <MessageCircle size={14} className="text-blue-400" />
+          <MessageCircle size={14} className="text-primary" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
             Most Discussed
           </h3>
@@ -69,8 +66,7 @@ const TrendingSidebar = () => {
         </div>
       </div>
 
-      {/* Trending Tags */}
-      <div className="bg-background border border-border/50 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={14} className="text-primary" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -81,7 +77,7 @@ const TrendingSidebar = () => {
           {["AI", "Productivity", "No-Code", "Dev Tools", "Design", "Mobile"].map((tag) => (
             <span
               key={tag}
-              className="px-2.5 py-1 text-[11px] font-medium bg-surface text-muted-foreground rounded-full hover:bg-surface-hover transition-colors cursor-pointer"
+              className="px-2.5 py-1 text-[11px] font-medium bg-secondary text-muted-foreground rounded-full hover:bg-secondary/80 hover:text-foreground transition-colors cursor-pointer"
             >
               #{tag}
             </span>

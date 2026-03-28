@@ -188,7 +188,7 @@ const PublishForm = () => {
         if (updateError) throw updateError;
 
         // Save update history (Work Note)
-        const { error: historyError } = await supabase
+        const { error: historyError } = await (supabase as any)
           .from("app_updates")
           .insert({
             app_id: editId,

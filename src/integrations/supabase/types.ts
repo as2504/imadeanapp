@@ -43,6 +43,38 @@ export type Database = {
           },
         ]
       }
+      app_updates: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          user_id: string
+          version_notes: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          version_notes: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          version_notes?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_updates_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       apps: {
         Row: {
           app_icon_url: string | null
@@ -316,7 +348,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_views: { Args: { app_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

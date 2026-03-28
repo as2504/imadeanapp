@@ -56,10 +56,10 @@ const AppDetail = () => {
       }
 
       // Increment views count (FIX)
-      await supabase.rpc('increment_views', { app_id: app.id });
+      await (supabase as any).rpc('increment_views', { app_id: app.id });
 
       // Check if has updates
-      const { count: updatesCount } = await supabase
+      const { count: updatesCount } = await (supabase as any)
         .from("app_updates")
         .select("*", { count: 'exact', head: true })
         .eq("app_id", app.id);

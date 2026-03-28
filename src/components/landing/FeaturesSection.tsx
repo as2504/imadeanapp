@@ -20,16 +20,16 @@ const benefits = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-24 bg-white border-t border-black/[0.03]">
+    <section className="py-24 bg-background border-t border-border/40">
       <div className="container mx-auto max-w-7xl px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {benefits.map((benefit, i) => (
             <div key={i} className="space-y-4 text-center md:text-left animate-reveal" style={{ animationDelay: `${i * 100}ms` }}>
-              <div className="w-10 h-10 rounded-xl bg-[#4285F4]/5 flex items-center justify-center mx-auto md:mx-0">
-                <benefit.icon size={20} className="text-[#4285F4]" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto md:mx-0">
+                <benefit.icon size={20} className="text-primary" />
               </div>
               <h3 className="text-lg font-bold text-foreground tracking-tight">{benefit.title}</h3>
-              <p className="text-sm text-black/40 leading-relaxed font-medium">{benefit.description}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed font-medium">{benefit.description}</p>
             </div>
           ))}
         </div>

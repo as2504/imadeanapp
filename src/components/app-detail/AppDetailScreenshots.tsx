@@ -17,7 +17,7 @@ const AppDetailScreenshots = ({ screenshots }: AppDetailScreenshotsProps) => {
           <button
             key={i}
             onClick={() => setSelectedImage(src)}
-            className="relative shrink-0 h-[300px] md:h-[450px] w-auto rounded-2xl overflow-hidden bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] transition-all duration-500 snap-center group border border-border/10"
+            className="relative shrink-0 h-[300px] md:h-[450px] w-auto rounded-2xl overflow-hidden bg-card shadow-[0_20px_50px_rgba(0,0,0,0.4)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.5)] transition-all duration-500 snap-center group border border-border/20"
           >
             <img 
               src={src} 

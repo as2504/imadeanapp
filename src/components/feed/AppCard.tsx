@@ -22,6 +22,7 @@ export interface AppPost {
   liked: boolean;
   saved: boolean;
   topComment?: string;
+  status?: string;
 }
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
@@ -93,7 +94,7 @@ const AppCard = ({ post, actions }: AppCardProps) => {
               {post.platforms.map((p) => {
                 const config = platformConfig[p];
                 if (!config) return null;
-                return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-50 group-hover:opacity-100 transition-opacity dark:invert dark:opacity-90" alt={config.label} />;
+                return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 group-hover:opacity-100 transition-opacity invert" alt={config.label} />;
               })}
             </div>
             {avgRating !== null && avgRating > 0 && (
