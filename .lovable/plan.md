@@ -1,217 +1,214 @@
-
-
-# Plan: Premium Dark Theme Redesign + Build Error Fixes
+# Plan: Complete Premium Dark SaaS Redesign
 
 ## Summary
 
-Two phases: (1) Fix existing build errors blocking deployment, (2) Transform the entire application from a light/slate theme to a premium dark SaaS aesthetic inspired by GitHub, Vercel, and Linear — deep dark backgrounds, subtle borders, crisp typography, and a single accent color.
+Full visual and structural overhaul of every page and component to match the premium dark SaaS aesthetic seen in the reference screenshots (Supabase, Vercel, GitHub, Algonaut). All existing features preserved, repositioned for better UX. Mobile-first responsive design throughout.
 
 ---
 
-## Phase 1: Fix Build Errors
+## Design System Foundation
 
-### 1a. Create `app_updates` table + `increment_views` RPC
-The types file has no `app_updates` table or `increment_views` function, but code references them. Create a migration:
-- `app_updates` table with columns: `id`, `app_id`, `user_id`, `version_notes`, `created_at`
-- `increment_views` RPC function that increments `views_count` on `apps`
-- RLS policies for read (public) and insert (authenticated, own user)
+### Color Tokens (`src/index.css`)
 
-### 1b. Fix `ProfilePublishedApps.tsx`
-- Line 220 references `app.status` but `AppPost` interface lacks `status`. Add `status?: string` to `AppPost` interface or cast appropriately.
+Already using dark tokens from previous update. Refine slightly:
+
+- Background: `#0D1117`, Card: `#161b22`, Elevated: `#21262D`
+- Accent: `#58a6ff` (blue), green for success `#3fb950`
+- Borders: `#30363d` at low opacity
+- Text: primary `#e6edf3`, secondary `#8b949e`
+
+### Typography
+
+- Inter font (already set)
+- Tighter letter-spacing on headings: `-0.03em`
+- Body: 14-16px, line-height 1.6
+- Section labels: 11px uppercase, `tracking-[0.15em]`, `text-muted-foreground`
+
+### Spacing
+
+- 8px grid: all padding/margins in multiples of 4/8
+- Section gaps: 64px vertical
+- Card padding: 24px
+- Component gaps: 16-24px
 
 ---
 
-## Phase 2: Dark Theme Transformation
+## Page-by-Page Changes
 
-### 2a. CSS Design Tokens (`src/index.css`)
-Replace the current `:root` (light) and `.dark` variables with a single dark-first palette:
+### 1. Landing Page (`Index.tsx`, `Navbar.tsx`, `HeroSection.tsx`, `FeaturesSection.tsx`, `Footer.tsx`)
 
-| Token | Value (HSL approximation) | Hex equivalent |
-|---|---|---|
-| `--background` | `215 28% 5%` | `#0D1117` |
-| `--foreground` | `213 14% 80%` | `#c9d1d9` |
-| `--card` | `215 22% 9%` | `#161b22` |
-| `--card-foreground` | `213 14% 80%` | `#c9d1d9` |
-| `--popover` | `215 19% 13%` | `#21262D` |
-| `--primary` | `212 92% 67%` | `#58a6ff` |
-| `--primary-foreground` | `215 28% 5%` | `#0D1117` |
-| `--secondary` | `215 19% 13%` | `#21262D` |
-| `--muted` | `215 19% 13%` | `#21262D` |
-| `--muted-foreground` | `213 10% 58%` | `#8b949e` |
-| `--border` | `215 14% 21%` | `#30363D` |
-| `--input` | `215 16% 14%` | `#1C1F24` |
-| `--surface` | `215 22% 9%` | `#161b22` |
-| `--surface-hover` | `215 19% 13%` | `#21262D` |
-| `--destructive` | `0 72% 51%` | red |
-| `--ring` | `212 92% 67%` | `#58a6ff` |
+**Navbar** - Simplify to: Logo left, nav links center (Product, Explore, Pricing), right side has "Log in" text + "Get Started" filled green/primary button. Transparent bg with backdrop blur. Thin bottom border.
 
-Remove `.dark` block entirely — the app is dark-only. Remove the dark mode toggle from `FeedNavbar.tsx`.
+**HeroSection** - Complete redesign inspired by Algonaut reference:
 
-### 2b. Tailwind Config (`tailwind.config.ts`)
-- Remove `darkMode: ["class"]` (no longer needed).
-- Keep all existing color token references — they map to the new CSS vars.
+- Remove tab-based carousel. Replace with a single powerful hero:
+  - Pill badge at top: "NEW — Showcase 2.0 is live →" (subtle border, small text)
+  - Massive centered headline (text-5xl to text-7xl): "The premium platform for modern builders"
+  - Subtext (text-lg, muted): one-liner value prop
+  - Single large CTA button: "Start Building" with arrow
+  - Below: tab-based carouse, a large product screenshot/mockup in a rounded card with subtle glow/shadow, showing the different pages.
+- Subtle radial gradient glow behind the hero content (primary/10 blur)
 
-### 2c. Button Component (`src/components/ui/button.tsx`)
-Update variants:
-- `default`: `bg-primary text-primary-foreground hover:bg-primary/80` (blue accent)
-- `secondary`: `bg-secondary text-foreground hover:bg-secondary/80`
-- `ghost`: `hover:bg-[#21262D] hover:text-foreground`
-- `outline`: `border border-border bg-transparent hover:bg-[#21262D]`
-- Change `rounded-full` to `rounded-md` for a more professional look.
-- Update shadows to subtle glows: `shadow-[0_1px_3px_rgba(0,0,0,0.5)]`
+**FeaturesSection** - Redesign as 2-column card grid (like Supabase "Branching"/"Read Replicas"):
 
-### 2d. Card Component (`src/components/ui/card.tsx`)
-- Base: `bg-card border-border/60 rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.4)]`
-- Hover state utility class for cards that need lift.
+- Each card: `bg-card border border-border/40 rounded-2xl p-8`
+- Title + "NEW" badge + bullet points with checkmarks
+- Optional illustration/graphic on right side of card
+- Cards for: "Discovery Feed", "Publish Workflow", "Creator Profiles", "Trending Analytics"
 
-### 2e. Input Component (`src/components/ui/input.tsx`)
-- `bg-[#1C1F24] border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary/50 rounded-md`
+**Footer** - Minimal dark footer: Logo left, link columns (Product, Company, Legal), social icons right. `bg-card border-t border-border/20`
 
-### 2f. Landing Page — Full Dark Redesign
+**CTA Section** - Simpler: centered headline + single button, subtle glow behind
 
-**Navbar (`Navbar.tsx`):**
-- `bg-[#0D1117]/80 backdrop-blur-xl border-b border-border/40`
-- Logo text: `text-foreground`, accent dot: `text-primary`
-- Links: `text-muted-foreground hover:text-foreground`
-- CTA button: accent blue, subtle glow
+### 2. Auth Page (`Auth.tsx`)
 
-**HeroSection (`HeroSection.tsx`):**
-- `bg-background` (dark)
-- Headline: `text-foreground` (near-white), accent word: `text-primary`
-- Tab buttons: dark surfaces with active state using `bg-card border-border`
-- Content card: `bg-card border-border/40`
-- Background blurs: primary blue glow orbs at low opacity
-- Remove all hardcoded `bg-white`, `text-black` references
+- Center card layout on dark bg
+- Card: `bg-card border border-border/40 rounded-xl p-8 max-w-sm`
+- Logo at top of card
+- Inputs: dark bg, subtle border, focus glow
+- Button: full-width primary
+- Clean toggle between sign in/sign up
 
-**FeaturesSection (`FeaturesSection.tsx`):**
-- Replace `bg-white` with `bg-background`
-- Replace `text-black/40` with `text-muted-foreground`
-- Icon containers: `bg-primary/10`
+### 3. Feed Navbar (`FeedNavbar.tsx`)
 
-**Footer (`Footer.tsx`):**
-- Replace `bg-white` with `bg-card`
-- Replace all `text-black/*` with semantic token colors
-- Border: `border-border/40`
+- Cleaner structure: Logo | Search (center, wider) | Nav links (Home, Trending) | Notification bell | Avatar dropdown
+- Search bar: `bg-card border border-border/40 rounded-lg` with `Cmd+K` hint badge
+- Avatar: actual profile image or initial in circle
+- Mobile bottom nav: simplified icons, no floating FAB — just 5 equal icons
+- Remove the `+` logo box, use text "Showcase" or a small icon
 
-**Index.tsx CTA section:**
-- Update background blur to use `bg-primary/10`
-- Button shadow: `shadow-primary/30`
+### 4. Home Feed (`HomeFeed.tsx`, `FeedLayout.tsx`, `AppCard.tsx`, `FeedFilters.tsx`, `FeedSidebar.tsx`)
 
-### 2g. Auth Page (`Auth.tsx`)
-- `bg-background` full page
-- Form card: wrap in `bg-card border border-border/40 rounded-xl p-8`
-- Inputs: dark input styling
-- Button: accent blue
+**FeedLayout** - Widen to `max-w-[1200px]`. Primary column `flex-1`, sidebar `w-[300px]`. Content sits directly on bg-background (no white card wrappers).
 
-### 2h. Feed Pages (Home, Trending)
+**FeedFilters** - Horizontal pill/tab bar: "For You | Following | Trending" as text tabs with underline active state. Sort dropdown on the right as a subtle `bg-card` select. Remove category chips from the filter bar (move to sidebar).
 
-**FeedNavbar (`FeedNavbar.tsx`):**
-- `bg-[#0D1117]/80 backdrop-blur-xl border-b border-border/40`
-- Remove dark mode toggle entirely
-- Logo box: `bg-primary`
-- Nav active: `text-primary bg-primary/10`
-- Mobile bottom nav: `bg-[#0D1117]/95 border-t border-border/40`
-- Dropdown: `bg-card border-border/40`
-- Remove `dark:invert` from platform icons
+**AppCard** - Redesign as a cleaner row card:
 
-**FeedLayout (`FeedLayout.tsx`):**
-- Remove white card wrappers if present — content sits on `bg-background`
+- Left: app icon (48px rounded-xl)
+- Center: App name (bold), publisher name + verified badge (small), one-line caption, tags as tiny muted pills
+- Right: rating stars, platform icons, arrow/chevron
+- Hover: subtle bg shift `hover:bg-card`, thin left border highlight `border-l-2 border-primary`
+- Remove heavy shadows, use `border-b border-border/20` between cards (list style, not card style)
 
-**HomeFeed.tsx / Trending.tsx:**
-- Replace `bg-background` (already uses token — will auto-update)
-- Remove any `bg-[#F1F5F9]` hardcoded references
-- Filter sticky bar: `bg-background/80 backdrop-blur-md`
+**FeedSidebar** - Clean modules:
 
-**AppCard (`AppCard.tsx`):**
-- `bg-card hover:bg-[#1c2028] border border-border/40 rounded-lg`
-- Hover: `hover:-translate-y-0.5 hover:border-primary/30`
-- Rating badge: `bg-primary/10 border-primary/20`
-- Remove `dark:invert` from platform icons
+- "Trending Tags" card: simple list, no heavy styling
+- "Creators to Follow" card: avatar + name + follow button
+- "Publish CTA": subtle card, not huge blue block. `bg-card` with primary text and outlined button
 
-**FeedFilters / TrendingFilters:**
-- Category chips: active = `bg-primary text-primary-foreground`, inactive = `bg-card border-border/40 text-muted-foreground hover:border-primary/30`
-- Dropdown content: `bg-card border-border/40`
+### 5. Trending Page (`Trending.tsx`, `TrendingCard.tsx`, `TrendingFilters.tsx`, `TrendingSidebar.tsx`)
 
-**FeedSidebar (`FeedSidebar.tsx`):**
-- Cards: `bg-card border-border/40 rounded-xl`
-- CTA: Keep `bg-primary` with adjusted shadow
-- Creator avatars: `bg-primary/10 border-primary/20`
+- Same layout as Home but with time filter tabs (Today, This Week, This Month, All Time)
+- TrendingCard: rank number on left (large, muted), then same row layout as AppCard
+- Category chips in sidebar, not in filter bar
 
-### 2i. App Detail Page (`AppDetail.tsx`)
-- Main container: `bg-background`
-- Content card: `bg-card border-border/40 rounded-2xl`
-- Tab buttons: `bg-card` active, `bg-transparent` inactive
-- Screenshots: subtle shadow `shadow-[0_4px_16px_rgba(0,0,0,0.5)]`
-- Back button: `bg-card border-border/40`
+### 6. App Detail (`AppDetail.tsx` + sub-components)
 
-### 2j. Profile Page (`Profile.tsx`)
-- `bg-background`
-- Stats strip, sidebar cards: `bg-card border-border/40`
+- Remove the huge rounded card wrapper. Content flows directly on `bg-background`
+- Header: App icon (64px) + name + publisher + rating display + "Try App" button + share
+- Horizontal tab bar with underline: Overview | Updates | Comments
+- Screenshots: horizontal scroll with subtle shadows
+- Stats/tags: inline pills below header, not in a separate section
+- Description: clean prose with good line-height
+- Comments: clean list with avatars
+- Related apps: horizontal scroll row at bottom
 
-### 2k. Edit Profile Page (`EditProfile.tsx`)
-- `bg-background`
-- Form sections: `bg-card border-border/40`
-- All inputs: dark input styling
+### 7. Profile Page (`Profile.tsx`, `ProfileHeader.tsx`, `ProfileStatsStrip.tsx`, `ProfileSidebar.tsx`)
 
-### 2l. Publish Form (`PublishForm.tsx`)
-- Replace `bg-[#F1F5F9]` with `bg-background`
-- Primary/secondary sections: `bg-card border-border/40`
-- All inputs: dark styling
+**ProfileHeader** - Simplified:
 
-### 2m. Skeleton / Loading States (`FeedSkeleton.tsx`)
-- Skeleton blocks: `bg-[#21262D] animate-pulse`
+- No huge gradient banner. Subtle top border or thin gradient line
+- Avatar (80px circle) + username + display name + bio + follow/edit button, all in a horizontal layout
+- Follower count inline with username
 
-### 2n. Dropdown Menu Component (`dropdown-menu.tsx`)
-- Content: `bg-card border-border/40`
-- Items: `hover:bg-[#21262D]`
-- Keep existing animated underline hover effect
+**StatsStrip** - Horizontal row of 4 stats, no card wrapper. Just icon + number + label inline, separated by thin dividers.
 
-### 2o. Global CSS Updates
-- Remove all hardcoded `bg-white`, `bg-[#F1F5F9]`, `text-black/*` across components
-- Body: add `color-scheme: dark` for native dark scrollbars
-- Scrollbar styling if needed
+**Tabs** - Underline tabs (not pill buttons): Published Apps | Saved | Activity
 
-### 2p. Remove Dark Mode Toggle
-- Remove the `Switch` + `Moon` icon from `FeedNavbar.tsx` dropdown
-- Remove `toggleDarkMode` function
-- Force dark: add `class="dark"` to `<html>` in `index.html` OR set tokens in `:root` directly (preferred — no class needed)
+**Sidebar** - Social links, skills summary in clean card
+
+### 8. Edit Profile (`EditProfile.tsx`)
+
+- Left sidebar navigation (like GitHub settings screenshot):
+  - Vertical nav: Profile, Experience, Dev
+  - Active item: `text-primary bg-primary/10 border-l-2 border-primary`
+- Main content area: clean form sections
+- Save button: sticky at bottom or in top-right
+- Remove the huge rounded card wrapper — use `bg-background` with section dividers
+
+### 9. Publish Form (`PublishForm.tsx`)
+
+- Two-column layout: main form left, preview/metadata right
+- Clean form sections with labels and spacing
+- Dark inputs with focus states
+- Platform selector: clean dropdown with icons
+- Tags/tech: chip input with autocomplete
+- Save Draft / Publish buttons: top-right, primary + secondary styles
+
+### 10. 404 Page (`NotFound.tsx`)
+
+- Centered: large "404" + message + "Go Home" button
+
+---
+
+## Component Updates
+
+### Shared UI Components
+
+
+| Component           | Change                                                            |
+| ------------------- | ----------------------------------------------------------------- |
+| `button.tsx`        | Already dark-themed, keep. Ensure `rounded-lg` not `rounded-full` |
+| `card.tsx`          | Already dark-themed, keep                                         |
+| `input.tsx`         | Already dark-themed, keep                                         |
+| `dropdown-menu.tsx` | Ensure `bg-card border-border/40`, items `hover:bg-[#21262D]`     |
+| `skeleton.tsx`      | Use `bg-[#21262D]`                                                |
+
+
+### New Patterns
+
+- Section headers: `<h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">`
+- Dividers: `<div className="border-t border-border/20" />` between sections
+- List items: no card per item, use border-bottom separation
+- Hover states: subtle bg change + optional left border accent
 
 ---
 
 ## Files Summary
 
-| File | Change |
-|---|---|
-| **Migration SQL** | Create `app_updates` table + `increment_views` RPC |
-| `src/index.css` | Replace all CSS custom properties with dark palette, remove `.dark` block |
-| `tailwind.config.ts` | Remove `darkMode` config |
-| `index.html` | No change needed if tokens are in `:root` |
-| `src/components/ui/button.tsx` | Update variant colors + border radius |
-| `src/components/ui/card.tsx` | Update base classes |
-| `src/components/ui/input.tsx` | Dark input styling |
-| `src/components/landing/Navbar.tsx` | Dark nav styling |
-| `src/components/landing/HeroSection.tsx` | Dark hero, remove `bg-white` references |
-| `src/components/landing/FeaturesSection.tsx` | Replace `bg-white`, `text-black` |
-| `src/components/landing/Footer.tsx` | Replace `bg-white`, `text-black` |
-| `src/pages/Index.tsx` | Update CTA section colors |
-| `src/pages/Auth.tsx` | Dark form card styling |
-| `src/components/feed/FeedNavbar.tsx` | Dark nav, remove dark mode toggle |
-| `src/components/feed/AppCard.tsx` | Dark card styling |
-| `src/components/feed/FeedSidebar.tsx` | Dark sidebar cards |
-| `src/components/feed/FeedFilters.tsx` | Dark filter chips/dropdowns |
-| `src/components/feed/FeedSkeleton.tsx` | Dark skeleton colors |
-| `src/components/feed/SearchBar.tsx` | Dark search styling |
-| `src/components/trending/TrendingFilters.tsx` | Dark filter chips |
-| `src/components/trending/TrendingSidebar.tsx` | Dark sidebar |
-| `src/components/trending/TrendingCard.tsx` | Dark card |
-| `src/components/layout/FeedLayout.tsx` | Remove white card wrappers |
-| `src/pages/HomeFeed.tsx` | Remove `bg-[#F1F5F9]` |
-| `src/pages/Trending.tsx` | Remove `bg-[#F1F5F9]` |
-| `src/pages/AppDetail.tsx` | Dark detail page |
-| `src/pages/Profile.tsx` | Dark profile page |
-| `src/pages/EditProfile.tsx` | Dark edit profile |
-| `src/components/publish/PublishForm.tsx` | Dark publish form, fix `app_updates` reference |
-| `src/components/app-detail/AppUpdateHistory.tsx` | Fix type after migration |
-| `src/components/profile/ProfilePublishedApps.tsx` | Fix `status` type error |
-| `src/components/ui/dropdown-menu.tsx` | Dark dropdown styling |
 
+| File                                                 | Change                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| `src/index.css`                                      | Minor token refinements, add utility classes              |
+| `src/components/landing/Navbar.tsx`                  | Simplified nav with centered links                        |
+| `src/components/landing/HeroSection.tsx`             | Complete rewrite: pill badge + hero headline + screenshot |
+| `src/components/landing/FeaturesSection.tsx`         | 2-column feature cards like Supabase                      |
+| `src/components/landing/Footer.tsx`                  | Minimal dark footer                                       |
+| `src/pages/Index.tsx`                                | Simplified CTA section                                    |
+| `src/pages/Auth.tsx`                                 | Card-based centered form                                  |
+| `src/components/feed/FeedNavbar.tsx`                 | Cleaner nav, wider search, simplified mobile              |
+| `src/components/layout/FeedLayout.tsx`               | Wider container, no wrappers                              |
+| `src/components/feed/AppCard.tsx`                    | List-style row card                                       |
+| `src/components/feed/FeedFilters.tsx`                | Tab bar with underline                                    |
+| `src/components/feed/FeedSidebar.tsx`                | Simpler modules, no huge CTA block                        |
+| `src/components/feed/FeedSkeleton.tsx`               | Match new card layout                                     |
+| `src/pages/HomeFeed.tsx`                             | Layout adjustments                                        |
+| `src/pages/Trending.tsx`                             | Layout adjustments                                        |
+| `src/components/trending/TrendingCard.tsx`           | Row card with rank                                        |
+| `src/components/trending/TrendingFilters.tsx`        | Tab bar style                                             |
+| `src/components/trending/TrendingSidebar.tsx`        | Cleaner modules                                           |
+| `src/pages/AppDetail.tsx`                            | Remove card wrapper, cleaner layout                       |
+| `src/components/app-detail/AppDetailHeader.tsx`      | Horizontal layout                                         |
+| `src/components/app-detail/AppDetailScreenshots.tsx` | Subtle shadows                                            |
+| `src/components/app-detail/AppDetailStats.tsx`       | Inline pills                                              |
+| `src/components/app-detail/AppDetailComments.tsx`    | Clean list                                                |
+| `src/components/app-detail/RelatedApps.tsx`          | Horizontal scroll                                         |
+| `src/pages/Profile.tsx`                              | Underline tabs, cleaner layout                            |
+| `src/components/profile/ProfileHeader.tsx`           | Simplified, no banner                                     |
+| `src/components/profile/ProfileStatsStrip.tsx`       | Inline stats row                                          |
+| `src/components/profile/ProfileSidebar.tsx`          | Clean card                                                |
+| `src/components/profile/ProfilePublishedApps.tsx`    | List style                                                |
+| `src/pages/EditProfile.tsx`                          | Vertical sidebar nav, form sections                       |
+| `src/components/publish/PublishForm.tsx`             | Cleaner form layout                                       |
+| `src/components/feed/SearchBar.tsx`                  | Wider, with keyboard shortcut hint                        |
