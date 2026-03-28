@@ -9,47 +9,48 @@
     color-scheme: dark;
 
     --background: 215 28% 5%;
-    --foreground: 213 14% 80%;
+    --foreground: 210 17% 90%;
 
     --card: 215 22% 9%;
-    --card-foreground: 213 14% 80%;
+    --card-foreground: 210 17% 90%;
 
-    --popover: 215 19% 13%;
-    --popover-foreground: 213 14% 80%;
+    --popover: 215 19% 11%;
+    --popover-foreground: 210 17% 90%;
 
     --primary: 212 92% 67%;
     --primary-foreground: 215 28% 5%;
 
-    --secondary: 215 19% 13%;
-    --secondary-foreground: 213 14% 80%;
+    --secondary: 215 16% 14%;
+    --secondary-foreground: 210 17% 90%;
 
-    --muted: 215 19% 13%;
-    --muted-foreground: 213 10% 58%;
+    --muted: 215 16% 14%;
+    --muted-foreground: 213 10% 55%;
 
-    --accent: 215 19% 13%;
-    --accent-foreground: 213 14% 80%;
+    --accent: 215 16% 14%;
+    --accent-foreground: 210 17% 90%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 14% 21%;
-    --input: 215 16% 14%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+
+    --border: 215 14% 18%;
+    --input: 215 16% 12%;
     --ring: 212 92% 67%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Custom tokens */
     --surface: 215 22% 9%;
-    --surface-hover: 215 19% 13%;
-    --hero-accent: 212 92% 67%;
+    --surface-hover: 215 16% 14%;
 
     --sidebar-background: 215 28% 5%;
-    --sidebar-foreground: 213 14% 80%;
+    --sidebar-foreground: 210 17% 90%;
     --sidebar-primary: 212 92% 67%;
     --sidebar-primary-foreground: 215 28% 5%;
-    --sidebar-accent: 215 19% 13%;
-    --sidebar-accent-foreground: 213 14% 80%;
-    --sidebar-border: 215 14% 21%;
+    --sidebar-accent: 215 16% 14%;
+    --sidebar-accent-foreground: 210 17% 90%;
+    --sidebar-border: 215 14% 18%;
     --sidebar-ring: 212 92% 67%;
   }
 }
@@ -61,13 +62,13 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     line-height: 1.2;
     text-wrap: balance;
   }
@@ -75,6 +76,7 @@
   p {
     text-wrap: pretty;
     overflow-wrap: break-word;
+    line-height: 1.6;
   }
 }
 
@@ -83,7 +85,7 @@
     font-size: clamp(2.5rem, 5vw, 4rem);
     line-height: 1.05;
     letter-spacing: -0.03em;
-    font-weight: 700;
+    font-weight: 800;
   }
 }
 
@@ -91,18 +93,16 @@
 @keyframes reveal-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
-    filter: blur(4px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
 .animate-reveal {
-  animation: reveal-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: reveal-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-reveal-delay-1 { animation-delay: 80ms; }
@@ -116,33 +116,4 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
-}
-
-/* Edit profile animations */
-@keyframes field-expand {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes chip-check {
-  0% { opacity: 0; transform: scale(0) rotate(-45deg); }
-  60% { transform: scale(1.2) rotate(0deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.animate-field-expand {
-  animation: field-expand 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.animate-chip-check {
-  animation: chip-check 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out both;
 }
