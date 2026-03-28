@@ -20,21 +20,15 @@ const FeedLayout = ({ children, sidebar }: FeedLayoutProps) => {
 
   return (
     <>
-      <div className="max-w-[1080px] mx-auto px-4 lg:px-6">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex gap-8">
-          {/* Primary column */}
-          <div className="flex-1 min-w-0 max-w-[720px]">
-            {renderedChildren}
-          </div>
-
-          {/* Desktop sidebar */}
-          <aside className="hidden lg:block w-[280px] shrink-0">
+          <div className="flex-1 min-w-0">{renderedChildren}</div>
+          <aside className="hidden lg:block w-[300px] shrink-0">
             <div className="sticky top-20 space-y-6">{sidebar}</div>
           </aside>
         </div>
       </div>
 
-      {/* Mobile sidebar panel */}
       <SidebarPanel open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
         {sidebar}
       </SidebarPanel>
