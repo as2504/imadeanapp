@@ -1,25 +1,21 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronLeft, Globe, Smartphone, Clock, Heart, Eye, Filter, Code2, Layers } from "lucide-react";
+import { ChevronDown, Globe, Smartphone, Filter, Code2 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger,
+  DropdownMenuSubContent, DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 
 const feedTabs = [
-  { id: "for-you", label: "For You", icon: <Heart size={14} className="text-rose-500" /> },
-  { id: "following", label: "Following", icon: <Eye size={14} className="text-sky-500" /> },
-  { id: "trending", label: "Trending", icon: <Layers size={14} className="text-amber-500" /> },
-  { id: "recent", label: "Most Recent", icon: <Clock size={14} className="text-emerald-500" /> },
-  { id: "liked", label: "Most Liked", icon: <Heart size={14} className="text-rose-500" /> },
-  { id: "viewed", label: "Most Viewed", icon: <Eye size={14} className="text-sky-500" /> },
+  { id: "for-you", label: "For You" },
+  { id: "following", label: "Following" },
+  { id: "trending", label: "Trending" },
+];
+
+const sortOptions = [
+  { id: "recent", label: "Most Recent" },
+  { id: "liked", label: "Most Liked" },
+  { id: "viewed", label: "Most Viewed" },
 ];
 
 const platforms = [
@@ -29,23 +25,7 @@ const platforms = [
   { id: "android", label: "Android Apps", icon: <Smartphone size={14} /> },
 ];
 
-const techStacks = [
-  { id: "react", label: "React" },
-  { id: "nextjs", label: "Next.js" },
-  { id: "tailwind", label: "Tailwind CSS" },
-  { id: "supabase", label: "Supabase" },
-  { id: "framer", label: "Framer Motion" },
-];
-
-const categories = [
-  "All",
-  "Web Apps",
-  "Mobile Apps",
-  "AI Tools",
-  "Productivity",
-  "Design",
-  "Dev Tools",
-];
+const techStacks = ["React", "Next.js", "Tailwind CSS", "Supabase", "Framer Motion"];
 
 export interface FeedFilterState {
   feed: string;
@@ -61,208 +41,95 @@ interface FeedFiltersProps {
 }
 
 const FeedFilters = ({ onOpenSidebar, onFilterChange }: FeedFiltersProps) => {
-  const [activeTab, setActiveTab] = useState(feedTabs[0]);
-  const [activePlatform, setActivePlatform] = useState(platforms[0]);
-  const [activeTech, setActiveTech] = useState("Any Stack");
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    setIsDragging(true);
-    setStartX(e.pageX - container.offsetLeft);
-    setScrollLeft(container.scrollLeft);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const container = e.currentTarget;
-    const x = e.pageX - container.offsetLeft;
-    const walk = (x - startX) * 2;
-    container.scrollLeft = scrollLeft - walk;
-  };
+  const [activeFeed, setActiveFeed] = useState("for-you");
+  const [activeSort, setActiveSort] = useState("");
+  const [activePlatform, setActivePlatform] = useState("all");
+  const [activeTech, setActiveTech] = useState("");
 
   useEffect(() => {
-    if (!onFilterChange) return;
-    // Map tab to feed/sort
-    const feedIds = ["for-you", "following", "trending"];
-    const isFeed = feedIds.includes(activeTab.id);
-    onFilterChange({
-      feed: isFeed ? activeTab.id : "for-you",
-      sort: !isFeed ? activeTab.id : "",
-      platform: activePlatform.id,
-      techStack: activeTech === "Any Stack" ? "" : activeTech,
-      category: activeCategory === "All" ? "" : activeCategory,
+    onFilterChange?.({
+      feed: activeFeed,
+      sort: activeSort,
+      platform: activePlatform,
+      techStack: activeTech,
+      category: "",
     });
-  }, [activeTab, activePlatform, activeTech, activeCategory]);
-
-  const getActiveStyles = (isActive: boolean) =>
-    isActive
-      ? "text-primary bg-transparent font-bold focus:bg-transparent focus:text-primary"
-      : "font-medium focus:bg-transparent focus:text-primary";
+  }, [activeFeed, activeSort, activePlatform, activeTech]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between border-b border-border/30 pb-2">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-black text-foreground hover:text-primary transition-colors focus:outline-none shrink-0 uppercase tracking-widest">
-                {activeTab.label}
-                <ChevronDown size={14} className="text-muted-foreground/60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[180px] rounded-2xl p-2 border-border/40 shadow-xl">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-black px-3 py-2">
-                Feed
-              </DropdownMenuLabel>
-              {feedTabs.slice(0, 3).map((tab) => (
-                <DropdownMenuItem
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab)}
-                  className={`rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs uppercase tracking-wider ${getActiveStyles(activeTab.id === tab.id)}`}
-                >
-                  <span className={activeTab.id === tab.id ? "opacity-100" : "opacity-40"}>{tab.icon}</span>
-                  {tab.label}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator className="my-2 opacity-50" />
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-black px-3 py-2">
-                Sort
-              </DropdownMenuLabel>
-              {feedTabs.slice(3).map((tab) => (
-                <DropdownMenuItem
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab)}
-                  className={`rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs uppercase tracking-wider ${getActiveStyles(activeTab.id === tab.id)}`}
-                >
-                  <span className={activeTab.id === tab.id ? "opacity-100" : "opacity-40"}>{tab.icon}</span>
-                  {tab.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="w-px h-4 bg-border/40 mx-1" />
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-2 py-1.5 text-sm font-black text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0 uppercase tracking-widest">
-                <Filter size={14} className="opacity-70" />
-                <span>Filter</span>
-                <ChevronDown size={14} className="text-muted-foreground/40" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[200px] rounded-2xl p-2 border-border/40 shadow-xl">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-black px-3 py-2">
-                Refine Feed
-              </DropdownMenuLabel>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="rounded-xl gap-3 py-2.5 px-3 text-xs uppercase tracking-wider font-bold">
-                  <Globe size={14} className="opacity-70" />
-                  <span>Platform</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="min-w-[180px] rounded-2xl p-2 border-border/40 shadow-2xl ml-1">
-                    {platforms.map((p) => (
-                      <DropdownMenuItem
-                        key={p.id}
-                        onClick={() => setActivePlatform(p)}
-                        className={`rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs uppercase tracking-wider ${getActiveStyles(activePlatform.id === p.id)}`}
-                      >
-                        <span className={activePlatform.id === p.id ? "opacity-100" : "opacity-40"}>{p.icon}</span>
-                        {p.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="rounded-xl gap-3 py-2.5 px-3 text-xs uppercase tracking-wider font-bold">
-                  <Code2 size={14} className="opacity-70" />
-                  <span>Tech Stack</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="min-w-[180px] rounded-2xl p-2 border-border/40 shadow-2xl ml-1">
-                    <DropdownMenuItem
-                      onClick={() => setActiveTech("Any Stack")}
-                      className={`rounded-xl py-2.5 px-3 cursor-pointer text-xs uppercase tracking-wider ${getActiveStyles(activeTech === "Any Stack")}`}
-                    >
-                      Any Stack
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="my-2 opacity-50" />
-                    {techStacks.map((t) => (
-                      <DropdownMenuItem
-                        key={t.id}
-                        onClick={() => setActiveTech(t.label)}
-                        className={`rounded-xl py-2.5 px-3 cursor-pointer text-xs uppercase tracking-wider ${getActiveStyles(activeTech === t.label)}`}
-                      >
-                        {t.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              <DropdownMenuSeparator className="my-2 opacity-50" />
-              <DropdownMenuItem
-                onClick={() => {
-                  setActivePlatform(platforms[0]);
-                  setActiveTech("Any Stack");
-                }}
-                className="rounded-xl text-[10px] text-muted-foreground hover:text-primary text-center justify-center font-black uppercase tracking-[0.2em] py-3"
-              >
-                Reset Filters
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {onOpenSidebar && (
+    <div className="flex items-center justify-between">
+      {/* Feed tabs */}
+      <div className="flex items-center gap-1">
+        {feedTabs.map((tab) => (
           <button
-            onClick={onOpenSidebar}
-            className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Open sidebar"
-          >
-            <ChevronLeft size={18} />
-          </button>
-        )}
-      </div>
-
-      <div 
-        className={`flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
-        onMouseDown={handleMouseDown}
-        onMouseLeave={handleMouseLeave}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
-      >
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`px-5 py-2 text-[11px] font-black rounded-xl whitespace-nowrap transition-all duration-300 active:scale-90 border border-border/40 uppercase tracking-widest ${
-              activeCategory === cat
-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                : "bg-surface text-muted-foreground hover:bg-surface-hover hover:text-foreground hover:border-border"
+            key={tab.id}
+            onClick={() => { setActiveFeed(tab.id); setActiveSort(""); }}
+            className={`relative px-3 py-2 text-sm font-medium transition-colors rounded-md ${
+              activeFeed === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {cat}
+            {tab.label}
+            {activeFeed === tab.id && (
+              <span className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary rounded-full" />
+            )}
           </button>
         ))}
+      </div>
+
+      {/* Right controls */}
+      <div className="flex items-center gap-1">
+        {/* Sort */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md transition-colors">
+              Sort <ChevronDown size={12} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[140px] p-1 rounded-lg border-border/40">
+            {sortOptions.map((s) => (
+              <DropdownMenuItem key={s.id} onClick={() => setActiveSort(s.id)} className={`rounded-md text-xs cursor-pointer ${activeSort === s.id ? "text-primary" : ""}`}>
+                {s.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md transition-colors">
+              <Filter size={12} /> Filter <ChevronDown size={12} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[180px] p-1 rounded-lg border-border/40">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1">Platform</DropdownMenuLabel>
+            {platforms.map((p) => (
+              <DropdownMenuItem key={p.id} onClick={() => setActivePlatform(p.id)} className={`rounded-md text-xs cursor-pointer gap-2 ${activePlatform === p.id ? "text-primary" : ""}`}>
+                {p.icon} {p.label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1">Tech Stack</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => setActiveTech("")} className={`rounded-md text-xs cursor-pointer ${!activeTech ? "text-primary" : ""}`}>
+              Any
+            </DropdownMenuItem>
+            {techStacks.map((t) => (
+              <DropdownMenuItem key={t} onClick={() => setActiveTech(t)} className={`rounded-md text-xs cursor-pointer ${activeTech === t ? "text-primary" : ""}`}>
+                {t}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => { setActivePlatform("all"); setActiveTech(""); }} className="rounded-md text-xs text-muted-foreground justify-center cursor-pointer">
+              Reset
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {onOpenSidebar && (
+          <button onClick={onOpenSidebar} className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground rounded-md transition-colors" aria-label="Open sidebar">
+            <Filter size={16} />
+          </button>
+        )}
       </div>
     </div>
   );

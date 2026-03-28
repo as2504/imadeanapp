@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Star } from "lucide-react";
+import { CheckCircle2, Star, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AppPost {
@@ -26,7 +26,7 @@ export interface AppPost {
 }
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
-  web: { label: "Web App", icon: "/world-wide-web.png" },
+  web: { label: "Web", icon: "/world-wide-web.png" },
   android: { label: "Android", icon: "/android.png" },
   ios: { label: "iOS", icon: "/app-store.png" },
 };
@@ -44,10 +44,7 @@ const AppCard = ({ post, actions }: AppCardProps) => {
 
   useEffect(() => {
     const fetchRating = async () => {
-      const { data } = await supabase
-        .from("ratings")
-        .select("rating")
-        .eq("app_id", post.id);
+      const { data } = await supabase.from("ratings").select("rating").eq("app_id", post.id);
       if (data && data.length > 0) {
         const avg = data.reduce((s, r) => s + r.rating, 0) / data.length;
         setAvgRating(Math.round(avg * 10) / 10);
@@ -59,61 +56,53 @@ const AppCard = ({ post, actions }: AppCardProps) => {
   return (
     <article
       onClick={() => navigate(`/app/${post.slug || post.id}`)}
-      className="bg-card hover:bg-accent/5 border border-border/40 rounded-xl p-3 sm:p-4 transition-all duration-300 group cursor-pointer flex flex-row gap-3 sm:gap-5 hover:shadow-lg hover:-translate-y-0.5 h-fit"
+      className="flex items-center gap-4 px-4 py-3 rounded-lg border-b border-border/20 last:border-b-0 hover:bg-card transition-colors cursor-pointer group"
     >
-      <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center text-xl shrink-0 overflow-hidden shadow-sm group-hover:shadow-md transition-all">
+      {/* Icon */}
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
         {isUrl(post.appIcon) ? (
           <img src={post.appIcon} alt={post.appName} className="w-full h-full object-cover" />
         ) : (
-          <span className="group-hover:scale-110 transition-transform">{post.appIcon}</span>
+          <span className="text-lg">{post.appIcon}</span>
         )}
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="text-sm sm:text-lg font-black text-foreground truncate group-hover:text-primary transition-colors tracking-tight">
-              {post.appName}
-            </h3>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] sm:text-xs font-bold text-primary truncate">
-                {post.publisherName}
-              </span>
-              {post.verified && (
-                <CheckCircle2 size={8} className="text-primary shrink-0 sm:w-3 sm:h-3" />
-              )}
-              <span className="text-muted-foreground/30">·</span>
-              <span className="text-[8px] sm:text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest whitespace-nowrap">
-                {post.timeAgo}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex items-center gap-1">
-              {post.platforms.map((p) => {
-                const config = platformConfig[p];
-                if (!config) return null;
-                return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 group-hover:opacity-100 transition-opacity invert" alt={config.label} />;
-              })}
-            </div>
-            {avgRating !== null && avgRating > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-primary/5 border border-primary/10">
-                <Star size={10} className="text-primary fill-primary sm:w-3 sm:h-3" />
-                <span className="text-[9px] sm:text-xs font-black text-foreground">{avgRating.toFixed(1)}</span>
-              </div>
-            )}
-            {actions && (
-              <div onClick={(e) => e.stopPropagation()}>
-                {actions}
-              </div>
-            )}
-          </div>
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+            {post.appName}
+          </h3>
+          {post.verified && <CheckCircle2 size={12} className="text-primary shrink-0" />}
         </div>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{post.caption}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[11px] text-muted-foreground">{post.publisherName}</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span className="text-[11px] text-muted-foreground">{post.timeAgo}</span>
+          {post.tags.slice(0, 2).map((tag) => (
+            <span key={tag} className="text-[10px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-secondary">{tag}</span>
+          ))}
+        </div>
+      </div>
 
-        <p className="text-[11px] sm:text-sm text-muted-foreground line-clamp-1 mt-1 font-medium">
-          {post.caption}
-        </p>
+      {/* Right */}
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="hidden sm:flex items-center gap-1">
+          {post.platforms.map((p) => {
+            const config = platformConfig[p];
+            if (!config) return null;
+            return <img key={p} src={config.icon} className="w-4 h-4 object-contain opacity-50 invert" alt={config.label} />;
+          })}
+        </div>
+        {avgRating !== null && avgRating > 0 && (
+          <div className="flex items-center gap-1">
+            <Star size={12} className="text-primary fill-primary" />
+            <span className="text-xs font-medium text-foreground">{avgRating.toFixed(1)}</span>
+          </div>
+        )}
+        {actions && <div onClick={(e) => e.stopPropagation()}>{actions}</div>}
+        <ChevronRight size={14} className="text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
       </div>
     </article>
   );
