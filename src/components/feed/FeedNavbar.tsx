@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,9 +17,6 @@ import {
   User,
   Plus,
   LogOut,
-  Menu,
-  X,
-  Moon,
 } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
 
@@ -33,18 +27,9 @@ const navItems = [
 
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(
-    document.documentElement.classList.contains("dark")
-  );
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const toggleDarkMode = (checked: boolean) => {
-    setDarkMode(checked);
-    document.documentElement.classList.toggle("dark", checked);
-    localStorage.setItem("theme", checked ? "dark" : "light");
-  };
 
   return (
     <>
@@ -56,7 +41,7 @@ const FeedNavbar = () => {
             className="flex items-center gap-2 group shrink-0"
           >
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-              <Plus size={20} className="text-white" />
+              <Plus size={20} className="text-primary-foreground" />
             </div>
             <span className="text-xl font-black text-foreground tracking-tight hidden sm:inline-block">
               Showcase
@@ -73,7 +58,7 @@ const FeedNavbar = () => {
             {/* Mobile search toggle */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="md:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-surface rounded-xl transition-all"
+              className="md:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
             >
               <Search size={22} />
             </button>
@@ -86,7 +71,7 @@ const FeedNavbar = () => {
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                     location.pathname === item.href
                       ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   <item.icon size={18} />
@@ -95,7 +80,7 @@ const FeedNavbar = () => {
               ))}
             </div>
 
-            <button className="hidden sm:flex p-2.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-xl transition-all">
+            <button className="hidden sm:flex p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all">
               <Bell size={20} />
             </button>
 
@@ -104,13 +89,13 @@ const FeedNavbar = () => {
             {/* Avatar Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 rounded-2xl hover:bg-surface transition-all outline-none">
+                <button className="p-1 rounded-2xl hover:bg-secondary transition-all outline-none">
                   <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
                     <User size={18} className="text-primary" />
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-xl border-border/40">
+              <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-xl border-border/40 bg-card">
                 <div className="px-2 py-3 mb-1">
                   <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Account</p>
                 </div>
@@ -122,20 +107,6 @@ const FeedNavbar = () => {
                   <Plus size={18} className="text-muted-foreground" />
                   <span className="font-bold">Publish App</span>
                 </DropdownMenuItem>
-                
-                <DropdownMenuSeparator className="my-2" />
-                
-                <div className="flex items-center justify-between px-2 py-2">
-                  <div className="flex items-center gap-3">
-                    <Moon size={18} className="text-muted-foreground" />
-                    <span className="text-sm font-bold">Dark Mode</span>
-                  </div>
-                  <Switch
-                    checked={darkMode}
-                    onCheckedChange={toggleDarkMode}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                </div>
                 
                 <DropdownMenuSeparator className="my-2" />
                 

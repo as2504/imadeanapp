@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,93 +6,51 @@
 
 @layer base {
   :root {
-    --background: 210 40% 96.1%;
-    --foreground: 222.2 47.4% 11.2%;
+    color-scheme: dark;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    --background: 215 28% 5%;
+    --foreground: 213 14% 80%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --card: 215 22% 9%;
+    --card-foreground: 213 14% 80%;
 
-    --primary: 217 91% 50%;
-    --primary-foreground: 0 0% 100%;
+    --popover: 215 19% 13%;
+    --popover-foreground: 213 14% 80%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --primary: 212 92% 67%;
+    --primary-foreground: 215 28% 5%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --secondary: 215 19% 13%;
+    --secondary-foreground: 213 14% 80%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 215 19% 13%;
+    --muted-foreground: 213 10% 58%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 215 19% 13%;
+    --accent-foreground: 213 14% 80%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 14% 21%;
+    --input: 215 16% 14%;
+    --ring: 212 92% 67%;
 
     --radius: 0.75rem;
 
     /* Custom tokens */
-    --surface: 220 20% 97%;
-    --surface-hover: 220 14% 94%;
-    --hero-accent: 24 80% 72%;
+    --surface: 215 22% 9%;
+    --surface-hover: 215 19% 13%;
+    --hero-accent: 212 92% 67%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-
-    /* Custom tokens */
-    --surface: 222.2 47.4% 11.2%;
-    --surface-hover: 222.2 47.4% 15.2%;
-    --hero-accent: 24 80% 72%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 215 28% 5%;
+    --sidebar-foreground: 213 14% 80%;
+    --sidebar-primary: 212 92% 67%;
+    --sidebar-primary-foreground: 215 28% 5%;
+    --sidebar-accent: 215 19% 13%;
+    --sidebar-accent-foreground: 213 14% 80%;
+    --sidebar-border: 215 14% 21%;
+    --sidebar-ring: 212 92% 67%;
   }
 }
 
@@ -110,6 +68,7 @@
     font-family: 'Inter', system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
+    line-height: 1.2;
     text-wrap: balance;
   }
 
@@ -161,37 +120,19 @@
 
 /* Edit profile animations */
 @keyframes field-expand {
-  from {
-    opacity: 0;
-    transform: translateY(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes chip-check {
-  0% {
-    opacity: 0;
-    transform: scale(0) rotate(-45deg);
-  }
-  60% {
-    transform: scale(1.2) rotate(0deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
+  0% { opacity: 0; transform: scale(0) rotate(-45deg); }
+  60% { transform: scale(1.2) rotate(0deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-field-expand {

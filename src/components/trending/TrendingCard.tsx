@@ -35,7 +35,7 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
       onClick={() => navigate(`/app/${(app as any).slug || app.id}`)}
       className="relative bg-card hover:bg-accent/5 border border-border/40 rounded-xl p-3 sm:p-4 transition-all duration-300 group cursor-pointer flex flex-row gap-3 sm:gap-5 hover:shadow-lg hover:-translate-y-0.5 h-fit"
     >
-      <div className="absolute -top-3 -left-2 text-3xl font-black text-foreground/10 dark:text-primary/20 group-hover:text-primary transition-all duration-500 italic z-20 pointer-events-none drop-shadow-sm select-none">
+      <div className="absolute -top-3 -left-2 text-3xl font-black text-primary/20 group-hover:text-primary transition-all duration-500 italic z-20 pointer-events-none drop-shadow-sm select-none">
         {app.rank}
       </div>
 
@@ -72,7 +72,7 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
               {app.platforms.map((p) => {
                 const config = platformConfig[p];
                 if (!config) return null;
-                return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-50 group-hover:opacity-100 transition-opacity dark:invert dark:opacity-90" alt={config.label} />;
+                return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 group-hover:opacity-100 transition-opacity invert" alt={config.label} />;
               })}
             </div>
             {avgRating !== null && avgRating > 0 && (
