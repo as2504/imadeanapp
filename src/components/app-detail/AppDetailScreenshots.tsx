@@ -17,12 +17,12 @@ const AppDetailScreenshots = ({ screenshots }: AppDetailScreenshotsProps) => {
           <button
             key={i}
             onClick={() => setSelectedImage(src)}
-            className="relative shrink-0 w-[280px] md:w-[400px] aspect-video rounded-2xl overflow-hidden bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] transition-all duration-500 snap-center group"
+            className="relative shrink-0 h-[300px] md:h-[450px] w-auto rounded-2xl overflow-hidden bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] transition-all duration-500 snap-center group border border-border/10"
           >
             <img 
               src={src} 
               alt={`Screenshot ${i + 1}`} 
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+              className="h-full w-auto object-cover transition-transform duration-700 group-hover:scale-105" 
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
           </button>

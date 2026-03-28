@@ -24,6 +24,34 @@ const TrendingFilters = ({ onOpenSidebar, onFilterChange }: TrendingFiltersProps
   const [activeTime, setActiveTime] = useState("This Week");
   const [activeCategory, setActiveCategory] = useState("All");
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    setIsDragging(true);
+    setStartX(e.pageX - container.offsetLeft);
+    setScrollLeft(container.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const container = e.currentTarget;
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startX) * 2;
+    container.scrollLeft = scrollLeft - walk;
+  };
+
   useEffect(() => {
     if (!onFilterChange) return;
     onFilterChange({
@@ -70,7 +98,13 @@ const TrendingFilters = ({ onOpenSidebar, onFilterChange }: TrendingFiltersProps
         )}
       </div>
 
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+      <div 
+        className={`flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
         {categoryFilters.map((cat) => (
           <button
             key={cat}

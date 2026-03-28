@@ -32,7 +32,12 @@ const platformConfig: Record<string, { label: string; icon: string }> = {
 
 const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
 
-const AppCard = ({ post }: { post: AppPost }) => {
+interface AppCardProps {
+  post: AppPost;
+  actions?: React.ReactNode;
+}
+
+const AppCard = ({ post, actions }: AppCardProps) => {
   const navigate = useNavigate();
   const [avgRating, setAvgRating] = useState<number | null>(null);
 
@@ -95,6 +100,11 @@ const AppCard = ({ post }: { post: AppPost }) => {
               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-primary/5 border border-primary/10">
                 <Star size={10} className="text-primary fill-primary sm:w-3 sm:h-3" />
                 <span className="text-[9px] sm:text-xs font-black text-foreground">{avgRating.toFixed(1)}</span>
+              </div>
+            )}
+            {actions && (
+              <div onClick={(e) => e.stopPropagation()}>
+                {actions}
               </div>
             )}
           </div>

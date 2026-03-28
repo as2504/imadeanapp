@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
-import { Camera, Plus } from "lucide-react";
+import { Camera, Plus, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditProfileAvatarProps {
     initial: string;
@@ -8,13 +11,46 @@ interface EditProfileAvatarProps {
 }
 
 const EditProfileAvatar = ({ initial, avatarUrl, onImageChange }: EditProfileAvatarProps) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
     const [dragging, setDragging] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFile = (file: File) => {
-        if (!file.type.startsWith("image/")) return;
-        const url = URL.createObjectURL(file);
-        onImageChange(url);
+    const handleFile = async (file: File) => {
+        if (!file.type.startsWith("image/")) {
+            toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
+            return;
+        }
+        if (!user) return;
+
+        setUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${user.id}/${Math.random()}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            onImageChange(publicUrl);
+            toast({ title: "Success", description: "Avatar uploaded successfully." });
+        } catch (error: any) {
+            console.error("Error uploading avatar:", error);
+            toast({ 
+                title: "Upload failed", 
+                description: error.message || "Could not upload image.", 
+                variant: "destructive" 
+            });
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleDrop = (e: React.DragEvent) => {
@@ -50,7 +86,11 @@ const EditProfileAvatar = ({ initial, avatarUrl, onImageChange }: EditProfileAva
                     }`}
             >
                 {/* Avatar image or initial */}
-                {avatarUrl ? (
+                {uploading ? (
+                    <div className="w-full h-full bg-surface flex items-center justify-center">
+                        <Loader2 className="animate-spin text-primary" size={24} />
+                    </div>
+                ) : avatarUrl ? (
                     <img
                         src={avatarUrl}
                         alt="Avatar"

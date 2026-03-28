@@ -1,16 +1,17 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   ArrowLeft, Upload, Loader2, X, ImagePlus, CheckCircle2, 
   Info, Pencil, Bold, Italic, Underline, List, Plus, 
   ChevronDown, Github, Play,
-  CircleDollarSign, CreditCard, Gift, Rocket, Eye
+  CircleDollarSign, CreditCard, Gift, Rocket, Eye, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Tooltip,
   TooltipContent,
@@ -34,8 +35,14 @@ import { cn } from "@/lib/utils";
 const TECH_OPTIONS = ["React", "Next.js", "Supabase", "Tailwind", "OpenAI", "TypeScript", "Node.js", "Python", "Docker", "AWS", "Framer", "Vercel"];
 const TAG_OPTIONS = ["AI", "SaaS", "Productivity", "DevTools", "Design", "Marketing", "Crypto", "Social", "Analytics", "Utilities"];
 
+const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
 const PublishForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
+  const isEditMode = !!editId;
+
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -59,8 +66,53 @@ const PublishForm = () => {
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   
+  const [updateNotes, setUpdateNotes] = useState("");
   const [isSubmitting, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
   const [errors, setErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isEditMode && editId) {
+      const fetchAppData = async () => {
+        const { data, error } = await supabase
+          .from("apps")
+          .select("*")
+          .eq("id", editId)
+          .maybeSingle();
+        
+        if (error || !data) {
+          toast({ title: "Error", description: "Could not find app to edit", variant: "destructive" });
+          navigate("/account");
+          return;
+        }
+
+        if (user && data.user_id !== user.id) {
+          toast({ title: "Unauthorized", description: "You don't own this app", variant: "destructive" });
+          navigate("/account");
+          return;
+        }
+
+        setAppName(data.app_name);
+        setCaption(data.caption || "");
+        setAbout(data.full_description || "");
+        setTechStack(data.tech_stack || []);
+        setTags(data.tags || []);
+        setPlatform((data.platforms?.[0] as string) || "web");
+        setUrls({
+          web: data.website_url || "",
+          android: data.play_store_url || "",
+          ios: data.app_store_url || "",
+          github: data.github_url || "",
+          demo: data.demo_video_url || ""
+        });
+        setPricing(data.pricing || "free");
+        setIconPreview(data.app_icon_url);
+        setScreenshotPreviews(data.screenshots || []);
+        setLoading(false);
+      };
+      fetchAppData();
+    }
+  }, [editId, isEditMode, navigate, toast, user]);
 
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,7 +124,7 @@ const PublishForm = () => {
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const remaining = 3 - screenshotFiles.length;
+    const remaining = 3 - screenshotPreviews.length;
     if (remaining <= 0) return;
     const toAdd = files.slice(0, remaining);
     setScreenshotFiles(prev => [...prev, ...toAdd]);
@@ -88,6 +140,7 @@ const PublishForm = () => {
     if (techStack.length === 0) newErrors.push("tech");
     if (tags.length === 0) newErrors.push("tags");
     if (!platform) newErrors.push("platform");
+    if (isEditMode && !updateNotes.trim()) newErrors.push("notes");
     
     setErrors(newErrors);
     return newErrors.length === 0;
@@ -98,13 +151,84 @@ const PublishForm = () => {
       toast({ title: "Check required fields", description: "Your masterpiece needs a few more details.", variant: "destructive" });
       return;
     }
+    if (!user) return;
+
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      // 1. Prepare data
+      const appData = {
+        app_name: appName,
+        slug: slugify(appName),
+        caption,
+        full_description: about,
+        tech_stack: techStack,
+        tags,
+        platforms: [platform],
+        website_url: urls.web || null,
+        play_store_url: urls.android || null,
+        app_store_url: urls.ios || null,
+        github_url: urls.github || null,
+        demo_video_url: urls.demo || null,
+        pricing,
+        app_icon_url: iconPreview, // In a real app, upload file first
+        screenshots: screenshotPreviews, // In a real app, upload files first
+        user_id: user.id,
+        status: "published"
+      };
+
+      let finalAppId = editId;
+
+      if (isEditMode && editId) {
+        // Update existing app
+        const { error: updateError } = await supabase
+          .from("apps")
+          .update(appData)
+          .eq("id", editId);
+        
+        if (updateError) throw updateError;
+
+        // Save update history (Work Note)
+        const { error: historyError } = await supabase
+          .from("app_updates")
+          .insert({
+            app_id: editId,
+            user_id: user.id,
+            version_notes: updateNotes
+          });
+        
+        if (historyError) throw historyError;
+
+        toast({ title: "App Updated Successfully! ✨", description: "Changes have been live." });
+      } else {
+        // Create new app
+        const { data, error: insertError } = await supabase
+          .from("apps")
+          .insert(appData)
+          .select("id")
+          .single();
+        
+        if (insertError) throw insertError;
+        finalAppId = data.id;
+
+        toast({ title: "App Published Successfully! 🚀", description: "The world is ready for your creation." });
+      }
+
+      navigate(`/app/${finalAppId}`);
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      toast({ title: "Launch failed", description: err.message || "Something went wrong.", variant: "destructive" });
+    } finally {
       setIsSaving(false);
-      toast({ title: "App Published Successfully! 🚀", description: "The world is ready for your creation." });
-      navigate("/account");
-    }, 1500);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -116,9 +240,8 @@ const PublishForm = () => {
               <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
             </button>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" className="rounded-xl font-black text-[10px] uppercase tracking-widest h-10 px-5">Save Draft</Button>
               <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-xl font-black text-[10px] uppercase tracking-widest h-10 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-95">
-                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : "Launch App"}
+                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : isEditMode ? "Save Update" : "Launch App"}
               </Button>
             </div>
           </div>
@@ -131,9 +254,29 @@ const PublishForm = () => {
             <div className="space-y-8">
               <div className="space-y-1">
                 <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-[1] text-foreground">
-                  Ship your <br /> <span className="text-primary italic">masterpiece.</span>
+                  {isEditMode ? "Refine your" : "Ship your"} <br /> <span className="text-primary italic">{isEditMode ? "craft." : "masterpiece."}</span>
                 </h1>
               </div>
+
+              {/* 0. Update Notes (WORK NOTE) - ONLY IN EDIT MODE */}
+              {isEditMode && (
+                <section className="space-y-4 bg-primary/5 border border-primary/20 p-6 sm:p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
+                  <div className="flex items-center gap-2">
+                    <History size={14} className="text-primary" />
+                    <Label className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Work Note (What's New?)</Label>
+                  </div>
+                  <Textarea 
+                    value={updateNotes}
+                    onChange={e => setUpdateNotes(e.target.value)}
+                    placeholder="Briefly describe what you updated in this version. e.g. Added dark mode, fixed navigation bugs..."
+                    className={cn(
+                      "min-h-[100px] rounded-[1.25rem] bg-background border-border/40 focus:ring-primary/20 p-5 text-sm font-medium",
+                      errors.includes("notes") && "border-destructive ring-1 ring-destructive/20"
+                    )}
+                  />
+                  <p className="text-[10px] text-muted-foreground/60 font-medium italic">Users will see this in the Update History tab.</p>
+                </section>
+              )}
 
               {/* 1. App Identity Top Row */}
               <section className="flex flex-col sm:flex-row gap-6 items-start bg-card border border-border/40 p-6 sm:p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
@@ -266,7 +409,7 @@ const PublishForm = () => {
                       </div>
                     </div>
                   ))}
-                  {screenshotFiles.length < 3 && (
+                  {screenshotPreviews.length < 3 && (
                     <button 
                       onClick={() => screenshotInputRef.current?.click()}
                       className="w-56 aspect-video rounded-xl border-4 border-dashed border-border/60 hover:border-primary/40 bg-background flex flex-col items-center justify-center gap-2 group transition-all shrink-0 shadow-inner"
@@ -348,7 +491,7 @@ const PublishForm = () => {
                     </Label>
                     <Input 
                       placeholder={`https://your-${platform}-app.com`}
-                      value={urls[platform as keyof typeof urls]}
+                      value={urls[platform as keyof typeof urls] || ""}
                       onChange={e => setUrls({...urls, [platform]: e.target.value})}
                       className="h-10 rounded-xl bg-background border-border/40 focus:ring-primary/20 text-xs px-4 font-bold"
                     />

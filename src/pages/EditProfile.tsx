@@ -9,6 +9,8 @@ import EditProfileLinks from "@/components/edit-profile/EditProfileLinks";
 import EditProfileExperience from "@/components/edit-profile/EditProfileExperience";
 import EditProfileDevelopment from "@/components/edit-profile/EditProfileDevelopment";
 import SidebarPanel from "@/components/layout/SidebarPanel";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import type { SocialLink } from "@/components/edit-profile/EditProfileLinks";
 
 const tabs = ["Profile", "Experience", "Development"] as const;
@@ -17,57 +19,100 @@ type Tab = (typeof tabs)[number];
 const EditProfile = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const displayName =
-        user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
-    const username = user?.email?.split("@")[0] || "user";
+    const { toast } = useToast();
 
     const [activeTab, setActiveTab] = useState<Tab>("Profile");
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // ── Profile state ──
     const [profile, setProfile] = useState({
-        username,
-        fullName: displayName,
-        gender: "Male",
-        dob: "1998-05-15",
-        title: "AI Product Designer",
-        location: "San Francisco, CA",
-        bio: "Building the next generation of vibe-coded AI tools. ⚡",
+        username: "",
+        fullName: "",
+        gender: "Prefer not to say",
+        dob: "",
+        title: "",
+        location: "",
+        bio: "",
         avatarUrl: null as string | null,
     });
 
-    const [links, setLinks] = useState<SocialLink[]>([
-        { id: "1", platform: "github", url: "https://github.com/creator" },
-        { id: "2", platform: "twitter", url: "https://x.com/creator" },
-    ]);
+    const [links, setLinks] = useState<SocialLink[]>([]);
 
     const [experience, setExperience] = useState({
-        education: [
-            { id: "1", school: "Stanford University", degree: "BS Computer Science", year: "2020" }
-        ],
-        work: [
-            { id: "1", company: "OpenAI", role: "Product Designer", years: "2" }
-        ]
+        education: [] as any[],
+        work: [] as any[]
     });
 
     const [development, setDevelopment] = useState({
-        primarySkill: "Full Stack Development",
-        secondaryTools: ["Vercel", "Supabase", "Framer"],
-        preferredPlatforms: ["Web Apps", "iOS"],
+        primarySkill: "",
+        secondaryTools: [] as string[],
+        preferredPlatforms: [] as string[],
         isFindingWork: false,
-        isOpenToCollaboration: true,
-        lookingFor: ["Developers", "Co-founders"]
+        isOpenToCollaboration: false,
+        lookingFor: [] as string[]
     });
 
     // ── Save status ──
     const [saveStatus, setSaveStatus] = useState("");
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+    useEffect(() => {
+        if (!user || !isFirstLoad) return;
+
+        const fetchProfile = async () => {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            if (error) {
+                console.error("Error fetching profile:", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load profile data",
+                    variant: "destructive",
+                });
+            } else if (data) {
+                setProfile({
+                    username: data.username || "",
+                    fullName: data.display_name || "",
+                    gender: data.gender || "Prefer not to say",
+                    dob: data.date_of_birth || "",
+                    title: data.professional_title || "",
+                    location: data.location || "",
+                    bio: data.bio || "",
+                    avatarUrl: data.avatar_url,
+                });
+                
+                setDevelopment({
+                    primarySkill: data.primary_skill || "",
+                    secondaryTools: data.secondary_tools || [],
+                    preferredPlatforms: data.preferred_platforms || [],
+                    isFindingWork: data.looking_for_work || false,
+                    isOpenToCollaboration: data.open_to_collaboration || false,
+                    lookingFor: data.collaboration_looking_for || [],
+                });
+
+                if (data.education) {
+                    setExperience(prev => ({ ...prev, education: data.education as any[] }));
+                }
+            }
+            setLoading(false);
+            setIsFirstLoad(false);
+        };
+
+        fetchProfile();
+    }, [user, toast, isFirstLoad]);
 
     // Mark changes
     useEffect(() => {
         if (hasChanges) {
-            setSaveStatus("Unsaved changes");
+            setSaveStatus("Save Updates");
         }
     }, [hasChanges]);
 
@@ -85,16 +130,57 @@ const EditProfile = () => {
         markChanged();
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (!user) return;
         setIsSaving(true);
         setSaveStatus("Saving…");
-        setTimeout(() => {
-            setIsSaving(false);
+
+        try {
+            const { error } = await supabase
+                .from("profiles")
+                .update({
+                    display_name: profile.fullName,
+                    gender: profile.gender,
+                    date_of_birth: profile.dob,
+                    professional_title: profile.title,
+                    location: profile.location,
+                    bio: profile.bio,
+                    avatar_url: profile.avatarUrl,
+                    primary_skill: development.primarySkill,
+                    secondary_tools: development.secondaryTools,
+                    preferred_platforms: development.preferredPlatforms,
+                    looking_for_work: development.isFindingWork,
+                    open_to_collaboration: development.isOpenToCollaboration,
+                    collaboration_looking_for: development.lookingFor,
+                    education: experience.education as any,
+                })
+                .eq("user_id", user.id);
+
+            if (error) throw error;
+
             setSaveStatus("Saved ✓");
             setHasChanges(false);
             setTimeout(() => setSaveStatus(""), 3000);
-        }, 800);
+        } catch (err: any) {
+            console.error("Error saving profile:", err);
+            toast({
+                title: "Error",
+                description: err.message || "Failed to save profile",
+                variant: "destructive",
+            });
+            setSaveStatus("Error saving");
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="animate-spin text-primary" size={32} />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background">
