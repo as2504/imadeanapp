@@ -34,7 +34,7 @@ const AppDetailStats = ({ tags, platforms, pricing }: AppDetailStatsProps) => {
           {platforms.map(p => {
             const config = platformConfig[p];
             if (!config) return null;
-            return <img key={p} src={config.icon} className="w-4 h-4 object-contain dark:invert" alt={config.label} />;
+            return <img key={p} src={config.icon} className="w-4 h-4 object-contain invert" alt={config.label} />;
           })}
         </div>
       </div>

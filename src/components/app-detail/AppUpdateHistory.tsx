@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { History, Calendar, User } from "lucide-react";
+import { History, Calendar } from "lucide-react";
 
 interface AppUpdate {
   id: string;
@@ -19,7 +19,7 @@ const AppUpdateHistory = ({ appId }: AppUpdateHistoryProps) => {
 
   useEffect(() => {
     const fetchUpdates = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("app_updates")
         .select("*")
         .eq("app_id", appId)
@@ -42,7 +42,7 @@ const AppUpdateHistory = ({ appId }: AppUpdateHistoryProps) => {
 
   if (updates.length === 0) {
     return (
-      <div className="text-center py-12 bg-surface/30 rounded-[2rem] border border-dashed border-border/40">
+      <div className="text-center py-12 bg-secondary/30 rounded-[2rem] border border-dashed border-border/40">
         <History size={32} className="mx-auto text-muted-foreground/30 mb-3" />
         <p className="text-xs font-black text-muted-foreground/60 uppercase tracking-[0.2em]">No update history yet</p>
       </div>
@@ -86,8 +86,8 @@ const AppUpdateHistory = ({ appId }: AppUpdateHistoryProps) => {
 
         {/* Initial Release Node */}
         <div className="relative pl-12 group">
-          <div className="absolute left-0 top-1 w-9 h-9 rounded-full bg-surface border border-border/40 flex items-center justify-center z-10">
-            <Rocket size={14} className="text-muted-foreground/40" />
+          <div className="absolute left-0 top-1 w-9 h-9 rounded-full bg-secondary border border-border/40 flex items-center justify-center z-10">
+            <RocketIcon size={14} className="text-muted-foreground/40" />
           </div>
           <div className="py-2.5">
              <p className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">Initial Release Launched</p>
@@ -98,7 +98,7 @@ const AppUpdateHistory = ({ appId }: AppUpdateHistoryProps) => {
   );
 };
 
-const Rocket = ({ size, className }: any) => (
+const RocketIcon = ({ size, className }: any) => (
   <svg 
     width={size} 
     height={size} 
