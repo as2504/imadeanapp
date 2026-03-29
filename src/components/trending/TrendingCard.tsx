@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Star } from "lucide-react";
+import { CheckCircle2, Star, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { TrendingApp } from "@/data/mockTrending";
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
-  web: { label: "Web App", icon: "/world-wide-web.png" },
+  web: { label: "Web", icon: "/world-wide-web.png" },
   android: { label: "Android", icon: "/android.png" },
   ios: { label: "iOS", icon: "/app-store.png" },
 };
@@ -33,60 +33,54 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
   return (
     <article
       onClick={() => navigate(`/app/${(app as any).slug || app.id}`)}
-      className="relative bg-card hover:bg-accent/5 border border-border/40 rounded-xl p-3 sm:p-4 transition-all duration-300 group cursor-pointer flex flex-row gap-3 sm:gap-5 hover:shadow-lg hover:-translate-y-0.5 h-fit"
+      className="relative flex items-center gap-4 px-4 py-3 rounded-xl border-b border-border/10 last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group"
     >
-      <div className="absolute -top-3 -left-2 text-3xl font-black text-primary/20 group-hover:text-primary transition-all duration-500 italic z-20 pointer-events-none drop-shadow-sm select-none">
+      {/* Rank Number */}
+      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-2xl font-black text-primary/10 group-hover:text-primary/20 transition-colors italic z-0 pointer-events-none select-none">
         {app.rank}
       </div>
 
-      <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center text-xl shrink-0 overflow-hidden shadow-sm group-hover:shadow-md transition-all">
+      {/* Icon */}
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden relative z-10">
         {isUrl(app.appIcon) ? (
           <img src={app.appIcon} alt={app.appName} className="w-full h-full object-cover" />
         ) : (
-          <span className="group-hover:scale-110 transition-transform">{app.appIcon}</span>
+          <span className="text-lg">{app.appIcon}</span>
         )}
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="text-sm sm:text-lg font-black text-foreground truncate group-hover:text-primary transition-colors tracking-tight">
-              {app.appName}
-            </h3>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] sm:text-xs font-bold text-primary truncate">
-                {app.publisherName}
-              </span>
-              {app.verified && (
-                <CheckCircle2 size={8} className="text-primary shrink-0 sm:w-3 sm:h-3" />
-              )}
-              <span className="text-muted-foreground/30">·</span>
-              <span className="text-[8px] sm:text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest whitespace-nowrap">
-                {app.timeAgo}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 mr-8">
-            <div className="hidden sm:flex items-center gap-1">
-              {app.platforms.map((p) => {
-                const config = platformConfig[p];
-                if (!config) return null;
-                return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 group-hover:opacity-100 transition-opacity invert" alt={config.label} />;
-              })}
-            </div>
-            {avgRating !== null && avgRating > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                <Star size={10} className="text-emerald-500 fill-emerald-500 sm:w-3 sm:h-3" />
-                <span className="text-[9px] sm:text-xs font-black text-foreground">{avgRating.toFixed(1)}</span>
-              </div>
-            )}
+      {/* Content */}
+      <div className="flex-1 min-w-0 relative z-10">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+            {app.appName}
+          </h3>
+          {app.verified && <CheckCircle2 size={12} className="text-primary shrink-0" />}
+        </div>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{app.caption}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[11px] text-muted-foreground">{app.publisherName}</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span className="text-[11px] text-muted-foreground">{app.timeAgo}</span>
+          <div className="flex items-center gap-1.5 ml-1">
+            {app.platforms.map((p) => {
+              const config = platformConfig[p];
+              if (!config) return null;
+              return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 dark:invert" alt={config.label} />;
+            })}
           </div>
         </div>
+      </div>
 
-        <p className="text-[11px] sm:text-sm text-muted-foreground line-clamp-1 mt-1 font-medium">
-          {app.caption}
-        </p>
+      {/* Right */}
+      <div className="flex items-center gap-3 shrink-0 relative z-10">
+        {avgRating !== null && avgRating > 0 && (
+          <div className="flex items-center gap-1">
+            <Star size={12} className="text-primary fill-primary" />
+            <span className="text-xs font-medium text-foreground">{avgRating.toFixed(1)}</span>
+          </div>
+        )}
+        <ChevronRight size={14} className="text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
       </div>
     </article>
   );

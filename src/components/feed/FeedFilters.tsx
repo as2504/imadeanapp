@@ -2,19 +2,18 @@ import { useState, useEffect } from "react";
 import { ChevronDown, Globe, Smartphone, Filter, Code2 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger,
-  DropdownMenuSubContent, DropdownMenuPortal,
+  DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 const feedTabs = [
   { id: "for-you", label: "For You" },
   { id: "following", label: "Following" },
-  { id: "trending", label: "Trending" },
 ];
 
 const sortOptions = [
   { id: "recent", label: "Most Recent" },
-  { id: "liked", label: "Most Liked" },
+  { id: "rated", label: "Most Rated" },
   { id: "viewed", label: "Most Viewed" },
 ];
 
@@ -46,6 +45,10 @@ const FeedFilters = ({ onOpenSidebar, onFilterChange }: FeedFiltersProps) => {
   const [activePlatform, setActivePlatform] = useState("all");
   const [activeTech, setActiveTech] = useState("");
 
+  const isFilterActive = activePlatform !== "all" || activeTech !== "";
+
+  const currentLabel = [...feedTabs, ...sortOptions].find(item => item.id === (activeSort || activeFeed))?.label || "For You";
+
   useEffect(() => {
     onFilterChange?.({
       feed: activeFeed,
@@ -58,79 +61,97 @@ const FeedFilters = ({ onOpenSidebar, onFilterChange }: FeedFiltersProps) => {
 
   return (
     <div className="flex items-center justify-between">
-      {/* Feed tabs */}
       <div className="flex items-center gap-1">
-        {feedTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveFeed(tab.id); setActiveSort(""); }}
-            className={`relative px-3 py-2 text-sm font-medium transition-colors rounded-md ${
-              activeFeed === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-            {activeFeed === tab.id && (
-              <span className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary rounded-full" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Right controls */}
-      <div className="flex items-center gap-1">
-        {/* Sort */}
+        {/* Selection Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md transition-colors">
-              Sort <ChevronDown size={12} />
+            <button className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-foreground hover:bg-secondary/60 rounded-md transition-colors outline-none">
+              {currentLabel} <ChevronDown size={12} className="text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[140px] p-1 rounded-lg border-border/40">
+          <DropdownMenuContent align="start" className="min-w-[150px] p-1 rounded-xl border-border/40 bg-card shadow-xl">
+            <DropdownMenuItem 
+              onClick={() => { setActiveFeed("for-you"); setActiveSort(""); }} 
+              className={cn("rounded-lg px-2.5 py-1.5 cursor-pointer text-xs font-medium", activeFeed === "for-you" && !activeSort && "text-primary bg-primary/5")}
+            >
+              For You
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => { setActiveFeed("following"); setActiveSort(""); }} 
+              className={cn("rounded-lg px-2.5 py-1.5 cursor-pointer text-xs font-medium", activeFeed === "following" && !activeSort && "text-primary bg-primary/5")}
+            >
+              Following
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1" />
             {sortOptions.map((s) => (
-              <DropdownMenuItem key={s.id} onClick={() => setActiveSort(s.id)} className={`rounded-md text-xs cursor-pointer ${activeSort === s.id ? "text-primary" : ""}`}>
+              <DropdownMenuItem 
+                key={s.id} 
+                onClick={() => { setActiveSort(s.id); }} 
+                className={cn("rounded-lg px-2.5 py-1.5 cursor-pointer text-xs font-medium", activeSort === s.id && "text-primary bg-primary/5")}
+              >
                 {s.label}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Filter */}
+        {/* Filter Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md transition-colors">
+            <button className={cn(
+              "flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md transition-colors outline-none",
+              isFilterActive ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            )}>
               <Filter size={12} /> Filter <ChevronDown size={12} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[180px] p-1 rounded-lg border-border/40">
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1">Platform</DropdownMenuLabel>
+          <DropdownMenuContent align="start" className="min-w-[180px] p-1.5 rounded-xl border-border/40 bg-card shadow-xl">
+            <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-muted-foreground px-2.5 py-1.5">Platform</DropdownMenuLabel>
             {platforms.map((p) => (
-              <DropdownMenuItem key={p.id} onClick={() => setActivePlatform(p.id)} className={`rounded-md text-xs cursor-pointer gap-2 ${activePlatform === p.id ? "text-primary" : ""}`}>
+              <DropdownMenuItem 
+                key={p.id} 
+                onClick={() => setActivePlatform(p.id)} 
+                className={cn("rounded-lg px-2.5 py-1.5 cursor-pointer gap-2 text-xs font-medium", activePlatform === p.id && "text-primary bg-primary/5")}
+              >
                 {p.icon} {p.label}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1">Tech Stack</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => setActiveTech("")} className={`rounded-md text-xs cursor-pointer ${!activeTech ? "text-primary" : ""}`}>
+            <DropdownMenuSeparator className="my-1" />
+            <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-muted-foreground px-2.5 py-1.5">Tech Stack</DropdownMenuLabel>
+            <DropdownMenuItem 
+              onClick={() => setActiveTech("")} 
+              className={cn("rounded-lg px-2.5 py-1.5 cursor-pointer text-xs font-medium", !activeTech && "text-primary bg-primary/5")}
+            >
               Any
             </DropdownMenuItem>
             {techStacks.map((t) => (
-              <DropdownMenuItem key={t} onClick={() => setActiveTech(t)} className={`rounded-md text-xs cursor-pointer ${activeTech === t ? "text-primary" : ""}`}>
+              <DropdownMenuItem 
+                key={t} 
+                onClick={() => setActiveTech(t)} 
+                className={cn("rounded-lg px-2.5 py-1.5 cursor-pointer text-xs font-medium", activeTech === t && "text-primary bg-primary/5")}
+              >
                 {t}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setActivePlatform("all"); setActiveTech(""); }} className="rounded-md text-xs text-muted-foreground justify-center cursor-pointer">
-              Reset
+            <DropdownMenuSeparator className="my-1" />
+            <DropdownMenuItem 
+              onClick={() => { setActivePlatform("all"); setActiveTech(""); setActiveSort(""); setActiveFeed("for-you"); }} 
+              className="rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground justify-center cursor-pointer hover:text-destructive transition-colors uppercase tracking-tight"
+            >
+              Reset Filters
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {onOpenSidebar && (
-          <button onClick={onOpenSidebar} className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground rounded-md transition-colors" aria-label="Open sidebar">
-            <Filter size={16} />
-          </button>
-        )}
       </div>
+
+      {onOpenSidebar && (
+        <button 
+          onClick={onOpenSidebar} 
+          className="lg:hidden p-1 text-muted-foreground hover:text-foreground rounded-md transition-colors text-[10px] font-black uppercase tracking-widest"
+        >
+          More
+        </button>
+      )}
     </div>
   );
 };

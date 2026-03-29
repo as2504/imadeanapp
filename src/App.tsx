@@ -15,6 +15,8 @@ import EditProfile from "./pages/EditProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ScrollToTop from "./components/layout/ScrollToTop.tsx";
 
+import { ThemeProvider } from "@/components/ThemeProvider";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -40,84 +42,86 @@ const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route
-              path="/auth"
-              element={
-                <PublicOnlyRoute>
-                  <Auth />
-                </PublicOnlyRoute>
-              }
-            />
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <HomeFeed />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/account"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/trending"
-              element={
-                <ProtectedRoute>
-                  <Trending />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/publish"
-              element={
-                <ProtectedRoute>
-                  <PublishApp />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/app/:id"
-              element={
-                <ProtectedRoute>
-                  <AppDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile/:userId"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/edit-profile"
-              element={
-                <ProtectedRoute>
-                  <EditProfile />
-                </ProtectedRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route
+                path="/auth"
+                element={
+                  <PublicOnlyRoute>
+                    <Auth />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <HomeFeed />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/trending"
+                element={
+                  <ProtectedRoute>
+                    <Trending />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/publish"
+                element={
+                  <ProtectedRoute>
+                    <PublishApp />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/app/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/:userId"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/edit-profile"
+                element={
+                  <ProtectedRoute>
+                    <EditProfile />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

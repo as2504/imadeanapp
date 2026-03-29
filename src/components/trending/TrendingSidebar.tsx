@@ -9,7 +9,7 @@ const topCreators = [
 const TrendingSidebar = () => {
   return (
     <div className="space-y-5">
-      <div className="bg-card border border-border/40 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Trophy size={14} className="text-amber-500" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -34,7 +34,7 @@ const TrendingSidebar = () => {
         </div>
       </div>
 
-      <div className="bg-card border border-border/40 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Heart size={14} className="text-red-400" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -50,7 +50,7 @@ const TrendingSidebar = () => {
         </div>
       </div>
 
-      <div className="bg-card border border-border/40 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <MessageCircle size={14} className="text-primary" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -66,7 +66,7 @@ const TrendingSidebar = () => {
         </div>
       </div>
 
-      <div className="bg-card border border-border/40 rounded-2xl p-4">
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={14} className="text-primary" />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">

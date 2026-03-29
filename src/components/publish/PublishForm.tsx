@@ -1,10 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
-  ArrowLeft, Upload, Loader2, X, ImagePlus, CheckCircle2, 
-  Info, Pencil, Bold, Italic, Underline, List, Plus, 
-  ChevronDown, Github, Play,
-  CircleDollarSign, CreditCard, Gift, Rocket, Eye, History
+  X, Upload, Loader2, Plus, 
+  Github, Play, Globe, Smartphone, Monitor, 
+  Twitter, Instagram, Youtube, Linkedin, MessageSquare, 
+  MoreHorizontal, Check, ArrowRight, ArrowLeft,
+  Trash2, ShieldCheck, Sparkles,
+  History as HistoryIcon,
+  Link as LinkIcon,
+  ExternalLink,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,30 +17,51 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
+import { cn } from "@/lib/utils";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-const TECH_OPTIONS = ["React", "Next.js", "Supabase", "Tailwind", "OpenAI", "TypeScript", "Node.js", "Python", "Docker", "AWS", "Framer", "Vercel"];
-const TAG_OPTIONS = ["AI", "SaaS", "Productivity", "DevTools", "Design", "Marketing", "Crypto", "Social", "Analytics", "Utilities"];
+const TECH_OPTIONS = ["React", "Next.js", "Supabase", "Tailwind", "OpenAI", "TypeScript", "Node.js", "Python", "Docker", "AWS", "Framer", "Vercel", "Flutter", "React Native"];
+const TAG_OPTIONS = ["productivity", "health", "sports", "ai", "social", "fun", "minimal", "creative", "finance", "education"];
+
+const SOCIAL_PLATFORMS = [
+  { id: "twitter", label: "Twitter/X", icon: Twitter },
+  { id: "discord", label: "Discord", icon: MessageSquare },
+  { id: "linkedin", label: "LinkedIn", icon: Linkedin },
+  { id: "instagram", label: "Instagram", icon: Instagram },
+  { id: "youtube", label: "YouTube", icon: Youtube },
+  { id: "other", label: "Other", icon: MoreHorizontal },
+];
 
 const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+const isValidUrl = (url: string, required = false) => {
+  if (!url) return !required;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 const PublishForm = () => {
   const navigate = useNavigate();
@@ -49,76 +75,119 @@ const PublishForm = () => {
   const iconInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
 
-  const [appName, setAppName] = useState("");
-  const [caption, setCaption] = useState("");
-  const [about, setAbout] = useState("");
-  const [showMarkdown, setShowMarkdown] = useState(false);
-  const [aboutExpanded, setAboutExpanded] = useState(false);
-  
-  const [techStack, setTechStack] = useState<string[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [platform, setPlatform] = useState("web");
-  const [urls, setUrls] = useState({ web: "", android: "", ios: "", github: "", demo: "" });
-  const [pricing, setPricing] = useState("free");
-  
-  const [iconFile, setIconFile] = useState<File | null>(null);
+  // Wizard State
+  const [step, setStep] = useState(1);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isLive, setIsLive] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    appName: "",
+    caption: "",
+    about: "",
+    platforms: ["web"],
+    techStack: [] as string[],
+    tags: [] as string[],
+    pricing: "free",
+    urls: {
+      web: "",
+      android: "",
+      ios: "",
+      github: "",
+      demo: ""
+    },
+    socialLinks: [] as { platform: string; url: string }[]
+  });
+
   const [iconPreview, setIconPreview] = useState<string | null>(null);
-  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
-  
-  const [updateNotes, setUpdateNotes] = useState("");
-  const [isSubmitting, setIsSaving] = useState(false);
-  const [loading, setLoading] = useState(isEditMode);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (isEditMode && editId) {
-      const fetchAppData = async () => {
-        const { data, error } = await supabase
-          .from("apps")
-          .select("*")
-          .eq("id", editId)
-          .maybeSingle();
-        
-        if (error || !data) {
-          toast({ title: "Error", description: "Could not find app to edit", variant: "destructive" });
-          navigate("/account");
-          return;
-        }
+  // Progress Calculation
+  const progress = useMemo(() => {
+    // Step 1: 0-25%
+    const s1Fields = [formData.appName.trim(), formData.caption.trim(), formData.about.trim()].filter(Boolean).length;
+    const s1 = (s1Fields / 3) * 25;
 
-        if (user && data.user_id !== user.id) {
-          toast({ title: "Unauthorized", description: "You don't own this app", variant: "destructive" });
-          navigate("/account");
-          return;
-        }
+    // Step 2: 25-50%
+    const s2 = iconPreview ? 25 : 0;
 
-        setAppName(data.app_name);
-        setCaption(data.caption || "");
-        setAbout(data.full_description || "");
-        setTechStack(data.tech_stack || []);
-        setTags(data.tags || []);
-        setPlatform((data.platforms?.[0] as string) || "web");
-        setUrls({
-          web: data.website_url || "",
-          android: data.play_store_url || "",
-          ios: data.app_store_url || "",
-          github: data.github_url || "",
-          demo: data.demo_video_url || ""
-        });
-        setPricing(data.pricing || "free");
-        setIconPreview(data.app_icon_url);
-        setScreenshotPreviews(data.screenshots || []);
-        setLoading(false);
-      };
-      fetchAppData();
+    // Step 3: 50-75%
+    const s3Valid = formData.platforms.length > 0 && formData.platforms.every(p => 
+      formData.urls[p as keyof typeof formData.urls]?.trim() && isValidUrl(formData.urls[p as keyof typeof formData.urls], true)
+    );
+    const s3 = s3Valid ? 25 : 0;
+
+    // Step 4: 75-100%
+    const s4Fields = [formData.techStack.length > 0, formData.tags.length > 0].filter(Boolean).length;
+    const s4 = (s4Fields / 2) * 25;
+
+    return Math.round(s1 + s2 + s3 + s4);
+  }, [formData, iconPreview]);
+
+  // Step Validation
+  const validateStep = (s: number) => {
+    const stepErrors: Record<string, string> = {};
+    
+    if (s === 1) {
+      if (!formData.appName.trim()) stepErrors.appName = "App name is required";
+      if (!formData.caption.trim()) stepErrors.caption = "Caption is required";
+      if (!formData.about.trim()) stepErrors.about = "Description is required";
     }
-  }, [editId, isEditMode, navigate, toast, user]);
+    
+    if (s === 2) {
+      if (!iconPreview) stepErrors.icon = "App icon is required";
+    }
+    
+    if (s === 3) {
+      if (formData.platforms.length === 0) {
+        stepErrors.platforms = "At least one platform is required";
+      } else {
+        if (formData.platforms.includes("web") && !formData.urls.web.trim()) stepErrors.webUrl = "Web URL is required";
+        else if (formData.platforms.includes("web") && !isValidUrl(formData.urls.web, true)) stepErrors.webUrl = "Invalid URL format";
+
+        if (formData.platforms.includes("android") && !formData.urls.android.trim()) stepErrors.androidUrl = "Android URL is required";
+        else if (formData.platforms.includes("android") && !isValidUrl(formData.urls.android, true)) stepErrors.androidUrl = "Invalid URL format";
+
+        if (formData.platforms.includes("ios") && !formData.urls.ios.trim()) stepErrors.iosUrl = "iOS URL is required";
+        else if (formData.platforms.includes("ios") && !isValidUrl(formData.urls.ios, true)) stepErrors.iosUrl = "Invalid URL format";
+      }
+      
+      if (formData.urls.github && !isValidUrl(formData.urls.github)) stepErrors.githubUrl = "Invalid URL format";
+      if (formData.urls.demo && !isValidUrl(formData.urls.demo)) stepErrors.demoUrl = "Invalid URL format";
+    }
+
+    if (s === 4) {
+      if (formData.techStack.length === 0) stepErrors.techStack = "At least one tech stack is required";
+      if (formData.tags.length === 0) stepErrors.tags = "At least one tag is required";
+      
+      formData.socialLinks.forEach((link, i) => {
+        if (link.url && !isValidUrl(link.url)) stepErrors[`social_${i}`] = "Invalid URL format";
+      });
+    }
+
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(prev => Math.min(prev + 1, 4));
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const prevStep = () => {
+    setStep(prev => Math.max(prev - 1, 1));
+    window.scrollTo(0, 0);
+  };
 
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setIconFile(file);
       setIconPreview(URL.createObjectURL(file));
+      setErrors(prev => ({ ...prev, icon: "" }));
     }
   };
 
@@ -127,528 +196,570 @@ const PublishForm = () => {
     const remaining = 3 - screenshotPreviews.length;
     if (remaining <= 0) return;
     const toAdd = files.slice(0, remaining);
-    setScreenshotFiles(prev => [...prev, ...toAdd]);
     setScreenshotPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
   };
 
-  const validate = () => {
-    const newErrors: string[] = [];
-    if (!iconFile && !iconPreview) newErrors.push("icon");
-    if (!appName.trim()) newErrors.push("name");
-    if (!caption.trim()) newErrors.push("caption");
-    if (!about.trim()) newErrors.push("about");
-    if (techStack.length === 0) newErrors.push("tech");
-    if (tags.length === 0) newErrors.push("tags");
-    if (!platform) newErrors.push("platform");
-    if (isEditMode && !updateNotes.trim()) newErrors.push("notes");
-    
-    setErrors(newErrors);
-    return newErrors.length === 0;
+  const togglePlatform = (p: string) => {
+    setFormData(prev => ({
+      ...prev,
+      platforms: prev.platforms.includes(p) 
+        ? prev.platforms.filter(item => item !== p) 
+        : [...prev.platforms, p]
+    }));
+    setErrors(prev => ({ ...prev, platforms: "" }));
   };
 
   const handleSubmit = async () => {
-    if (!validate()) {
-      toast({ title: "Check required fields", description: "Your masterpiece needs a few more details.", variant: "destructive" });
-      return;
-    }
+    if (!validateStep(4)) return;
     if (!user) return;
 
-    setIsSaving(true);
+    setIsSubmitting(true);
     try {
-      // 1. Prepare data
       const appData = {
-        app_name: appName,
-        slug: slugify(appName),
-        caption,
-        full_description: about,
-        tech_stack: techStack,
-        tags,
-        platforms: [platform],
-        website_url: urls.web || null,
-        play_store_url: urls.android || null,
-        app_store_url: urls.ios || null,
-        github_url: urls.github || null,
-        demo_video_url: urls.demo || null,
-        pricing,
-        app_icon_url: iconPreview, // In a real app, upload file first
-        screenshots: screenshotPreviews, // In a real app, upload files first
+        app_name: formData.appName,
+        slug: slugify(formData.appName),
+        caption: formData.caption,
+        full_description: formData.about,
+        tech_stack: formData.techStack,
+        tags: formData.tags,
+        platforms: formData.platforms,
+        website_url: formData.urls.web || null,
+        play_store_url: formData.urls.android || null,
+        app_store_url: formData.urls.ios || null,
+        github_url: formData.urls.github || null,
+        demo_video_url: formData.urls.demo || null,
+        pricing: formData.pricing,
+        app_icon_url: iconPreview,
+        screenshots: screenshotPreviews,
         user_id: user.id,
         status: "published"
       };
 
-      let finalAppId = editId;
-
       if (isEditMode && editId) {
-        // Update existing app
-        const { error: updateError } = await supabase
-          .from("apps")
-          .update(appData)
-          .eq("id", editId);
-        
-        if (updateError) throw updateError;
-
-        // Save update history (Work Note)
-        const { error: historyError } = await (supabase as any)
-          .from("app_updates")
-          .insert({
-            app_id: editId,
-            user_id: user.id,
-            version_notes: updateNotes
-          });
-        
-        if (historyError) throw historyError;
-
-        toast({ title: "App Updated Successfully! ✨", description: "Changes have been live." });
+        await supabase.from("apps").update(appData).eq("id", editId);
       } else {
-        // Create new app
-        const { data, error: insertError } = await supabase
-          .from("apps")
-          .insert(appData)
-          .select("id")
-          .single();
-        
-        if (insertError) throw insertError;
-        finalAppId = data.id;
-
-        toast({ title: "App Published Successfully! 🚀", description: "The world is ready for your creation." });
+        await supabase.from("apps").insert(appData);
       }
 
-      navigate(`/app/${finalAppId}`);
+      setIsLive(true);
     } catch (err: any) {
-      console.error("Submission error:", err);
-      toast({ title: "Launch failed", description: err.message || "Something went wrong.", variant: "destructive" });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (isLive) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-in fade-in duration-700">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-bounce">
+          <Check size={40} className="text-primary" />
+        </div>
+        <h2 className="text-3xl font-black mb-2">Your app is live!</h2>
+        <p className="text-muted-foreground mb-8">The community can now discover your creation.</p>
+        <Button onClick={() => navigate("/account")} className="rounded-xl px-8 font-bold">
+          Back to Profile
+        </Button>
       </div>
     );
   }
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-        {/* Header */}
-        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 h-16 flex items-center shadow-sm">
-          <div className="container mx-auto max-w-6xl px-6 flex justify-between items-center">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-black text-muted-foreground hover:text-primary transition-all group uppercase tracking-widest">
-              <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
-            </button>
-            <div className="flex items-center gap-4">
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-xl font-black text-[10px] uppercase tracking-widest h-10 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-95">
-                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : isEditMode ? "Save Update" : "Launch App"}
-              </Button>
+    <div className="min-h-screen bg-background py-10 md:py-20 px-4">
+      {/* Wizard Container */}
+      <div className="max-w-[680px] mx-auto bg-card rounded-[2rem] border border-border/40 shadow-2xl overflow-hidden flex flex-col min-h-[600px] relative">
+        
+        {/* Sticky Top Bar */}
+        <header className="sticky top-0 z-50 bg-card border-b border-border/40 px-6 h-14 flex items-center justify-between gap-4">
+          <button 
+            onClick={() => {
+              if (formData.appName || iconPreview) setShowCancelModal(true);
+              else navigate(-1);
+            }}
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Cancel
+          </button>
+
+          <div className="flex-1 flex items-center gap-3 max-w-[300px]">
+            <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-out" 
+                style={{ width: `${progress}%` }}
+              />
             </div>
+            {progress === 100 && (
+              <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center animate-in scale-in duration-300">
+                <Check size={10} className="text-white" strokeWidth={4} />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="hidden sm:flex rounded-lg text-[10px] h-8 font-bold border-border/40">
+              Save as Draft
+            </Button>
           </div>
         </header>
 
-        <main className="container mx-auto max-w-6xl px-6 py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
-            
-            {/* PRIMARY COLUMN */}
-            <div className="space-y-8">
-              <div className="space-y-1">
-                <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-[1] text-foreground">
-                  {isEditMode ? "Refine your" : "Ship your"} <br /> <span className="text-primary italic">{isEditMode ? "craft." : "masterpiece."}</span>
-                </h1>
-              </div>
-
-              {/* 0. Update Notes (WORK NOTE) - ONLY IN EDIT MODE */}
-              {isEditMode && (
-                <section className="space-y-4 bg-primary/5 border border-primary/20 p-6 sm:p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
-                  <div className="flex items-center gap-2">
-                    <History size={14} className="text-primary" />
-                    <Label className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Work Note (What's New?)</Label>
-                  </div>
-                  <Textarea 
-                    value={updateNotes}
-                    onChange={e => setUpdateNotes(e.target.value)}
-                    placeholder="Briefly describe what you updated in this version. e.g. Added dark mode, fixed navigation bugs..."
-                    className={cn(
-                      "min-h-[100px] rounded-[1.25rem] bg-background border-border/40 focus:ring-primary/20 p-5 text-sm font-medium",
-                      errors.includes("notes") && "border-destructive ring-1 ring-destructive/20"
-                    )}
-                  />
-                  <p className="text-[10px] text-muted-foreground/60 font-medium italic">Users will see this in the Update History tab.</p>
-                </section>
-              )}
-
-              {/* 1. App Identity Top Row */}
-              <section className="flex flex-col sm:flex-row gap-6 items-start bg-card border border-border/40 p-6 sm:p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-5 scale-150 rotate-12 group-hover:scale-175 transition-transform duration-700">
-                  <Rocket size={100} className="text-primary fill-primary" />
+        {/* Step Content */}
+        <main className="flex-1 p-6 md:p-8">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {step === 1 && (
+              <div className="space-y-5">
+                <div className="space-y-0.5">
+                   <h2 className="text-lg font-black">App Info</h2>
+                   <p className="text-[11px] text-muted-foreground">The foundation of your application's identity.</p>
                 </div>
-
-                <button
-                  onClick={() => iconInputRef.current?.click()}
-                  className={cn(
-                    "w-28 h-24 sm:w-36 sm:h-36 rounded-[1.5rem] border-4 border-dashed flex flex-col items-center justify-center gap-2 bg-background transition-all group shrink-0 overflow-hidden shadow-inner relative z-10",
-                    errors.includes("icon") ? "border-destructive bg-destructive/5" : "border-border/60 hover:border-primary/40"
-                  )}
-                >
-                  {iconPreview ? (
-                    <img src={iconPreview} className="w-full h-full object-cover" />
-                  ) : (
-                    <>
-                      <div className="p-2 rounded-xl bg-surface group-hover:bg-primary/10 transition-colors">
-                        <Upload size={24} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Icon</span>
-                    </>
-                  )}
-                </button>
-                <input ref={iconInputRef} type="file" className="hidden" accept="image/*" onChange={handleIconChange} />
-
-                <div className="flex-1 w-full flex flex-col gap-4 relative z-10">
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">App Name</Label>
-                    <Input 
-                      placeholder="e.g. Vibe-Check AI"
-                      value={appName}
-                      onChange={e => setAppName(e.target.value)}
-                      className={cn(
-                        "h-12 rounded-xl text-lg font-black bg-background border-border/40 focus:ring-primary/20 transition-all px-5 placeholder:text-muted-foreground/30",
-                        errors.includes("name") && "border-destructive ring-1 ring-destructive/20"
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">The Vibe (Caption)</Label>
+                
+                <div className="space-y-3.5 pt-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">App Name *</label>
                     <div className="relative">
                       <Input 
-                        placeholder="In one sentence, why is this cool?"
-                        value={caption}
-                        onChange={e => setCaption(e.target.value)}
+                        placeholder="What's your app called?"
+                        value={formData.appName}
+                        onChange={e => {
+                          setFormData({ ...formData, appName: e.target.value.slice(0, 20) });
+                          if (errors.appName) setErrors(prev => ({ ...prev, appName: "" }));
+                        }}
                         className={cn(
-                          "h-12 rounded-xl bg-background border-border/40 focus:ring-primary/20 transition-all px-5 pr-12 text-sm font-bold placeholder:text-muted-foreground/30",
-                          errors.includes("caption") && "border-destructive ring-1 ring-destructive/20"
+                          "h-10 rounded-lg bg-background border-border/40 focus:ring-primary/20 transition-all text-xs font-semibold pr-12",
+                          errors.appName && "border-destructive focus:ring-destructive/20"
                         )}
                       />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-foreground text-background text-xs font-bold rounded-xl p-3 max-w-[240px] shadow-2xl">
-                          This caption appears directly on the app card in the global feed. Make it snappy!
-                        </TooltipContent>
-                      </Tooltip>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground/40">{formData.appName.length}/20</span>
                     </div>
+                    {errors.appName && <p className="text-[9px] text-destructive font-bold ml-1">{errors.appName}</p>}
                   </div>
-                </div>
-              </section>
 
-              {/* 2. About Section */}
-              <section className="space-y-4 bg-card border border-border/40 p-6 sm:p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
-                <div className="flex justify-between items-center relative z-10">
-                  <div className="flex items-center gap-2">
-                    <Pencil size={14} className="text-primary" />
-                    <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">The Backstory</Label>
-                  </div>
-                  <button 
-                    onClick={() => setShowMarkdown(!showMarkdown)}
-                    className={cn("p-1.5 rounded-lg transition-all border", showMarkdown ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border/40 hover:text-primary hover:border-primary/40")}
-                  >
-                    <Bold size={12} />
-                  </button>
-                </div>
-                
-                <div className={cn("bg-background border rounded-[1.25rem] transition-all overflow-hidden relative z-10 shadow-inner", errors.includes("about") ? "border-destructive ring-1 ring-destructive/20" : "border-border/40")}>
-                  {showMarkdown && (
-                    <div className="flex items-center gap-1 p-2 border-b border-border/40 bg-surface/50 backdrop-blur-sm">
-                      {[Bold, Italic, Underline, List].map((Icon, i) => (
-                        <button key={i} className="p-1.5 hover:bg-background border border-transparent hover:border-border/40 rounded-lg transition-all text-muted-foreground hover:text-primary"><Icon size={12} /></button>
-                      ))}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Caption *</label>
+                    <div className="relative">
+                      <Input 
+                        placeholder="Short, punchy tagline..."
+                        value={formData.caption}
+                        onChange={e => {
+                          setFormData({ ...formData, caption: e.target.value.slice(0, 80) });
+                          if (errors.caption) setErrors(prev => ({ ...prev, caption: "" }));
+                        }}
+                        className={cn(
+                          "h-10 rounded-lg bg-background border-border/40 focus:ring-primary/20 transition-all text-xs font-semibold pr-12",
+                          errors.caption && "border-destructive focus:ring-destructive/20"
+                        )}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground/40">{formData.caption.length}/80</span>
                     </div>
-                  )}
-                  <div className="relative">
+                    {errors.caption && <p className="text-[9px] text-destructive font-bold ml-1">{errors.caption}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">About the App *</label>
                     <Textarea 
-                      value={about}
-                      onChange={e => setAbout(e.target.value)}
-                      placeholder="Describe the magic behind your app. What problem does it solve? What's the tech stack?"
+                      placeholder="Describe the magic behind your app..."
+                      value={formData.about}
+                      onChange={e => {
+                        setFormData({ ...formData, about: e.target.value });
+                        if (errors.about) setErrors(prev => ({ ...prev, about: "" }));
+                      }}
                       className={cn(
-                        "border-0 focus-visible:ring-0 rounded-none bg-transparent min-h-[140px] p-5 leading-relaxed text-sm font-medium placeholder:text-muted-foreground/30",
-                        !aboutExpanded && "line-clamp-4 overflow-hidden h-[140px]"
+                        "min-h-[140px] rounded-xl bg-background border-border/40 focus:ring-primary/20 transition-all text-xs leading-relaxed",
+                        errors.about && "border-destructive focus:ring-destructive/20"
                       )}
                     />
-                    {!aboutExpanded && about.length > 200 && (
-                      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent flex items-end justify-center pb-3">
-                        <button onClick={() => setAboutExpanded(true)} className="text-[9px] font-black text-primary uppercase tracking-[0.2em] hover:underline bg-background px-3 py-1 rounded-full border border-border/40 shadow-sm">Expand Story</button>
-                      </div>
-                    )}
+                    {errors.about && <p className="text-[9px] text-destructive font-bold ml-1">{errors.about}</p>}
                   </div>
-                </div>
-              </section>
-
-              {/* 3. Gallery */}
-              <section className="space-y-4 bg-card border border-border/40 p-6 sm:p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
-                <div className="flex items-center gap-2">
-                  <ImagePlus size={14} className="text-primary" />
-                  <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Visual Showcase (max 3)</Label>
-                </div>
-                
-                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-                  {screenshotPreviews.map((src, i) => (
-                    <div key={i} className="relative group w-56 aspect-video rounded-xl overflow-hidden border border-border/40 bg-background shrink-0 shadow-lg">
-                      <img src={src} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <button 
-                          onClick={() => {
-                            setScreenshotFiles(prev => prev.filter((_, idx) => idx !== i));
-                            setScreenshotPreviews(prev => prev.filter((_, idx) => idx !== i));
-                          }}
-                          className="p-2 bg-destructive text-destructive-foreground rounded-xl shadow-xl hover:scale-110 active:scale-95 transition-all"
-                        >
-                          <X size={20} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {screenshotPreviews.length < 3 && (
-                    <button 
-                      onClick={() => screenshotInputRef.current?.click()}
-                      className="w-56 aspect-video rounded-xl border-4 border-dashed border-border/60 hover:border-primary/40 bg-background flex flex-col items-center justify-center gap-2 group transition-all shrink-0 shadow-inner"
-                    >
-                      <div className="p-2 rounded-xl bg-surface group-hover:bg-primary/10 transition-colors">
-                        <ImagePlus size={24} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Add View</span>
-                    </button>
-                  )}
-                </div>
-                <input ref={screenshotInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleScreenshotChange} />
-              </section>
-
-              {/* 4. Taxonomy */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-card border border-border/40 p-6 rounded-[2rem] shadow-xl">
-                  <TaxonomyField 
-                    label="Tech Stack" 
-                    options={TECH_OPTIONS} 
-                    selected={techStack} 
-                    onChange={setTechStack} 
-                    error={errors.includes("tech")}
-                  />
-                </div>
-                <div className="bg-card border border-border/40 p-6 rounded-[2rem] shadow-xl">
-                  <TaxonomyField 
-                    label="Tags" 
-                    options={TAG_OPTIONS} 
-                    selected={tags} 
-                    onChange={setTags} 
-                    error={errors.includes("tags")}
-                  />
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* SECONDARY COLUMN (Sidebar) */}
-            <aside className="space-y-8 lg:sticky lg:top-24">
-              {/* Platform Dropdown */}
-              <section className="bg-card border border-border/40 p-6 rounded-[2rem] shadow-xl space-y-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Rocket size={12} className="text-primary" />
-                  </div>
-                  <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Platform</Label>
+            {step === 2 && (
+              <div className="space-y-6">
+                <div className="space-y-0.5">
+                   <h2 className="text-lg font-black">Visuals</h2>
+                   <p className="text-[11px] text-muted-foreground">Visuals that define your brand experience.</p>
                 </div>
-                
-                <div className="space-y-4">
-                  <Select value={platform} onValueChange={setPlatform}>
-                    <SelectTrigger className={cn(
-                      "h-12 rounded-xl bg-background border-border/40 focus:ring-primary/20 px-4 font-bold text-xs",
-                      errors.includes("platform") && "border-destructive"
-                    )}>
-                      <SelectValue placeholder="Select Platform" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-border shadow-2xl p-1 bg-card">
-                      <SelectItem value="web" className="rounded-lg py-2.5 cursor-pointer">
-                        <div className="flex items-center gap-3 font-bold text-xs">
-                          <img src="/world-wide-web.png" className="w-5 h-5 object-contain" alt="" /> Web App
+
+                <div className="space-y-5 pt-2">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">App Icon *</label>
+                    <div className="flex items-start gap-5">
+                      <button
+                        onClick={() => iconInputRef.current?.click()}
+                        className={cn(
+                          "w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 bg-background hover:bg-accent/5 transition-all overflow-hidden shrink-0",
+                          errors.icon ? "border-destructive" : "border-border/60 hover:border-primary/40"
+                        )}
+                      >
+                        {iconPreview ? (
+                          <img src={iconPreview} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 px-2 text-center">
+                            <Upload size={18} className="text-muted-foreground/40" />
+                            <span className="text-[8px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-tight">Upload</span>
+                          </div>
+                        )}
+                      </button>
+                      <input ref={iconInputRef} type="file" className="hidden" accept="image/*" onChange={handleIconChange} />
+                      <div className="flex-1 pt-1">
+                        <p className="text-xs font-bold text-foreground">Icon Preview</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1 leading-relaxed">180×180 px recommended. Square crop works best.</p>
+                        {errors.icon && <p className="text-[9px] text-destructive font-bold mt-1.5">{errors.icon}</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Gallery</label>
+                    <div className="flex flex-wrap gap-2.5">
+                      {screenshotPreviews.map((src, i) => (
+                        <div key={i} className="relative w-40 aspect-video rounded-lg overflow-hidden border border-border/20 shadow-sm group">
+                          <img src={src} className="w-full h-full object-cover" />
+                          <button 
+                            onClick={() => setScreenshotPreviews(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute top-1 right-1 p-0.5 bg-background/80 backdrop-blur-md text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <X size={10} />
+                          </button>
                         </div>
-                      </SelectItem>
-                      <SelectItem value="android" className="rounded-lg py-2.5 cursor-pointer">
-                        <div className="flex items-center gap-3 font-bold text-xs">
-                          <img src="/android.png" className="w-5 h-5 object-contain" alt="" /> Android
+                      ))}
+                      {screenshotPreviews.length < 3 && (
+                        <button 
+                          onClick={() => screenshotInputRef.current?.click()}
+                          className="w-40 aspect-video rounded-lg border-2 border-dashed border-border/40 bg-background flex flex-col items-center justify-center hover:border-primary/40 transition-all group"
+                        >
+                          <Plus size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                          <span className="text-[8px] font-bold text-muted-foreground/50 uppercase">Add</span>
+                        </button>
+                      )}
+                    </div>
+                    <input ref={screenshotInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleScreenshotChange} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className="space-y-0.5">
+                   <h2 className="text-lg font-black">Where it runs & Links</h2>
+                   <p className="text-[11px] text-muted-foreground">Distribution platforms and primary links.</p>
+                </div>
+
+                <div className="space-y-6 pt-2">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Platforms</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: "web", label: "Web", icon: Globe },
+                        { id: "android", label: "Android", icon: Smartphone },
+                        { id: "ios", label: "iOS", icon: Monitor },
+                      ].map((p) => (
+                        <div
+                          key={p.id}
+                          onClick={() => togglePlatform(p.id)}
+                          className={cn(
+                            "flex items-center justify-between px-3 py-2 rounded-lg border transition-all duration-200 cursor-pointer",
+                            formData.platforms.includes(p.id) 
+                              ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                              : "border-border/40 bg-background text-muted-foreground hover:border-border"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <p.icon size={14} />
+                            <span className="text-[11px] font-bold">{p.label}</span>
+                          </div>
+                          <Switch 
+                            checked={formData.platforms.includes(p.id)} 
+                            className="scale-75 data-[state=checked]:bg-primary pointer-events-none" 
+                            onCheckedChange={() => {}} 
+                          />
                         </div>
-                      </SelectItem>
-                      <SelectItem value="ios" className="rounded-lg py-2.5 cursor-pointer">
-                        <div className="flex items-center gap-3 font-bold text-xs">
-                          <img src="/app-store.png" className="w-5 h-5 object-contain" alt="" /> iOS
+                      ))}
+                    </div>
+                    {errors.platforms && <p className="text-[9px] text-destructive font-bold ml-1">{errors.platforms}</p>}
+
+                    <div className="space-y-2.5 animate-in fade-in duration-500">
+                      {formData.platforms.includes("web") && (
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-muted-foreground/60 uppercase ml-1">Web URL</label>
+                          <Input 
+                            placeholder="https://yourapp.com" 
+                            value={formData.urls.web} 
+                            onChange={e => setFormData({ ...formData, urls: { ...formData.urls, web: e.target.value }})} 
+                            className={cn("h-9 rounded-lg bg-background border-border/40 text-[11px]", errors.webUrl && "border-destructive")}
+                          />
+                          {errors.webUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
                         </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                      )}
+                      {formData.platforms.includes("android") && (
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-muted-foreground/60 uppercase ml-1">Android Play Store</label>
+                          <Input 
+                            placeholder="https://play.google.com/..." 
+                            value={formData.urls.android} 
+                            onChange={e => setFormData({ ...formData, urls: { ...formData.urls, android: e.target.value }})} 
+                            className={cn("h-9 rounded-lg bg-background border-border/40 text-[11px]", errors.androidUrl && "border-destructive")}
+                          />
+                          {errors.androidUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
+                        </div>
+                      )}
+                      {formData.platforms.includes("ios") && (
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-muted-foreground/60 uppercase ml-1">iOS App Store</label>
+                          <Input 
+                            placeholder="https://apps.apple.com/..." 
+                            value={formData.urls.ios} 
+                            onChange={e => setFormData({ ...formData, urls: { ...formData.urls, ios: e.target.value }})} 
+                            className={cn("h-9 rounded-lg bg-background border-border/40 text-[11px]", errors.iosUrl && "border-destructive")}
+                          />
+                          {errors.iosUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                  <div className="animate-in slide-in-from-top-2 duration-300">
-                    <Label className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1.5 block ml-1">
-                      {platform.toUpperCase()} URL
-                    </Label>
-                    <Input 
-                      placeholder={`https://your-${platform}-app.com`}
-                      value={urls[platform as keyof typeof urls] || ""}
-                      onChange={e => setUrls({...urls, [platform]: e.target.value})}
-                      className="h-10 rounded-xl bg-background border-border/40 focus:ring-primary/20 text-xs px-4 font-bold"
-                    />
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">GitHub</label>
+                      <div className="relative">
+                        <Github size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                        <Input 
+                          placeholder="Repository URL" 
+                          value={formData.urls.github} 
+                          onChange={e => setFormData({ ...formData, urls: { ...formData.urls, github: e.target.value }})} 
+                          className={cn("h-9 rounded-lg bg-background border-border/40 pl-9 text-[11px] font-semibold", errors.githubUrl && "border-destructive")}
+                        />
+                      </div>
+                      {errors.githubUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Demo Video</label>
+                      <div className="relative">
+                        <Play size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                        <Input 
+                          placeholder="Video URL" 
+                          value={formData.urls.demo} 
+                          onChange={e => setFormData({ ...formData, urls: { ...formData.urls, demo: e.target.value }})} 
+                          className={cn("h-9 rounded-lg bg-background border-border/40 pl-9 text-[11px] font-semibold", errors.demoUrl && "border-destructive")}
+                        />
+                      </div>
+                      {errors.demoUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
+                    </div>
                   </div>
                 </div>
-              </section>
+              </div>
+            )}
 
-              {/* Pricing */}
-              <section className="bg-card border border-border/40 p-6 rounded-[2rem] shadow-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <CircleDollarSign size={14} className="text-primary" />
-                  <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Monetization</Label>
+            {step === 4 && (
+              <div className="space-y-6">
+                <div className="space-y-0.5">
+                   <h2 className="text-lg font-black">Tags & Tech</h2>
+                   <p className="text-[11px] text-muted-foreground">Classify your app and specify its tech stack.</p>
                 </div>
-                <Select value={pricing} onValueChange={setPricing}>
-                  <SelectTrigger className="h-11 rounded-xl bg-background border-border/40 focus:ring-primary/20 px-4 font-black text-xs uppercase tracking-widest">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border shadow-2xl p-1 bg-card">
-                    <SelectItem value="free" className="rounded-lg py-2 cursor-pointer text-xs">
-                      <div className="flex items-center gap-3 font-bold"><Gift size={14} className="text-emerald-500" /> FREE</div>
-                    </SelectItem>
-                    <SelectItem value="paid" className="rounded-lg py-2 cursor-pointer text-xs">
-                      <div className="flex items-center gap-3 font-bold"><CircleDollarSign size={14} className="text-amber-500" /> PAID</div>
-                    </SelectItem>
-                    <SelectItem value="freemium" className="rounded-lg py-2 cursor-pointer text-xs">
-                      <div className="flex items-center gap-3 font-bold"><CreditCard size={14} className="text-primary" /> FREEMIUM</div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </section>
 
-              {/* Others */}
-              <section className="bg-card border border-border/40 p-6 rounded-[2rem] shadow-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <Github size={14} className="text-primary" />
-                  <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Social Links</Label>
-                </div>
-                <div className="space-y-3">
-                  <div className="relative group">
-                    <Github size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input 
-                      placeholder="GitHub Repo"
-                      value={urls.github}
-                      onChange={e => setUrls({...urls, github: e.target.value})}
-                      className="h-10 rounded-xl bg-background border-border/40 pl-10 text-[11px] font-bold"
-                    />
+                <div className="space-y-6 pt-2">
+                  <TagSelector 
+                    label="Tech Stack"
+                    suggestions={TECH_OPTIONS}
+                    selected={formData.techStack}
+                    onChange={tags => setFormData({ ...formData, techStack: tags })}
+                  />
+                  <TagSelector 
+                    label="Tags"
+                    suggestions={TAG_OPTIONS}
+                    selected={formData.tags}
+                    onChange={tags => setFormData({ ...formData, tags: tags })}
+                    max={8}
+                  />
+
+                  <div className="space-y-3 pt-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Social Links</label>
+                      <button 
+                        onClick={() => setFormData({ ...formData, socialLinks: [...formData.socialLinks, { platform: "twitter", url: "" }] })}
+                        className="text-[9px] font-black text-primary hover:underline uppercase tracking-widest"
+                      >
+                        + Add
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {formData.socialLinks.map((link, i) => (
+                        <div key={i} className="flex gap-2 animate-in slide-in-from-left-2 duration-300">
+                          <Select 
+                            value={link.platform} 
+                            onValueChange={val => {
+                              const newLinks = [...formData.socialLinks];
+                              newLinks[i].platform = val;
+                              setFormData({ ...formData, socialLinks: newLinks });
+                            }}
+                          >
+                            <SelectTrigger className="w-24 h-9 rounded-lg bg-background border-border/40 text-[10px] font-bold">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-border bg-card">
+                              {SOCIAL_PLATFORMS.map(p => (
+                                <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold">
+                                  <div className="flex items-center gap-2">
+                                    <p.icon size={10} /> {p.label}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex-1 relative">
+                            <Input 
+                              placeholder="URL" 
+                              value={link.url} 
+                              onChange={e => {
+                                const newLinks = [...formData.socialLinks];
+                                newLinks[i].url = e.target.value;
+                                setFormData({ ...formData, socialLinks: newLinks });
+                              }}
+                              className={cn("h-9 rounded-lg bg-background border-border/40 pr-9 text-[10px] font-semibold", errors[`social_${i}`] && "border-destructive")}
+                            />
+                            {errors[`social_${i}`] && <p className="text-[9px] text-destructive font-bold mt-1">Give a correct URL</p>}
+                            <button 
+                              onClick={() => setFormData({ ...formData, socialLinks: formData.socialLinks.filter((_, idx) => idx !== i) })}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/30 hover:text-destructive transition-colors"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="relative group">
-                    <Play size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input 
-                      placeholder="Demo Video"
-                      value={urls.demo}
-                      onChange={e => setUrls({...urls, demo: e.target.value})}
-                      className="h-10 rounded-xl bg-background border-border/40 pl-10 text-[11px] font-bold"
-                    />
-                  </div>
                 </div>
-              </section>
-            </aside>
-
+              </div>
+            )}
           </div>
         </main>
-      </div>
-    </TooltipProvider>
-  );
-};
 
-const TaxonomyField = ({ label, options, selected, onChange, error }: any) => {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-
-  const filtered = options.filter((o: string) => 
-    o.toLowerCase().includes(search.toLowerCase()) && !selected.includes(o)
-  );
-
-  const canAddCustom = search.trim().length > 0 && !options.some((o: string) => o.toLowerCase() === search.toLowerCase()) && !selected.some((s: string) => s.toLowerCase() === search.toLowerCase());
-
-  const addOption = (opt: string) => {
-    onChange([...selected, opt]);
-    setSearch("");
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <Plus size={14} className="text-primary" />
-          <Label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</Label>
-        </div>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <button className={cn(
-              "p-1.5 rounded-lg border transition-all hover:scale-110 active:scale-95 shadow-sm",
-              error ? "border-destructive bg-destructive/10 text-destructive" : "border-border/40 bg-background hover:text-primary hover:border-primary/40"
-            )}>
-              <Plus size={14} strokeWidth={3} />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-64 rounded-[1.5rem] border-border shadow-2xl p-4 space-y-3 bg-card backdrop-blur-xl">
-            <div className="relative">
-              <Eye size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input 
-                placeholder={`Search or add...`}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="h-9 rounded-xl text-xs pl-9 bg-background border-border/40"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && canAddCustom) {
-                    addOption(search.trim());
-                  }
-                }}
-              />
-            </div>
-            <div className="max-h-48 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
-              {filtered.map((o: string) => (
-                <button 
-                  key={o}
-                  onClick={() => addOption(o)}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:text-primary transition-all flex items-center justify-between group"
-                  >
-                  {o}
-                  <Plus size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                  ))}
-                  {canAddCustom && (
-                  <button 
-                  onClick={() => addOption(search.trim())}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-primary hover:font-bold transition-all flex items-center justify-between group"
-                  >
-                  Add "{search}"
-                  <Plus size={10} />
-                  </button>
-
-              )}
-              {filtered.length === 0 && !canAddCustom && <p className="text-[9px] text-muted-foreground p-3 text-center font-bold italic">No results found</p>}
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="flex flex-wrap gap-2 min-h-[40px] p-3 bg-background/50 rounded-xl border border-dashed border-border/60">
-        {selected.map((item: string) => (
-          <div key={item} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase tracking-widest animate-in zoom-in-95 group shadow-sm">
-            {item}
-            <button onClick={() => onChange(selected.filter((i: string) => i !== item))} className="hover:text-destructive transition-colors">
-              <X size={12} strokeWidth={3} className="group-hover:scale-125 transition-transform" />
-            </button>
+        {/* Fixed Bottom Bar */}
+        <footer className="border-t border-border/40 px-6 py-4 flex items-center justify-between bg-card/80 backdrop-blur-sm">
+          <div>
+            {step > 1 && (
+              <button 
+                onClick={prevStep}
+                className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
+              >
+                <ArrowLeft size={14} /> Back
+              </button>
+            )}
           </div>
-        ))}
-        {selected.length === 0 && <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest pl-1 mt-1.5">Select or add...</p>}
+
+          <Button 
+            onClick={step === 4 ? handleSubmit : nextStep} 
+            disabled={isSubmitting}
+            className="rounded-lg px-6 font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-primary/10 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+          >
+            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : step === 4 ? "Publish App" : "Next"} 
+            {step < 4 && <ArrowRight size={14} />}
+          </Button>
+        </footer>
+
+        {/* Cancel Modal */}
+        <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+          <DialogContent className="rounded-3xl border-border/40 shadow-2xl p-8 max-w-[400px]">
+            <DialogHeader className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-2">
+                <HistoryIcon size={24} className="text-amber-500" />
+              </div>
+              <DialogTitle className="text-2xl font-black">Save draft before leaving?</DialogTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                You have unsaved changes. Do you want to save them as a draft or discard everything?
+              </p>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-6">
+              <Button variant="ghost" className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
+                Discard
+              </Button>
+              <Button className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
+                Save & Exit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
 };
 
-const Label = ({ children, className }: any) => (
-  <h3 className={className}>{children}</h3>
-);
+const TagSelector = ({ label, suggestions, selected, onChange, max }: any) => {
+  const [input, setInput] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const filtered = suggestions.filter((s: string) => 
+    s.toLowerCase().includes(input.toLowerCase()) && !selected.includes(s)
+  );
+
+  const add = (tag: string) => {
+    if (max && selected.length >= max) return;
+    if (selected.includes(tag)) return;
+    onChange([...selected, tag]);
+    setInput("");
+    setOpen(false);
+  };
+
+  const remove = (tag: string) => onChange(selected.filter((t: string) => t !== tag));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">{label}</label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button className="p-1 rounded-md hover:bg-secondary transition-colors">
+              <Plus size={14} className="text-primary" strokeWidth={3} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-60 p-2 rounded-xl border-border bg-card shadow-2xl">
+            <div className="relative mb-2">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input 
+                placeholder="Search..." 
+                value={input} 
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && input.trim()) {
+                    add(input.trim());
+                  }
+                }}
+                className="h-8 rounded-lg bg-background border-border/40 pl-8 text-xs font-semibold"
+              />
+            </div>
+            <div className="max-h-40 overflow-y-auto space-y-0.5">
+              {filtered.map((s: string) => (
+                <button key={s} onClick={() => add(s)} className="w-full text-left px-3 py-1.5 text-[11px] font-bold hover:bg-secondary rounded-lg transition-colors">
+                  {s}
+                </button>
+              ))}
+              {input && !suggestions.some((s: any) => s.toLowerCase() === input.toLowerCase()) && (
+                <button onClick={() => add(input.trim())} className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-primary hover:bg-secondary rounded-lg transition-colors">
+                  Add "{input}"
+                </button>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+      
+      <div className="flex flex-wrap gap-1.5">
+        {selected.map((tag: string) => (
+          <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-primary/10 text-primary rounded-lg text-[10px] font-bold border border-primary/20">
+            {tag}
+            <button onClick={() => remove(tag)} className="hover:text-destructive transition-colors">
+              <X size={10} strokeWidth={3} />
+            </button>
+          </span>
+        ))}
+        {selected.length === 0 && <p className="text-[9px] text-muted-foreground/30 font-bold uppercase tracking-widest pt-1 pl-1">None</p>}
+      </div>
+    </div>
+  );
+};
 
 export default PublishForm;

@@ -8,8 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Home, TrendingUp, Bell, User, Plus, LogOut } from "lucide-react";
+import { Search, Home, TrendingUp, Bell, User, Plus, LogOut, Sun, Moon } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
+import { useTheme } from "@/components/ThemeProvider";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/home" },
@@ -19,6 +20,7 @@ const navItems = [
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const { signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -79,6 +81,23 @@ const FeedNavbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/publish")} className="rounded-md py-2 gap-2 cursor-pointer text-sm">
                   <Plus size={16} className="text-muted-foreground" />
                   Publish App
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")} 
+                  className="rounded-md py-2 gap-2 cursor-pointer text-sm"
+                >
+                  {theme === "dark" ? (
+                    <>
+                      <Sun size={16} className="text-muted-foreground" />
+                      Light Mode
+                    </>
+                  ) : (
+                    <>
+                      <Moon size={16} className="text-muted-foreground" />
+                      Dark Mode
+                    </>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut} className="rounded-md py-2 gap-2 text-destructive focus:text-destructive cursor-pointer text-sm">

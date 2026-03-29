@@ -56,7 +56,7 @@ const AppCard = ({ post, actions }: AppCardProps) => {
   return (
     <article
       onClick={() => navigate(`/app/${post.slug || post.id}`)}
-      className="flex items-center gap-4 px-4 py-3 rounded-lg border-b border-border/20 last:border-b-0 hover:bg-card transition-colors cursor-pointer group"
+      className="flex items-center gap-4 px-4 py-3 rounded-xl border-b border-border/10 last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group"
     >
       {/* Icon */}
       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
@@ -80,21 +80,18 @@ const AppCard = ({ post, actions }: AppCardProps) => {
           <span className="text-[11px] text-muted-foreground">{post.publisherName}</span>
           <span className="text-muted-foreground/30">·</span>
           <span className="text-[11px] text-muted-foreground">{post.timeAgo}</span>
-          {post.tags.slice(0, 2).map((tag) => (
-            <span key={tag} className="text-[10px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-secondary">{tag}</span>
-          ))}
+          <div className="flex items-center gap-1.5 ml-1">
+            {post.platforms.map((p) => {
+              const config = platformConfig[p];
+              if (!config) return null;
+              return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 dark:invert" alt={config.label} />;
+            })}
+          </div>
         </div>
       </div>
 
       {/* Right */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className="hidden sm:flex items-center gap-1">
-          {post.platforms.map((p) => {
-            const config = platformConfig[p];
-            if (!config) return null;
-            return <img key={p} src={config.icon} className="w-4 h-4 object-contain opacity-50 invert" alt={config.label} />;
-          })}
-        </div>
         {avgRating !== null && avgRating > 0 && (
           <div className="flex items-center gap-1">
             <Star size={12} className="text-primary fill-primary" />

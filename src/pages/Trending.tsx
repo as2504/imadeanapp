@@ -66,19 +66,21 @@ const Trending = () => {
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<TrendingSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
-            <div className="space-y-4">
-              <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <div className="bg-card border border-border/40 rounded-2xl shadow-sm overflow-hidden min-h-[600px] flex flex-col relative">
+              <div className="sticky top-14 z-30 bg-card border-b border-border/40 py-1.5 px-4 sm:px-6">
                 <TrendingFilters onOpenSidebar={onOpenSidebar} onFilterChange={setFilters} />
               </div>
-              {loading ? <FeedSkeleton /> : (
-                <div>
-                  {apps.map((app, i) => (
-                    <div key={app.id} ref={(el) => { if (el) cardRefs.current.set(app.id, el); }} className="opacity-0" style={{ animationDelay: `${i * 60}ms` }}>
-                      <TrendingCard app={app} />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="flex-1 p-1 sm:p-2">
+                {loading ? <FeedSkeleton /> : (
+                  <div>
+                    {apps.map((app, i) => (
+                      <div key={app.id} ref={(el) => { if (el) cardRefs.current.set(app.id, el); }} className="opacity-0" style={{ animationDelay: `${i * 60}ms` }}>
+                        <TrendingCard app={app} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </FeedLayout>

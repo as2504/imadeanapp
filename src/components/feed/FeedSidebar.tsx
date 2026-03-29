@@ -19,10 +19,10 @@ const FeedSidebar = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Trending tags */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
           Trending Tags
         </h3>
         <div className="space-y-0.5">
@@ -38,24 +38,22 @@ const FeedSidebar = () => {
         </div>
       </div>
 
-      <div className="border-t border-border/40" />
-
       {/* Suggested creators */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
           Creators to Follow
         </h3>
         <div className="space-y-3">
           {suggestedCreators.map((creator) => (
             <div key={creator.handle} className="flex items-center gap-3 px-1">
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-semibold text-foreground">
+              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
                 {creator.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
                 <p className="text-[11px] text-muted-foreground">{creator.apps} apps</p>
               </div>
-              <button className="p-1.5 text-muted-foreground hover:text-primary rounded-md transition-colors">
+              <button className="p-1.5 text-muted-foreground hover:text-primary rounded-md transition-colors shrink-0">
                 <UserPlus size={16} />
               </button>
             </div>
@@ -63,12 +61,10 @@ const FeedSidebar = () => {
         </div>
       </div>
 
-      <div className="border-t border-border/40" />
-
       {/* Publish CTA */}
-      <div className="bg-card border border-border/40 rounded-lg p-5 space-y-3">
+      <div className="bg-card border border-border/40 rounded-2xl p-5 space-y-3 shadow-sm">
         <p className="text-sm font-semibold text-foreground">Built something cool?</p>
-        <p className="text-xs text-muted-foreground">Share your project with the community and get real feedback.</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">Share your project with the community and get real feedback.</p>
         <button
           onClick={() => navigate("/publish")}
           className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"

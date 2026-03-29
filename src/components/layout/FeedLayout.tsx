@@ -24,7 +24,7 @@ const FeedLayout = ({ children, sidebar }: FeedLayoutProps) => {
         <div className="flex gap-8">
           <div className="flex-1 min-w-0">{renderedChildren}</div>
           <aside className="hidden lg:block w-[300px] shrink-0">
-            <div className="sticky top-20 space-y-6">{sidebar}</div>
+            <div className="sticky top-14 space-y-6">{sidebar}</div>
           </aside>
         </div>
       </div>
