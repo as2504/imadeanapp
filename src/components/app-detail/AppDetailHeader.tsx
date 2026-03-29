@@ -1,9 +1,12 @@
-import { Star, Eye, Share2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, Eye, Share2, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AppDetailHeaderProps {
-  app: { name: string; publisher: string; icon: string; views: number; publishedDate: string; platforms: string[]; slug?: string; };
+  app: { id?: string; name: string; publisher: string; icon: string; views: number; publishedDate: string; platforms: string[]; slug?: string; };
   avgRating: number;
   totalRatings: number;
   onTryApp: () => void;
@@ -11,6 +14,13 @@ interface AppDetailHeaderProps {
 
 const AppDetailHeader = ({ app, avgRating, totalRatings, onTryApp }: AppDetailHeaderProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!user || !app.id) return;
+    supabase.from("saved_apps" as any).select("id").eq("user_id", user.id).eq("app_id", app.id).maybeSingle().then(({ data }) => setSaved(!!data));
+  }, [user, app.id]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -22,6 +32,20 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, onTryApp }: AppDetailHe
         toast({ title: "Link Copied!", description: "App link copied to clipboard." });
       }
     } catch (err) { console.error("Error sharing:", err); }
+  };
+
+  const handleSave = async () => {
+    if (!user) { toast({ title: "Sign in required", description: "Please sign in to save apps." }); return; }
+    if (!app.id) return;
+    if (saved) {
+      await supabase.from("saved_apps" as any).delete().eq("user_id", user.id).eq("app_id", app.id);
+      setSaved(false);
+      toast({ title: "Removed", description: "App removed from saved." });
+    } else {
+      await supabase.from("saved_apps" as any).insert({ user_id: user.id, app_id: app.id } as any);
+      setSaved(true);
+      toast({ title: "Saved", description: "App saved to your profile." });
+    }
   };
 
   return (
@@ -52,6 +76,9 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, onTryApp }: AppDetailHe
       <div className="flex items-center gap-2 shrink-0">
         <Button size="sm" onClick={onTryApp} className="h-9 px-5 rounded-lg text-sm font-medium">
           Try App
+        </Button>
+        <Button size="icon" variant="outline" onClick={handleSave} className={`w-9 h-9 rounded-lg ${saved ? "text-primary border-primary/40" : ""}`}>
+          <Bookmark size={14} fill={saved ? "currentColor" : "none"} />
         </Button>
         <Button size="icon" variant="outline" onClick={handleShare} className="w-9 h-9 rounded-lg">
           <Share2 size={14} />

@@ -14,6 +14,20 @@ const Trending = () => {
   const [apps, setApps] = useState<(TrendingApp & { slug?: string })[]>([]);
   const [filters, setFilters] = useState<TrendingFilterState>({ time: "This Week", category: "" });
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [showFilters, setShowFilters] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const y = window.scrollY;
+      if (y < 100) { setShowFilters(true); }
+      else if (y < lastScrollY.current) { setShowFilters(true); }
+      else { setShowFilters(false); }
+      lastScrollY.current = y;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const fetchTrending = useCallback(async () => {
     setLoading(true);
@@ -66,11 +80,11 @@ const Trending = () => {
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<TrendingSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
-            <div className="bg-card border border-border/40 rounded-2xl shadow-sm overflow-hidden min-h-[600px] flex flex-col relative">
-              <div className="sticky top-14 z-30 bg-card border-b border-border/40 py-1.5 px-4 sm:px-6">
+            <div className="min-h-[600px] flex flex-col relative">
+              <div className={`sticky top-14 z-30 bg-background/95 backdrop-blur-sm border-b border-border/40 py-1 px-4 sm:px-6 transition-transform duration-300 ${showFilters ? "translate-y-0" : "-translate-y-full"}`}>
                 <TrendingFilters onOpenSidebar={onOpenSidebar} onFilterChange={setFilters} />
               </div>
-              <div className="flex-1 p-1 sm:p-2">
+              <div className="flex-1 pt-2">
                 {loading ? <FeedSkeleton /> : (
                   <div>
                     {apps.map((app, i) => (
