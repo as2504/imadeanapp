@@ -36,7 +36,7 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
       className="relative flex items-center gap-4 px-4 py-3 rounded-xl border-b border-border/10 last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group"
     >
       {/* Rank Number */}
-      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-2xl font-black text-primary/10 group-hover:text-primary/20 transition-colors italic z-0 pointer-events-none select-none">
+      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-2xl font-black text-primary/30 group-hover:text-primary/50 transition-colors italic z-0 pointer-events-none select-none">
         {app.rank}
       </div>
 

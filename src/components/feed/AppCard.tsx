@@ -36,9 +36,10 @@ const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
 interface AppCardProps {
   post: AppPost;
   actions?: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-const AppCard = ({ post, actions }: AppCardProps) => {
+const AppCard = ({ post, actions, onClick }: AppCardProps) => {
   const navigate = useNavigate();
   const [avgRating, setAvgRating] = useState<number | null>(null);
 
@@ -53,9 +54,17 @@ const AppCard = ({ post, actions }: AppCardProps) => {
     fetchRating();
   }, [post.id]);
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick(e);
+    } else {
+      navigate(`/app/${post.slug || post.id}`);
+    }
+  };
+
   return (
     <article
-      onClick={() => navigate(`/app/${post.slug || post.id}`)}
+      onClick={handleCardClick}
       className="flex items-center gap-4 px-4 py-3 rounded-xl border-b border-border/10 last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group"
     >
       {/* Icon */}

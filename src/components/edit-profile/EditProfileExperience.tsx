@@ -64,8 +64,8 @@ const EditProfileExperience = ({ education, work, onEducationChange, onWorkChang
         </div>
 
         <div className="space-y-3">
-          {education.map((edu) => (
-            <div key={edu.id} className="flex items-center justify-between p-3 rounded-xl bg-surface/30 border border-border/40 group">
+          {education.map((edu, index) => (
+            <div key={`${edu.id}-${index}`} className="flex items-center justify-between p-3 rounded-xl bg-surface/30 border border-border/40 group">
               <p className="text-sm font-medium text-foreground">
                 {edu.school} <span className="text-muted-foreground mx-1.5">·</span> {edu.degree} <span className="text-muted-foreground mx-1.5">·</span> <span className="text-primary/70">{edu.year}</span>
               </p>
@@ -125,8 +125,8 @@ const EditProfileExperience = ({ education, work, onEducationChange, onWorkChang
         </div>
 
         <div className="space-y-3">
-          {work.map((w) => (
-            <div key={w.id} className="flex items-center justify-between p-3 rounded-xl bg-surface/30 border border-border/40 group">
+          {work.map((w, index) => (
+            <div key={`${w.id}-${index}`} className="flex items-center justify-between p-3 rounded-xl bg-surface/30 border border-border/40 group">
               <p className="text-sm font-medium text-foreground">
                 {w.company} <span className="text-muted-foreground mx-1.5">·</span> {w.role} <span className="text-muted-foreground mx-1.5">·</span> <span className="text-primary/70">{w.years} yrs</span>
               </p>

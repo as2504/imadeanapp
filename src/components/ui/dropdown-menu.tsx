@@ -77,12 +77,15 @@ const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
     inset?: boolean;
+    variant?: "default" | "destructive";
   }
->(({ className, inset, children, ...props }, ref) => (
+>(({ className, inset, children, variant = "default", ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-transparent focus:text-primary group",
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-transparent group",
+      variant === "default" && "focus:text-primary",
+      variant === "destructive" && "focus:text-destructive",
       inset && "pl-8",
       className,
     )}
@@ -90,7 +93,10 @@ const DropdownMenuItem = React.forwardRef<
   >
     <span className="relative flex items-center gap-2">
       {children}
-      <span className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-primary scale-x-0 group-focus:scale-x-100 transition-transform duration-200 origin-left" />
+      <span className={cn(
+        "absolute left-0 right-0 -bottom-0.5 h-0.5 scale-x-0 group-focus:scale-x-100 transition-transform duration-200 origin-left",
+        variant === "default" ? "bg-primary" : "bg-destructive"
+      )} />
     </span>
   </DropdownMenuPrimitive.Item>
 ));

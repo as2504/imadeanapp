@@ -100,7 +100,7 @@ const FeedNavbar = () => {
                   )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="rounded-md py-2 gap-2 text-destructive focus:text-destructive cursor-pointer text-sm">
+                <DropdownMenuItem onClick={signOut} variant="destructive" className="rounded-md py-2 gap-2 text-destructive focus:text-destructive cursor-pointer text-sm">
                   <LogOut size={16} />
                   Log out
                 </DropdownMenuItem>

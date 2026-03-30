@@ -249,6 +249,14 @@ const PublishForm = () => {
     }
   };
 
+  const handleSaveDraft = () => {
+    toast({
+      title: "Draft saved",
+      description: "Your progress has been saved as a draft.",
+    });
+    navigate("/account");
+  };
+
   if (isLive) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-in fade-in duration-700">
@@ -296,7 +304,12 @@ const PublishForm = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="hidden sm:flex rounded-lg text-[10px] h-8 font-bold border-border/40">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSaveDraft}
+              className="hidden sm:flex rounded-lg text-[10px] h-8 font-bold border-border/40"
+            >
               Save as Draft
             </Button>
           </div>

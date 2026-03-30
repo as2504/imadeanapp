@@ -39,9 +39,13 @@ const EditProfile = () => {
       if (error) { toast({ title: "Error", description: "Failed to load profile", variant: "destructive" }); }
       else if (data) {
         setProfile({ username: data.username || "", fullName: data.display_name || "", gender: data.gender || "Prefer not to say", dob: data.date_of_birth || "", title: data.professional_title || "", location: data.location || "", bio: data.bio || "", avatarUrl: data.avatar_url });
-        setDevelopment({ primarySkill: data.primary_skill || "", secondaryTools: data.secondary_tools || [], preferredPlatforms: data.preferred_platforms || [], isFindingWork: data.looking_for_work || false, isOpenToCollaboration: data.open_to_collaboration || false, lookingFor: data.collaboration_looking_for || [] });
-        if (data.education) setExperience(prev => ({ ...prev, education: data.education as any[] }));
+        setDevelopment({ primarySkill: data.primary_skill || "", secondaryTools: data.secondary_tools || [], preferred_platforms: data.preferred_platforms || [], isFindingWork: data.looking_for_work || false, isOpenToCollaboration: data.open_to_collaboration || false, lookingFor: data.collaboration_looking_for || [] });
+        setExperience({ 
+          education: (data.education as any[]) || [], 
+          work: (data.work_experience as any[]) || [] 
+        });
       }
+
       setLoading(false); setIsFirstLoad(false);
     };
     fetchProfile();
@@ -57,7 +61,9 @@ const EditProfile = () => {
     try {
       const { error } = await supabase.from("profiles").update({
         display_name: profile.fullName, gender: profile.gender, date_of_birth: profile.dob, professional_title: profile.title, location: profile.location, bio: profile.bio, avatar_url: profile.avatarUrl,
-        primary_skill: development.primarySkill, secondary_tools: development.secondaryTools, preferred_platforms: development.preferredPlatforms, looking_for_work: development.isFindingWork, open_to_collaboration: development.isOpenToCollaboration, collaboration_looking_for: development.lookingFor, education: experience.education as any,
+        primary_skill: development.primarySkill, secondary_tools: development.secondaryTools, preferred_platforms: development.preferredPlatforms, looking_for_work: development.isFindingWork, open_to_collaboration: development.isOpenToCollaboration, collaboration_looking_for: development.lookingFor, 
+        education: experience.education as any,
+        work_experience: experience.work as any,
       }).eq("user_id", user.id);
       if (error) throw error;
       setSaveStatus("Saved ✓"); setHasChanges(false); setTimeout(() => setSaveStatus(""), 3000);

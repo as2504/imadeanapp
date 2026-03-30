@@ -175,49 +175,56 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {apps.map((app) => (
           <div key={app.id} className="relative group/card">
-            <AppCard 
-              post={app} 
-              actions={isOwnProfile ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1.5 bg-background border border-border/60 rounded-lg shadow-sm hover:bg-accent transition-colors">
-                      <Edit3 size={14} className="text-primary" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
-                    <DropdownMenuItem 
-                      onClick={() => navigate(`/app/${app.slug || app.id}`)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Eye size={14} className="text-sky-500" /> App Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => navigate(`/publish?edit=${app.id}`)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Edit3 size={14} className="text-amber-500" /> Update App
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuSeparator className="my-2 opacity-50" />
-                    
-                    <DropdownMenuItem 
-                      onClick={() => setUnpublishId(app.id)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-muted-foreground"
-                    >
-                      <PowerOff size={14} /> Unpublish App
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => setDeleteId(app.id)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
-                    >
-                      <Trash2 size={14} /> Delete App
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            />
+            {isOwnProfile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div>
+                    <AppCard 
+                      post={app} 
+                      onClick={(e) => {
+                        // The DropdownMenuTrigger handles the click
+                      }}
+                    />
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
+                  <DropdownMenuItem 
+                    onClick={() => navigate(`/app/${app.slug || app.id}`)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                  >
+                    <Eye size={14} className="text-sky-500" /> App Details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate(`/publish?edit=${app.id}`)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                  >
+                    <Edit3 size={14} className="text-amber-500" /> Update App
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator className="my-2 opacity-50" />
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setUnpublishId(app.id)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                  >
+                    <PowerOff size={14} /> Unpublish App
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    variant="destructive"
+                    onClick={() => setDeleteId(app.id)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
+                  >
+                    <Trash2 size={14} /> Delete App
+                  </DropdownMenuItem>
+
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <AppCard post={app} />
+            )}
 
             {app.status === "unpublished" && (
+
               <div className="absolute top-2 left-2 z-10">
                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/90 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg backdrop-blur-sm">
                   <AlertCircle size={10} /> Unpublished

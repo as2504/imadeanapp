@@ -42,7 +42,7 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
       appsRes.data?.forEach((app) => combined.push({ type: "app", id: app.id, slug: app.slug || undefined, name: app.app_name, subtitle: app.tagline || "App", icon: app.app_icon_url || undefined }));
       profilesRes.data?.forEach((p) => combined.push({ type: "user", id: p.user_id, name: p.display_name || p.username || "User", subtitle: p.professional_title || "@" + (p.username || "user"), icon: p.avatar_url || undefined }));
       setResults(combined);
-      setOpen(combined.length > 0);
+      setOpen(true);
       setLoading(false);
     }, 300);
     return () => clearTimeout(timeout);
@@ -66,15 +66,10 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
         placeholder="Search apps, creators..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => results.length > 0 && setOpen(true)}
+        onFocus={() => query.trim().length >= 2 && setOpen(true)}
         className="h-9 rounded-lg bg-secondary border-0 pl-9 pr-8 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 w-full"
         autoFocus={mobile}
       />
-      {!query && !mobile && (
-        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/40 border border-border/40 rounded px-1.5 py-0.5 bg-background pointer-events-none">
-          ⌘K
-        </kbd>
-      )}
 
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border/40 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">

@@ -1,18 +1,20 @@
-import { TrendingUp, UserPlus, Zap, ArrowRight } from "lucide-react";
+import { UserPlus, ArrowRight, Star, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const trendingTags = [
-  { tag: "AI", count: "2.4k" },
-  { tag: "Productivity", count: "1.8k" },
-  { tag: "No-Code", count: "1.2k" },
-  { tag: "SaaS", count: "980" },
-  { tag: "Automation", count: "756" },
+const topCreators = [
+  { name: "Ananya Mehta", handle: "@ananya", apps: 12 },
+  { name: "Leo Park", handle: "@leopark", apps: 8 },
+  { name: "Sara Voss", handle: "@saravoss", apps: 5 },
 ];
 
-const suggestedCreators = [
-  { name: "Ananya Mehta", handle: "@ananya", apps: 8 },
-  { name: "Leo Park", handle: "@leopark", apps: 12 },
-  { name: "Sara Voss", handle: "@saravoss", apps: 5 },
+const mostRated = [
+  { name: "FocusFlow", rating: "4.9", count: "128" },
+  { name: "Stackly", rating: "4.8", count: "95" },
+];
+
+const mostReviewed = [
+  { name: "DevPort", comments: "58" },
+  { name: "ShipDeck", comments: "42" },
 ];
 
 const FeedSidebar = () => {
@@ -20,42 +22,67 @@ const FeedSidebar = () => {
 
   return (
     <div className="space-y-5">
-      {/* Trending tags */}
+      {/* Top Creators */}
       <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
-          Trending Tags
-        </h3>
-        <div className="space-y-0.5">
-          {trendingTags.map((item) => (
-            <button
-              key={item.tag}
-              className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-secondary transition-colors text-left"
-            >
-              <span className="text-sm text-foreground">#{item.tag}</span>
-              <span className="text-xs text-muted-foreground">{item.count}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Suggested creators */}
-      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
-          Creators to Follow
+          Top Creators This Week
         </h3>
         <div className="space-y-3">
-          {suggestedCreators.map((creator) => (
+          {topCreators.map((creator, i) => (
             <div key={creator.handle} className="flex items-center gap-3 px-1">
+              <span className="text-xs font-bold text-muted-foreground/40 tabular-nums w-4">
+                {i + 1}
+              </span>
               <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
                 {creator.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
-                <p className="text-[11px] text-muted-foreground">{creator.apps} apps</p>
+                <p className="text-[11px] text-muted-foreground">{creator.apps} projects</p>
               </div>
               <button className="p-1.5 text-muted-foreground hover:text-primary rounded-md transition-colors shrink-0">
                 <UserPlus size={16} />
               </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Most Rated */}
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
+          Most Rated This Week
+        </h3>
+        <div className="space-y-3">
+          {mostRated.map((app) => (
+            <div key={app.name} className="flex items-center gap-3 px-1">
+              <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center shrink-0">
+                <Star size={14} className="text-primary fill-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{app.name}</p>
+                <p className="text-[11px] text-muted-foreground">{app.rating} ({app.count} ratings)</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Most Reviewed */}
+      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
+          Most Reviewed This Week
+        </h3>
+        <div className="space-y-3">
+          {mostReviewed.map((app) => (
+            <div key={app.name} className="flex items-center gap-3 px-1">
+              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                <MessageSquare size={14} className="text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{app.name}</p>
+                <p className="text-[11px] text-muted-foreground">{app.comments} reviews</p>
+              </div>
             </div>
           ))}
         </div>
