@@ -39,7 +39,7 @@ const EditProfile = () => {
       if (error) { toast({ title: "Error", description: "Failed to load profile", variant: "destructive" }); }
       else if (data) {
         setProfile({ username: data.username || "", fullName: data.display_name || "", gender: data.gender || "Prefer not to say", dob: data.date_of_birth || "", title: data.professional_title || "", location: data.location || "", bio: data.bio || "", avatarUrl: data.avatar_url });
-        setDevelopment({ primarySkill: data.primary_skill || "", secondaryTools: data.secondary_tools || [], preferred_platforms: data.preferred_platforms || [], isFindingWork: data.looking_for_work || false, isOpenToCollaboration: data.open_to_collaboration || false, lookingFor: data.collaboration_looking_for || [] });
+        setDevelopment({ primarySkill: data.primary_skill || "", secondaryTools: data.secondary_tools || [], preferredPlatforms: data.preferred_platforms || [], isFindingWork: data.looking_for_work || false, isOpenToCollaboration: data.open_to_collaboration || false, lookingFor: data.collaboration_looking_for || [] });
         setExperience({ 
           education: (data.education as any[]) || [], 
           work: (data.work_experience as any[]) || [] 
