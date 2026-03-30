@@ -57,6 +57,7 @@
   .dark {
     color-scheme: dark;
 
+    --navbar: 215 30% 3%;
     --background: 215 28% 5%;
     --foreground: 210 17% 90%;
 
