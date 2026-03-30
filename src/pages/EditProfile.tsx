@@ -60,7 +60,7 @@ const EditProfile = () => {
     setIsSaving(true); setSaveStatus("Saving…");
     try {
       const { error } = await supabase.from("profiles").update({
-        display_name: profile.fullName, gender: profile.gender, date_of_birth: profile.dob, professional_title: profile.title, location: profile.location, bio: profile.bio, avatar_url: profile.avatarUrl,
+        display_name: profile.fullName, gender: profile.gender, date_of_birth: profile.dob || null, professional_title: profile.title, location: profile.location, bio: profile.bio, avatar_url: profile.avatarUrl,
         primary_skill: development.primarySkill, secondary_tools: development.secondaryTools, preferred_platforms: development.preferredPlatforms, looking_for_work: development.isFindingWork, open_to_collaboration: development.isOpenToCollaboration, collaboration_looking_for: development.lookingFor, 
         education: experience.education as any,
         work_experience: experience.work as any,
