@@ -131,7 +131,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
     setIsActionLoading(true);
     const { error } = await supabase
       .from("apps")
-      .update({ status: "unpublished", unpublish_reason: unpublishReason })
+      .update({ status: "draft", unpublish_reason: unpublishReason } as any)
       .eq("id", unpublishId);
     setIsActionLoading(false);
 
