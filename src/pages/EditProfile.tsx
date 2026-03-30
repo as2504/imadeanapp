@@ -35,7 +35,7 @@ const EditProfile = () => {
     if (!user || !isFirstLoad) return;
     const fetchProfile = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle() as { data: any; error: any };
       if (error) { toast({ title: "Error", description: "Failed to load profile", variant: "destructive" }); }
       else if (data) {
         setProfile({ username: data.username || "", fullName: data.display_name || "", gender: data.gender || "Prefer not to say", dob: data.date_of_birth || "", title: data.professional_title || "", location: data.location || "", bio: data.bio || "", avatarUrl: data.avatar_url });
