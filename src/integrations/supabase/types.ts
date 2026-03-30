@@ -98,6 +98,7 @@ export type Database = {
           tagline: string | null
           tags: string[] | null
           tech_stack: string[] | null
+          unpublish_reason: string | null
           updated_at: string
           user_id: string
           views_count: number | null
@@ -125,6 +126,7 @@ export type Database = {
           tagline?: string | null
           tags?: string[] | null
           tech_stack?: string[] | null
+          unpublish_reason?: string | null
           updated_at?: string
           user_id: string
           views_count?: number | null
@@ -152,6 +154,7 @@ export type Database = {
           tagline?: string | null
           tags?: string[] | null
           tech_stack?: string[] | null
+          unpublish_reason?: string | null
           updated_at?: string
           user_id?: string
           views_count?: number | null
@@ -244,6 +247,7 @@ export type Database = {
           user_id: string
           username: string | null
           website: string | null
+          work_experience: Json | null
           work_experience_years: number | null
         }
         Insert: {
@@ -274,6 +278,7 @@ export type Database = {
           user_id: string
           username?: string | null
           website?: string | null
+          work_experience?: Json | null
           work_experience_years?: number | null
         }
         Update: {
@@ -304,6 +309,7 @@ export type Database = {
           user_id?: string
           username?: string | null
           website?: string | null
+          work_experience?: Json | null
           work_experience_years?: number | null
         }
         Relationships: []
