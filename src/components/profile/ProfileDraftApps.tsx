@@ -2,48 +2,113 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Send, Pencil } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-interface DraftApp {
-  id: string;
-  app_name: string;
-  app_icon_url: string | null;
-  status: string;
-  created_at: string;
-  tagline: string | null;
-  slug: string | null;
-}
+import AppCard from "@/components/feed/AppCard";
+import type { AppPost } from "@/components/feed/AppCard";
+import {
+  MoreVertical, Edit3, Eye, Trash2, Send,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 const ProfileDraftApps = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [apps, setApps] = useState<DraftApp[]>([]);
+  const [apps, setApps] = useState<AppPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const fetchDrafts = async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("apps")
-      .select("id, app_name, app_icon_url, status, created_at, tagline, slug")
+      .select("*")
       .eq("user_id", user.id)
       .in("status", ["draft", "unpublished"])
       .order("created_at", { ascending: false });
-    if (!error && data) setApps(data);
+
+    if (!data) { setApps([]); setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, username, avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const publisherName = profile?.display_name || profile?.username || "User";
+
+    const mapped: AppPost[] = data.map((app) => ({
+      id: app.id,
+      slug: app.slug || undefined,
+      appName: app.app_name,
+      appIcon: app.app_icon_url || "📱",
+      publisherName,
+      publisherAvatar: publisherName.charAt(0),
+      verified: true,
+      timeAgo: getTimeAgo(app.created_at),
+      caption: app.caption || app.tagline || "",
+      tags: app.tags || [],
+      platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
+      techStack: app.tech_stack || [],
+      likes: app.likes_count || 0,
+      comments: app.comments_count || 0,
+      views: app.views_count || 0,
+      liked: false,
+      saved: false,
+      status: app.status as any,
+    }));
+
+    setApps(mapped);
     setLoading(false);
   };
 
   useEffect(() => { fetchDrafts(); }, [user]);
 
   const handlePublish = async (id: string) => {
+    setIsActionLoading(true);
     const { error } = await supabase.from("apps").update({ status: "published" }).eq("id", id);
+    setIsActionLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Published!", description: "Your app is now live." });
+      fetchDrafts();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteConfirm !== "DELETE" || !deleteId) return;
+    setIsActionLoading(true);
+    const { error } = await supabase.from("apps").delete().eq("id", deleteId);
+    setIsActionLoading(false);
+    if (error) {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "App deleted", description: "Your app has been removed forever." });
+      setDeleteId(null);
+      setDeleteConfirm("");
       fetchDrafts();
     }
   };
@@ -63,35 +128,105 @@ const ProfileDraftApps = () => {
   }
 
   return (
-    <div className="space-y-3">
-      {apps.map((app) => (
-        <div key={app.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-card/50 hover:bg-card transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-            {app.app_icon_url ? (
-              <img src={app.app_icon_url} alt={app.app_name} className="w-full h-full object-cover" />
-            ) : (
-              <FileText size={18} className="text-muted-foreground" />
-            )}
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {apps.map((app) => (
+          <div key={app.id} className="relative group/card">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div>
+                  <AppCard post={app} onClick={(e) => {}} />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
+                <DropdownMenuItem
+                  onClick={() => navigate(`/app/${app.slug || app.id}`)}
+                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                >
+                  <Eye size={14} className="text-sky-500" /> View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => navigate(`/publish?edit=${app.id}`)}
+                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                >
+                  <Edit3 size={14} className="text-amber-500" /> Edit App
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handlePublish(app.id)}
+                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-emerald-500"
+                >
+                  <Send size={14} /> Publish
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="my-2 opacity-50" />
+
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteId(app.id)}
+                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
+                >
+                  <Trash2 size={14} /> Delete App
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="absolute top-2 left-2 z-10">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/90 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg backdrop-blur-sm">
+                Draft
+              </div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{app.app_name}</p>
-            <p className="text-xs text-muted-foreground truncate">{app.tagline || "No tagline"}</p>
-          </div>
-          <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/40">
-            {app.status}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/app/${app.slug || app.id}`)}>
-              <Pencil size={14} />
-            </Button>
-            <Button variant="default" size="sm" className="h-8 text-xs" onClick={() => handlePublish(app.id)}>
-              <Send size={12} className="mr-1" /> Publish
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent className="rounded-[2.5rem] border-border/40 p-8 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-black uppercase tracking-tight">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground font-medium pt-2">
+              This action cannot be undone. This will permanently delete your application.
+              <div className="mt-6 p-4 bg-destructive/5 rounded-2xl border border-destructive/10">
+                <p className="text-xs font-black text-destructive uppercase tracking-widest mb-3">Type "DELETE" to confirm</p>
+                <Input
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder="DELETE"
+                  className="h-12 bg-background border-destructive/20 focus:border-destructive rounded-xl font-black text-center tracking-[0.5em]"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 mt-6">
+            <AlertDialogCancel className="rounded-xl h-12 font-black uppercase tracking-widest border-border/40">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleteConfirm !== "DELETE" || isActionLoading}
+              className="rounded-xl h-12 px-8 font-black uppercase tracking-widest bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xl shadow-destructive/20"
+            >
+              {isActionLoading ? <Loader2 className="animate-spin" /> : "Delete Forever"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
+
+function getTimeAgo(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  const diffWeek = Math.floor(diffDay / 7);
+  if (diffWeek < 4) return `${diffWeek}w ago`;
+  return `${Math.floor(diffDay / 30)}mo ago`;
+}
 
 export default ProfileDraftApps;
