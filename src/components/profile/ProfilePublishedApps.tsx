@@ -138,7 +138,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
     if (error) {
       toast({ title: "Operation failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "App unpublished", description: "Your app is no longer visible in public feeds." });
+      toast({ title: "Moved to Drafts", description: "Your app has been saved as a draft." });
       setUnpublishId(null);
       setUnpublishReason("");
       fetchApps();
