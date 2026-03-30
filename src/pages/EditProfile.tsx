@@ -64,7 +64,7 @@ const EditProfile = () => {
         primary_skill: development.primarySkill, secondary_tools: development.secondaryTools, preferred_platforms: development.preferredPlatforms, looking_for_work: development.isFindingWork, open_to_collaboration: development.isOpenToCollaboration, collaboration_looking_for: development.lookingFor, 
         education: experience.education as any,
         work_experience: experience.work as any,
-      }).eq("user_id", user.id);
+      } as any).eq("user_id", user.id);
       if (error) throw error;
       setSaveStatus("Saved ✓"); setHasChanges(false); setTimeout(() => setSaveStatus(""), 3000);
     } catch (err: any) { toast({ title: "Error", description: err.message || "Failed to save", variant: "destructive" }); setSaveStatus(""); }
