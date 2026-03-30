@@ -131,14 +131,14 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
     setIsActionLoading(true);
     const { error } = await supabase
       .from("apps")
-      .update({ status: "unpublished", unpublish_reason: unpublishReason })
+      .update({ status: "draft", unpublish_reason: unpublishReason } as any)
       .eq("id", unpublishId);
     setIsActionLoading(false);
 
     if (error) {
       toast({ title: "Operation failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "App unpublished", description: "Your app is no longer visible in public feeds." });
+      toast({ title: "Moved to Drafts", description: "Your app has been saved as a draft." });
       setUnpublishId(null);
       setUnpublishReason("");
       fetchApps();

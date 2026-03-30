@@ -8,6 +8,7 @@
   :root {
     color-scheme: light;
 
+    --navbar: 210 20% 96%;
     --background: 212 33% 96%;
     --foreground: 222.2 84% 4.9%;
 
@@ -57,6 +58,7 @@
   .dark {
     color-scheme: dark;
 
+    --navbar: 215 30% 3%;
     --background: 215 28% 5%;
     --foreground: 210 17% 90%;
 

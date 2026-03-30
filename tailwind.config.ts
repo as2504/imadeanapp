@@ -18,6 +18,7 @@ export default {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        navbar: "hsl(var(--navbar))",
         foreground: "hsl(var(--foreground))",
         surface: "hsl(var(--surface))",
         "surface-hover": "hsl(var(--surface-hover))",
