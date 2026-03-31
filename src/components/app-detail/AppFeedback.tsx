@@ -32,7 +32,7 @@ const AppFeedback = ({ appId }: AppFeedbackProps) => {
         .eq("app_id", appId)
         .maybeSingle();
       
-      setConfig(data);
+      setConfig(data as any);
     } catch (error) {
       console.error("Error fetching feedback config:", error);
     } finally {
