@@ -83,9 +83,10 @@ const Settings = () => {
       .maybeSingle();
     
     if (data) {
+      const cfg = data as any;
       setFeedbackConfig({
-        enabled: data.is_enabled,
-        type: data.feedback_type
+        enabled: cfg.is_enabled,
+        type: cfg.feedback_type
       });
     } else {
       setFeedbackConfig({ enabled: true, type: "text" });
