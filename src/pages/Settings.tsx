@@ -88,11 +88,6 @@ const Settings = () => {
         enabled: cfg.is_enabled,
         type: cfg.feedback_type
       });
-
-
-
-
-
     } else {
       setFeedbackConfig({ enabled: true, type: "text" });
     }
