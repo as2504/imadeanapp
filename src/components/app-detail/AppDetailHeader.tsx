@@ -15,9 +15,10 @@ interface AppDetailHeaderProps {
   app: { id?: string; name: string; publisher: string; icon: string; views: number; publishedDate: string; platforms: string[]; slug?: string; };
   avgRating: number;
   totalRatings: number;
+  isAuthenticated?: boolean;
 }
 
-const AppDetailHeader = ({ app, avgRating, totalRatings }: AppDetailHeaderProps) => {
+const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true }: AppDetailHeaderProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [saved, setSaved] = useState(false);
@@ -78,29 +79,30 @@ const AppDetailHeader = ({ app, avgRating, totalRatings }: AppDetailHeaderProps)
               <p className="text-sm sm:text-base text-primary font-medium mt-0.5">{app.publisher}</p>
             </div>
             
-            {/* Actions for tablet/desktop - hide if very small */}
-            <ActionButtons className="hidden sm:flex" />
-            
-            {/* Actions for mobile - 3 dots menu */}
-            <div className="sm:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
-                    <MoreVertical size={20} className="text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleSave} className="gap-2">
-                    <Bookmark size={16} fill={saved ? "currentColor" : "none"} className={saved ? "text-primary" : ""} />
-                    {saved ? "Saved" : "Save"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleShare} className="gap-2">
-                    <Share2 size={16} />
-                    Share
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {isAuthenticated && (
+              <>
+                <ActionButtons className="hidden sm:flex" />
+                <div className="sm:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+                        <MoreVertical size={20} className="text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleSave} className="gap-2">
+                        <Bookmark size={16} fill={saved ? "currentColor" : "none"} className={saved ? "text-primary" : ""} />
+                        {saved ? "Saved" : "Save"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShare} className="gap-2">
+                        <Share2 size={16} />
+                        Share
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
