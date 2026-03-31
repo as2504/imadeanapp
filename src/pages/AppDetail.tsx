@@ -5,7 +5,8 @@ import AppDetailHeader from "@/components/app-detail/AppDetailHeader";
 import AppDetailScreenshots from "@/components/app-detail/AppDetailScreenshots";
 import AppDetailStats from "@/components/app-detail/AppDetailStats";
 import AppDetailDescription from "@/components/app-detail/AppDetailDescription";
-import AppDetailComments from "@/components/app-detail/AppDetailComments";
+import AppFeedback from "@/components/app-detail/AppFeedback";
+import AppDetailReviews from "@/components/app-detail/AppDetailReviews";
 import AppUpdateHistory from "@/components/app-detail/AppUpdateHistory";
 import RelatedApps from "@/components/app-detail/RelatedApps";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 
 const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-const tabs = ["Overview", "Updates", "Comments"] as const;
+const tabs = ["Overview", "Reviews", "Updates"] as const;
 type Tab = (typeof tabs)[number];
 
 const AppDetail = () => {
@@ -25,6 +26,7 @@ const AppDetail = () => {
   const [avgRating, setAvgRating] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
   const [userTried, setUserTried] = useState(false);
+  const [userReviewed, setUserReviewed] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
   useEffect(() => {
@@ -42,7 +44,7 @@ const AppDetail = () => {
       await (supabase as any).rpc('increment_views', { app_id: app.id });
 
       const { data: profile } = await supabase.from("profiles").select("display_name, username, user_id").eq("user_id", app.user_id).maybeSingle();
-      const { data: ratings } = await supabase.from("ratings").select("rating").eq("app_id", app.id);
+      const { data: ratings } = await supabase.from("ratings").select("rating, user_id").eq("app_id", app.id);
       const ratingsArr = ratings || [];
       const avg = ratingsArr.length > 0 ? ratingsArr.reduce((sum, r) => sum + r.rating, 0) / ratingsArr.length : 0;
       setAvgRating(Math.round(avg * 10) / 10);
@@ -51,6 +53,9 @@ const AppDetail = () => {
       if (user) {
         const { data: tries } = await supabase.from("app_tries").select("id").eq("app_id", app.id).eq("user_id", user.id).maybeSingle();
         setUserTried(!!tries);
+        
+        const hasReviewed = ratingsArr.some(r => r.user_id === user.id);
+        setUserReviewed(hasReviewed);
       }
 
       setAppData({
@@ -83,6 +88,12 @@ const AppDetail = () => {
     if (url) window.open(url, "_blank");
   };
 
+  const handleRateClick = () => {
+    setActiveTab("Reviews");
+    // Optionally scroll to top or specific section
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (loading && !appData) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
@@ -105,7 +116,17 @@ const AppDetail = () => {
           <ChevronLeft size={16} /> Back
         </button>
 
-        <AppDetailHeader app={appData} avgRating={avgRating} totalRatings={totalRatings} onTryApp={handleTryApp} />
+        <AppDetailHeader app={appData} avgRating={avgRating} totalRatings={totalRatings} />
+
+        {/* Action Row */}
+        <div className="mt-6">
+          <button 
+            onClick={handleTryApp} 
+            className="w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-[0.98]"
+          >
+            Try App
+          </button>
+        </div>
 
         {/* Tabs */}
         <div className="flex items-center gap-1 mt-8 border-b border-border/40">
@@ -130,11 +151,16 @@ const AppDetail = () => {
               <div className="space-y-8">
                 <AppDetailScreenshots screenshots={appData.screenshots} />
                 <AppDetailStats tags={appData.tags} platforms={appData.platforms} pricing={appData.pricing} />
-                <AppDetailDescription description={appData.description} whatsNew={appData.whatsNew} lastUpdated={appData.lastUpdated} />
+                <AppDetailDescription 
+                  description={appData.description} 
+                  userTried={userTried}
+                  userReviewed={userReviewed}
+                  onRateClick={handleRateClick}
+                />
               </div>
             )}
+            {activeTab === "Reviews" && <AppDetailReviews appId={appData.id} userTried={userTried} />}
             {activeTab === "Updates" && <AppUpdateHistory appId={appData.id} />}
-            {activeTab === "Comments" && <AppDetailComments appId={appData.id} userTried={userTried} />}
           </div>
           <aside className="space-y-6">
             <RelatedApps currentId={appData.id} currentTags={appData.tags} />

@@ -23,24 +23,62 @@ const RelatedApps = ({ currentId, currentTags }: RelatedAppsProps) => {
 
   useEffect(() => {
     const fetchRelated = async () => {
-      const { data: apps } = await supabase.from("apps").select("id, slug, app_name, app_icon_url, tags").eq("status", "published").neq("id", currentId).limit(6);
+      if (!currentTags || currentTags.length === 0) {
+        // No tags to match, just fetch latest
+        const { data: apps } = await supabase.from("apps").select("id, slug, app_name, app_icon_url, tags").eq("status", "published").neq("id", currentId).limit(4);
+        if (apps) await enrichAndSetRelated(apps);
+        return;
+      }
+
+      const primaryTag = currentTags[0];
+      
+      // 1. Try to find apps with the same primary tag
+      const { data: taggedApps } = await supabase
+        .from("apps")
+        .select("id, slug, app_name, app_icon_url, tags")
+        .eq("status", "published")
+        .neq("id", currentId)
+        .contains("tags", [primaryTag])
+        .limit(4);
+
+      let finalApps = taggedApps || [];
+
+      // 2. If we have less than 4, fill with other apps
+      if (finalApps.length < 4) {
+        const existingIds = finalApps.map(a => a.id);
+        const { data: fallbackApps } = await supabase
+          .from("apps")
+          .select("id, slug, app_name, app_icon_url, tags")
+          .eq("status", "published")
+          .neq("id", currentId)
+          .not("id", "in", `(${[currentId, ...existingIds].join(',')})`)
+          .limit(4 - finalApps.length);
+        
+        if (fallbackApps) finalApps = [...finalApps, ...fallbackApps];
+      }
+
+      await enrichAndSetRelated(finalApps);
+    };
+
+    const enrichAndSetRelated = async (apps: any[]) => {
       if (!apps || apps.length === 0) { setRelated([]); return; }
-
-      const sorted = [...apps].sort((a, b) => {
-        const aO = (a.tags || []).filter((t) => currentTags?.includes(t)).length;
-        const bO = (b.tags || []).filter((t) => currentTags?.includes(t)).length;
-        return bO - aO;
-      }).slice(0, 4);
-
-      const ids = sorted.map((a) => a.id);
+      
+      const ids = apps.map((a) => a.id);
       const { data: ratings } = await supabase.from("ratings").select("app_id, rating").in("app_id", ids);
       const ratingMap = new Map<string, number[]>();
       (ratings || []).forEach((r) => { if (!ratingMap.has(r.app_id)) ratingMap.set(r.app_id, []); ratingMap.get(r.app_id)!.push(r.rating); });
 
-      setRelated(sorted.map((app) => {
+      setRelated(apps.map((app) => {
         const arr = ratingMap.get(app.id) || [];
         const avg = arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
-        return { id: app.id, slug: app.slug, name: app.app_name, icon: app.app_icon_url || "📱", tag: (app.tags || [])[0] || "App", avgRating: Math.round(avg * 10) / 10 };
+        return { 
+          id: app.id, 
+          slug: app.slug, 
+          name: app.app_name, 
+          icon: app.app_icon_url || "📱", 
+          tag: (app.tags || [])[0] || "App", 
+          avgRating: Math.round(avg * 10) / 10 
+        };
       }));
     };
     fetchRelated();

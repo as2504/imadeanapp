@@ -12,19 +12,18 @@ const AppDetailScreenshots = ({ screenshots }: AppDetailScreenshotsProps) => {
   return (
     <div className="space-y-4">
       {/* Horizontal Scroll Area */}
-      <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x px-1">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
         {screenshots.map((src, i) => (
           <button
             key={i}
             onClick={() => setSelectedImage(src)}
-            className="relative shrink-0 h-[300px] md:h-[450px] w-auto rounded-2xl overflow-hidden bg-card shadow-[0_20px_50px_rgba(0,0,0,0.4)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.5)] transition-all duration-500 snap-center group border border-border/20"
+            className="relative shrink-0 h-[220px] sm:h-[280px] md:h-[340px] w-auto transition-all duration-500 snap-center group"
           >
             <img 
               src={src} 
               alt={`Screenshot ${i + 1}`} 
-              className="h-full w-auto object-cover transition-transform duration-700 group-hover:scale-105" 
+              className="h-full w-full object-contain transition-transform duration-700 group-hover:scale-[1.02] rounded-xl" 
             />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
           </button>
         ))}
       </div>

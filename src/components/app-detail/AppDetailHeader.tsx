@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react";
-import { Star, Eye, Share2, Bookmark } from "lucide-react";
+import { Star, Eye, Share2, Bookmark, Calendar, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AppDetailHeaderProps {
   app: { id?: string; name: string; publisher: string; icon: string; views: number; publishedDate: string; platforms: string[]; slug?: string; };
   avgRating: number;
   totalRatings: number;
-  onTryApp: () => void;
 }
 
-const AppDetailHeader = ({ app, avgRating, totalRatings, onTryApp }: AppDetailHeaderProps) => {
+const AppDetailHeader = ({ app, avgRating, totalRatings }: AppDetailHeaderProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [saved, setSaved] = useState(false);
@@ -48,41 +53,74 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, onTryApp }: AppDetailHe
     }
   };
 
-  return (
-    <div className="flex items-start gap-5">
-      <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shrink-0">
-        <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
-      </div>
+  const ActionButtons = ({ className }: { className?: string }) => (
+    <div className={`flex items-center gap-1 ${className}`}>
+      <Button variant="ghost" size="icon" onClick={handleSave} className={`w-10 h-10 rounded-full hover:bg-secondary/80 ${saved ? "text-primary" : "text-muted-foreground"}`}>
+        <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={handleShare} className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80">
+        <Share2 size={18} />
+      </Button>
+    </div>
+  );
 
-      <div className="flex-1 min-w-0">
-        <h1 className="text-xl font-semibold text-foreground">{app.name}</h1>
-        <p className="text-sm text-primary mt-0.5">{app.publisher}</p>
-        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-          {avgRating > 0 && (
-            <div className="flex items-center gap-1">
-              <Star size={12} className="fill-primary text-primary" />
-              <span className="font-medium text-foreground">{avgRating.toFixed(1)}</span>
-              <span>({totalRatings})</span>
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-4">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden shrink-0 border border-border/40">
+          <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight truncate">{app.name}</h1>
+              <p className="text-sm sm:text-base text-primary font-medium mt-0.5">{app.publisher}</p>
             </div>
-          )}
-          <div className="flex items-center gap-1">
-            <Eye size={12} />
-            <span>{app.views} views</span>
+            
+            {/* Actions for tablet/desktop - hide if very small */}
+            <ActionButtons className="hidden sm:flex" />
+            
+            {/* Actions for mobile - 3 dots menu */}
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+                    <MoreVertical size={20} className="text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleSave} className="gap-2">
+                    <Bookmark size={16} fill={saved ? "currentColor" : "none"} className={saved ? "text-primary" : ""} />
+                    {saved ? "Saved" : "Save"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleShare} className="gap-2">
+                    <Share2 size={16} />
+                    Share
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <span>{app.publishedDate}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <Button size="sm" onClick={onTryApp} className="h-9 px-5 rounded-lg text-sm font-medium">
-          Try App
-        </Button>
-        <Button size="icon" variant="outline" onClick={handleSave} className={`w-9 h-9 rounded-lg ${saved ? "text-primary border-primary/40" : ""}`}>
-          <Bookmark size={14} fill={saved ? "currentColor" : "none"} />
-        </Button>
-        <Button size="icon" variant="outline" onClick={handleShare} className="w-9 h-9 rounded-lg">
-          <Share2 size={14} />
-        </Button>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm text-muted-foreground">
+        {avgRating > 0 && (
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <Star size={14} className="fill-primary text-primary" />
+            <span className="font-semibold text-foreground">{avgRating.toFixed(1)}</span>
+            <span className="text-muted-foreground/60">({totalRatings})</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <Eye size={14} />
+          <span>{app.views} <span className="hidden sm:inline">views</span><span className="sm:hidden">v</span></span>
+        </div>
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <Calendar size={14} />
+          <span>{app.publishedDate}</span>
+        </div>
       </div>
     </div>
   );

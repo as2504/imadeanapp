@@ -27,28 +27,6 @@ const EditProfileIdentity = ({
     return (
         <section className="animate-reveal space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Username / Handle */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="username" className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
-                            Username / Handle
-                        </Label>
-                        <span className="text-[9px] text-muted-foreground/40 font-medium italic">Permanent</span>
-                    </div>
-                    <div className="relative group">
-                        <Input
-                            id="username"
-                            value={data.username}
-                            readOnly
-                            disabled
-                            className="h-10 bg-surface/50 border-border/40 text-muted-foreground/70 cursor-not-allowed transition-all pr-10"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 group-hover:opacity-100 transition-opacity">
-                            <Info size={14} className="text-muted-foreground" />
-                        </div>
-                    </div>
-                </div>
-
                 {/* Full Name */}
                 <div className="space-y-2">
                     <Label htmlFor="fullName" className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-bold">

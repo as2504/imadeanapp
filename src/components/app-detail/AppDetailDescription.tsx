@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AppDetailDescriptionProps {
   description: string;
-  whatsNew: string;
-  lastUpdated: string;
+  userTried: boolean;
+  userReviewed: boolean;
+  onRateClick: () => void;
 }
 
-const AppDetailDescription = ({ description, whatsNew, lastUpdated }: AppDetailDescriptionProps) => {
+const AppDetailDescription = ({ description, userTried, userReviewed, onRateClick }: AppDetailDescriptionProps) => {
   const [expanded, setExpanded] = useState(false);
 
   // Simple formatter to handle bold (**text**) and bullets (- text) without markdown chars
@@ -50,20 +58,42 @@ const AppDetailDescription = ({ description, whatsNew, lastUpdated }: AppDetailD
         </div>
       </section>
 
-      {/* What's New Section */}
-      <section className="p-8 rounded-[2rem] bg-surface border border-border/40">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2 uppercase tracking-[0.1em]">
-            What's new
+      {/* Rate this app CTA */}
+      {!userReviewed && (
+        <section className="p-8 rounded-[2rem] bg-surface border border-border/40 text-center">
+          <h2 className="text-xl font-black text-foreground tracking-tight mb-2 uppercase tracking-[0.1em]">
+            Rate this app
           </h2>
-          <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] bg-background px-3 py-1 rounded-full border border-border/40">
-            Updated {lastUpdated}
-          </span>
-        </div>
-        <div className="text-base text-muted-foreground leading-relaxed font-medium">
-          {formatText(whatsNew)}
-        </div>
-      </section>
+          <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+            Share your experience with the community and help the creator improve.
+          </p>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="inline-block">
+                  <Button 
+                    onClick={onRateClick}
+                    disabled={!userTried}
+                    className={cn(
+                      "rounded-full px-8 py-6 h-auto font-bold uppercase tracking-widest text-xs transition-all",
+                      userTried ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                    )}
+                  >
+                    <Star size={16} className={cn("mr-2", userTried && "fill-current")} />
+                    Write a review
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {!userTried && (
+                <TooltipContent>
+                  <p>Please try the app first before giving the rating.</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </section>
+      )}
     </div>
   );
 };

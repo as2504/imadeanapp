@@ -132,59 +132,66 @@ const EditProfileDevelopment = ({
 
       {/* Work Status */}
       <section className="space-y-6 pt-6 border-t border-border/40">
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-surface/30 border border-border/40">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Search size={16} className="text-primary" />
-              <p className="text-sm font-bold text-foreground">Are you finding work?</p>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">We'll show your profile to developers looking to hire.</p>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Search size={18} className="text-primary" />
+            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Availability Status</Label>
           </div>
-          <Switch 
-            checked={isFindingWork}
-            onCheckedChange={val => onDataChange("isFindingWork", val)}
-          />
+          
+          <Select 
+            value={isFindingWork ? "finding" : isOpenToCollaboration ? "collaboration" : "not-looking"} 
+            onValueChange={(val) => {
+              if (val === "finding") {
+                onDataChange("isFindingWork", true);
+                onDataChange("isOpenToCollaboration", false);
+              } else if (val === "collaboration") {
+                onDataChange("isFindingWork", false);
+                onDataChange("isOpenToCollaboration", true);
+              } else {
+                onDataChange("isFindingWork", false);
+                onDataChange("isOpenToCollaboration", false);
+              }
+            }}
+          >
+            <SelectTrigger className="h-10 bg-surface/30 border-border/40 focus:bg-background transition-all rounded-xl text-sm">
+              <SelectValue placeholder="Select status..." />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="not-looking">Not looking / Private</SelectItem>
+              <SelectItem value="finding">Finding Work</SelectItem>
+              <SelectItem value="collaboration">Open to Collaboration</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {isFindingWork && (
+            <p className="text-xs text-muted-foreground leading-relaxed pl-1 animate-in fade-in slide-in-from-top-1">
+              We'll show your profile to developers looking to hire or team up.
+            </p>
+          )}
+
+          {isOpenToCollaboration && (
+            <div className="p-5 rounded-2xl border border-border/40 bg-surface/10 space-y-4 animate-in fade-in zoom-in-95">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Looking for:</Label>
+              <div className="flex flex-wrap gap-3">
+                {collaborationRoles.map(role => (
+                  <button
+                    key={role}
+                    onClick={() => toggleItem(lookingFor, role, "lookingFor")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      lookingFor.includes(role)
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/10"
+                        : "bg-background border border-border/60 text-muted-foreground hover:border-primary/30"
+                    }`}
+                  >
+                    {lookingFor.includes(role) && <Check size={14} strokeWidth={3} />}
+                    {role}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 italic">Team up with others on new projects or shared ventures.</p>
+            </div>
+          )}
         </div>
-
-        {!isFindingWork && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-surface/30 border border-border/40">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <UserPlus size={16} className="text-primary" />
-                  <p className="text-sm font-bold text-foreground">Open to Collaboration</p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">Team up with others on new projects.</p>
-              </div>
-              <Switch 
-                checked={isOpenToCollaboration}
-                onCheckedChange={val => onDataChange("isOpenToCollaboration", val)}
-              />
-            </div>
-
-            {isOpenToCollaboration && (
-              <div className="p-5 rounded-2xl border border-border/40 bg-surface/10 space-y-4 animate-in fade-in zoom-in-95">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Looking for:</Label>
-                <div className="flex flex-wrap gap-3">
-                  {collaborationRoles.map(role => (
-                    <button
-                      key={role}
-                      onClick={() => toggleItem(lookingFor, role, "lookingFor")}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        lookingFor.includes(role)
-                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/10"
-                          : "bg-background border border-border/60 text-muted-foreground hover:border-primary/30"
-                      }`}
-                    >
-                      {lookingFor.includes(role) && <Check size={14} strokeWidth={3} />}
-                      {role}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </section>
     </div>
   );

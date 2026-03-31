@@ -36,15 +36,6 @@ const HeroSection = () => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-6 relative z-10">
-        {/* Pill badge */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/60 bg-card text-sm text-muted-foreground">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <span>Showcase 2.0 is live</span>
-            <ArrowRight size={12} />
-          </div>
-        </div>
-
         {/* Headline */}
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-6">
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.05]">

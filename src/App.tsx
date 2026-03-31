@@ -12,6 +12,7 @@ import Trending from "./pages/Trending.tsx";
 import PublishApp from "./pages/PublishApp.tsx";
 import AppDetail from "./pages/AppDetail.tsx";
 import EditProfile from "./pages/EditProfile.tsx";
+import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ScrollToTop from "./components/layout/ScrollToTop.tsx";
 
@@ -112,6 +113,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <EditProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />
