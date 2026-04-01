@@ -35,18 +35,16 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
       onClick={() => navigate(`/app/${(app as any).slug || app.id}`)}
       className="relative flex items-center gap-4 px-4 py-3 rounded-xl border-b border-border/10 last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group"
     >
-      {/* Rank Number */}
-      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-2xl font-black text-primary/30 group-hover:text-primary/50 transition-colors italic z-0 pointer-events-none select-none">
-        {app.rank}
-      </div>
-
-      {/* Icon */}
+      {/* Icon with Rank Badge */}
       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden relative z-10">
         {isUrl(app.appIcon) ? (
           <img src={app.appIcon} alt={app.appName} className="w-full h-full object-cover" />
         ) : (
           <span className="text-lg">{app.appIcon}</span>
         )}
+        <div className="absolute -bottom-0.5 -left-0.5 w-5 h-5 rounded-md bg-background border border-border/60 flex items-center justify-center">
+          <span className="text-[9px] font-black text-primary leading-none">{app.rank}</span>
+        </div>
       </div>
 
       {/* Content */}
