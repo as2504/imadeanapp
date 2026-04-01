@@ -15,11 +15,6 @@ const Navbar = () => {
           Showcase<span className="text-primary">.</span>
         </button>
 
-        <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate("/")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Product</button>
-          <button onClick={() => navigate("/trending")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Explore</button>
-        </div>
-
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/auth")} className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3">
             Log in

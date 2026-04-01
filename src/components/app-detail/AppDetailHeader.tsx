@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Star, Eye, Share2, Bookmark, Calendar, MoreVertical } from "lucide-react";
+import { Star, Share2, Bookmark, Calendar, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface AppDetailHeaderProps {
-  app: { id?: string; name: string; publisher: string; icon: string; views: number; publishedDate: string; platforms: string[]; slug?: string; };
+  app: { id?: string; name: string; publisher: string; icon: string; publishedDate: string; platforms: string[]; slug?: string; };
   avgRating: number;
   totalRatings: number;
   isAuthenticated?: boolean;
@@ -115,10 +115,6 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
             <span className="text-muted-foreground/60">({totalRatings})</span>
           </div>
         )}
-        <div className="flex items-center gap-1.5 whitespace-nowrap">
-          <Eye size={14} />
-          <span>{app.views} <span className="hidden sm:inline">views</span><span className="sm:hidden">v</span></span>
-        </div>
         <div className="flex items-center gap-1.5 whitespace-nowrap">
           <Calendar size={14} />
           <span>{app.publishedDate}</span>
