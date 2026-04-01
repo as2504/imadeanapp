@@ -1,70 +1,86 @@
 
 
-# Plan: Public App/Profile Pages, OG Tags, Build Fixes
+# Plan: Trending Numbers, Reviews, Settings, Mobile Touch, Social Links, Docs
 
-## Summary
+## 1. Trending Card — Rank Number on Icon
 
-Three workstreams: (1) fix build errors in AppFeedback and Settings, (2) make app detail and profile pages publicly accessible without auth, with conditional UI for logged-in vs anonymous users, (3) add dynamic OG meta tags for social link unfurling via an edge function.
+**Problem:** Double-digit rank numbers appear behind/below the icon, not overlaid on it.
+
+**Fix in `TrendingCard.tsx`:** Move the rank number from an `absolute -left-1` sibling into an overlay badge positioned on the bottom-left corner of the icon `div`. Use a small circular badge with dark background and bold text sitting on the icon.
+
+## 2. Trending Filters — Persist Selection
+
+**Fix in `Trending.tsx`:** Store the filter state in `sessionStorage` on change, and initialize from `sessionStorage` on mount. This way navigating away and back preserves the filter.
+
+## 3. Move Log Out to Settings Page
+
+**`FeedNavbar.tsx`:** Remove the "Log out" `DropdownMenuItem` from the avatar dropdown.
+
+**`Settings.tsx`:** Add a new "Account" section (or append to "General") with a "Log out" button at the bottom, styled as a destructive action.
+
+## 4. Beta Badge on App Feedback in Settings
+
+**`Settings.tsx`:** Add a small "Beta" badge next to the "App Feedback" label in the sidebar/mobile dropdown.
+
+## 5. Generate `supabasedb.md` and `supabaseauth.md`
+
+Create two markdown files at the project root with detailed step-by-step migration and auth integration guides based on the current schema and auth setup.
+
+## 6. Fix Mobile Touch — Published Apps Dropdown Trigger
+
+**Problem:** On mobile, wrapping `AppCard` inside `DropdownMenuTrigger` means any touch (including scroll) opens the dropdown.
+
+**Fix in `ProfilePublishedApps.tsx`:** Remove the `DropdownMenuTrigger` wrapping the entire card. Instead, add a small "more options" button (`MoreVertical` icon) in the top-right corner of each card. The card itself navigates to the app detail page on click. The three-dot button opens the dropdown. This separates navigation from actions and prevents scroll-triggered menus.
+
+## 7. Reviews — Edit Not Reflecting, Likes Resetting
+
+**Edit not reflecting:** The `comments` table RLS is missing an UPDATE policy. Users can't update their own comments. Need a migration to add UPDATE policy.
+
+**Likes resetting:** `handleLike` does optimistic update but on page change/refresh, `likes_count` is fetched from DB. The update uses the stale `review.likes_count` from the found item (which may already be optimistically incremented). Also, there's no per-user like tracking — any user can like infinitely and likes reset because there's no `comment_likes` table.
+
+**Fix:**
+- Migration: Add UPDATE RLS policy on `comments` for own comments.
+- For likes: Create a `comment_likes` table (`id, comment_id, user_id, created_at`) with unique constraint on `(comment_id, user_id)`. Add RLS. Update `handleLike` to insert into `comment_likes` and increment `likes_count` via a DB function or direct increment. On fetch, check if current user has liked each comment.
+
+## 8. Social Links Not Saving from Edit Profile
+
+**Problem:** `EditProfile.tsx` `handleSave` doesn't write `github_url`, `twitter_url`, `linkedin_url`, `website`, `portfolio_url`, `instagram_url`, `leetcode_url` to the profiles table. The `EditProfileLinks` component manages `links` state but it's never persisted.
+
+**Fix in `EditProfile.tsx`:** In `handleSave`, extract social link URLs from the `links` array by platform and include them in the update payload. Also on fetch, populate `links` from the profile's social URL columns.
 
 ---
 
-## 1. Fix Build Errors
+## Database Migration
 
-**`AppFeedback.tsx` (line 35) and `Settings.tsx` (lines 87-88):** Both reference `app_feedback_config` which doesn't exist in the DB schema, causing `SelectQueryError` types. Fix by casting with `as any` on the data result, same pattern already used on line 30 of AppFeedback.
+```sql
+-- Allow users to update their own comments
+CREATE POLICY "Users can update their own comments"
+ON public.comments FOR UPDATE TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
-- `AppFeedback.tsx` line 35: `setConfig(data as any)`
-- `Settings.tsx` lines 85-89: cast `data` as `any` before accessing `.is_enabled` and `.feedback_type`
+-- Comment likes table for persistent per-user likes
+CREATE TABLE public.comment_likes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(comment_id, user_id)
+);
 
----
+ALTER TABLE public.comment_likes ENABLE ROW LEVEL SECURITY;
 
-## 2. Public Routes for App Detail and Profile
+CREATE POLICY "Comment likes viewable by everyone"
+ON public.comment_likes FOR SELECT TO public USING (true);
 
-**`App.tsx`:** Remove `ProtectedRoute` wrapper from:
-- `/app/:id` — render `<AppDetail />` directly
-- `/profile/:userId` — render `<Profile />` directly
+CREATE POLICY "Users can like"
+ON public.comment_likes FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = user_id);
 
-**`AppDetail.tsx`:** Make auth-aware instead of auth-required:
-- `useAuth()` already provides `user` (null if not logged in)
-- **Tabs:** Only show "Overview" tab for unauthenticated users. Hide "Reviews" and "Updates" tabs.
-- **Try App button:** Always visible (opens URL without tracking if not logged in)
-- **Save/Rate:** Hide save button and rate CTA if `!user`
-- **Navbar:** Conditionally render `FeedNavbar` (if logged in) or a new `PublicNavbar` (if not)
-
-**`PublicNavbar` (new component `src/components/layout/PublicNavbar.tsx`):**
-- Logo left, "Log in" + "Get Started" buttons right
-- No search, no Home/Trending links, no profile dropdown, no mobile bottom nav
-- Same dark navbar styling as existing navbars
-
-**`AppDetailHeader.tsx`:** Hide save/share actions if `!user` (pass `isAuthenticated` prop)
-
-**`Profile.tsx`:** Make auth-aware:
-- If `!user` and viewing `/profile/:userId`, show published apps only (no Saved/Drafts/Activity tabs)
-- Use `PublicNavbar` instead of `FeedNavbar` when `!user`
-- Show "Log in to publish an app" CTA banner
-
-**`FeedNavbar.tsx`:** Add guard — `signOut` call will error if no auth context user. Since we're using `PublicNavbar` for unauthenticated pages, this is handled by not rendering `FeedNavbar` at all.
-
----
-
-## 3. Dynamic OG Tags via Edge Function
-
-Since this is a client-side SPA, social crawlers won't execute JS. We need server-side OG tag injection.
-
-**Edge function `supabase/functions/og-meta/index.ts`:**
-- Receives app slug/id as query param
-- Fetches app data from DB (name, icon, tagline)
-- Returns HTML with proper OG meta tags:
-  - `og:title` = app name
-  - `og:description` = caption/tagline
-  - `og:image` = app icon URL
-  - `og:url` = full app URL
-  - `twitter:card` = `summary`
-
-**`vercel.json`:** Add a rewrite rule so that when a social crawler (detected by User-Agent) hits `/app/:slug`, it gets redirected to the edge function. For regular users, the SPA loads normally.
-
-Alternative simpler approach: Add a `<meta>` tag update in `AppDetail.tsx` using `document.title` and `react-helmet-async` (or manual `document.querySelector`). This works for users but NOT for social crawlers. For full OG support, the edge function is needed.
-
-**Practical approach:** Use the edge function for crawlers + update `document.title` in AppDetail for browser tab titles.
+CREATE POLICY "Users can unlike"
+ON public.comment_likes FOR DELETE TO authenticated
+USING (auth.uid() = user_id);
+```
 
 ---
 
@@ -72,14 +88,14 @@ Alternative simpler approach: Add a `<meta>` tag update in `AppDetail.tsx` using
 
 | File | Change |
 |---|---|
-| `src/components/app-detail/AppFeedback.tsx` | Cast `data as any` on line 35 |
-| `src/pages/Settings.tsx` | Cast feedback config `data as any` |
-| `src/App.tsx` | Remove `ProtectedRoute` from `/app/:id` and `/profile/:userId` |
-| `src/pages/AppDetail.tsx` | Auth-aware: conditional tabs, navbar, actions |
-| `src/pages/Profile.tsx` | Auth-aware: public view with limited tabs, CTA |
-| `src/components/app-detail/AppDetailHeader.tsx` | Accept `isAuthenticated` prop, hide save if false |
-| `src/components/layout/PublicNavbar.tsx` | **New** — minimal navbar with login/signup buttons |
-| `supabase/functions/og-meta/index.ts` | **New** — OG tag HTML for social crawlers |
-| `vercel.json` | Add rewrite for crawler user-agents (or keep simple SPA fallback) |
-| `index.html` | Add default OG tags as fallback |
+| `src/components/trending/TrendingCard.tsx` | Rank badge overlaid on icon |
+| `src/pages/Trending.tsx` | Persist filters in sessionStorage |
+| `src/components/feed/FeedNavbar.tsx` | Remove logout from dropdown |
+| `src/pages/Settings.tsx` | Add logout button, beta badge on feedback |
+| `src/components/profile/ProfilePublishedApps.tsx` | Replace card-as-trigger with MoreVertical button |
+| `src/components/app-detail/AppDetailReviews.tsx` | Fix likes with `comment_likes` table, fix edit refresh |
+| `src/pages/EditProfile.tsx` | Save/load social link URLs |
+| `supabasedb.md` | **New** — DB migration guide |
+| `supabaseauth.md` | **New** — Auth integration guide |
+| **Migration SQL** | UPDATE policy on comments, `comment_likes` table |
 
