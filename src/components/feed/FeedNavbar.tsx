@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Home, TrendingUp, Bell, User, Plus, LogOut, Settings } from "lucide-react";
+import { Search, Home, TrendingUp, Bell, User, Plus, Settings } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
 import { useTheme } from "@/components/ThemeProvider";
 

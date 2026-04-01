@@ -68,7 +68,10 @@ const Trending = () => {
     setLoading(false);
   }, [filters]);
 
-  useEffect(() => { fetchTrending(); }, [fetchTrending]);
+  useEffect(() => {
+    sessionStorage.setItem("trending-filters", JSON.stringify(filters));
+    fetchTrending();
+  }, [fetchTrending]);
 
   useEffect(() => {
     if (loading) return;

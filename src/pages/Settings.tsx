@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { 
   ChevronLeft, 
   Moon, 
@@ -16,7 +17,8 @@ import {
   Bell,
   Loader2,
   Check,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -43,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
@@ -120,10 +122,10 @@ const Settings = () => {
   };
 
   const sections = [
-    { id: "general", label: "General", icon: SettingsIcon },
-    { id: "feedback", label: "App Feedback", icon: MessageSquare },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "privacy", label: "Privacy & Security", icon: Shield },
+    { id: "general", label: "General", icon: SettingsIcon, badge: null },
+    { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
+    { id: "notifications", label: "Notifications", icon: Bell, badge: null },
+    { id: "privacy", label: "Privacy & Security", icon: Shield, badge: null },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -157,6 +159,11 @@ const Settings = () => {
                     <span className="font-bold uppercase tracking-tight text-xs">
                       {activeSectionData.label}
                     </span>
+                    {activeSectionData.badge && (
+                      <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest">
+                        {activeSectionData.badge}
+                      </Badge>
+                    )}
                   </div>
                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -186,6 +193,11 @@ const Settings = () => {
                           )}>
                             {s.label}
                           </span>
+                          {s.badge && (
+                            <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest">
+                              {s.badge}
+                            </Badge>
+                          )}
                           {activeSection === s.id && (
                             <Check className="ml-auto h-4 w-4 text-primary" />
                           )}
@@ -198,7 +210,7 @@ const Settings = () => {
             </Popover>
           </div>
 
-          {/* Desktop Sidebar - Decreased width */}
+          {/* Desktop Sidebar */}
           <div className="hidden lg:block lg:w-48 shrink-0">
             <div className="flex lg:flex-col gap-1">
               {sections.map((s) => (
@@ -214,6 +226,11 @@ const Settings = () => {
                 >
                   <s.icon size={16} className={activeSection === s.id ? "text-primary" : "text-muted-foreground"} />
                   {s.label}
+                  {s.badge && (
+                    <Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest ml-auto">
+                      {s.badge}
+                    </Badge>
+                  )}
                 </button>
               ))}
             </div>
@@ -222,7 +239,6 @@ const Settings = () => {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="bg-card border border-border/40 rounded-2xl overflow-hidden">
-              {/* Content Header with Save button on top right */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                   {activeSectionData.label}
@@ -267,6 +283,26 @@ const Settings = () => {
                           <Moon size={16} />
                         </button>
                       </div>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="border-t border-border/40" />
+
+                    {/* Log out */}
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-foreground">Log Out</p>
+                        <p className="text-xs text-muted-foreground">Sign out of your account</p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={signOut}
+                        className="rounded-xl gap-2 font-bold text-xs"
+                      >
+                        <LogOut size={14} />
+                        Log Out
+                      </Button>
                     </div>
                   </div>
                 )}

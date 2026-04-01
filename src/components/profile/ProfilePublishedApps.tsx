@@ -40,7 +40,6 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
   const [apps, setApps] = useState<AppPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Dialog states
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [unpublishId, setUnpublishId] = useState<string | null>(null);
@@ -59,20 +58,13 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
       .eq("user_id", targetUserId)
       .order("created_at", { ascending: false });
 
-    // For other users, only show published apps
     if (!isOwnProfile) {
       query = query.eq("status", "published");
     }
 
     const { data } = await query;
+    if (!data) { setApps([]); setLoading(false); return; }
 
-    if (!data) {
-      setApps([]);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profile for the publisher name
     const { data: profile } = await supabase
       .from("profiles")
       .select("display_name, username, avatar_url")
@@ -106,23 +98,18 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchApps();
-  }, [targetUserId, isOwnProfile]);
+  useEffect(() => { fetchApps(); }, [targetUserId, isOwnProfile]);
 
   const handleDelete = async () => {
     if (deleteConfirm !== "DELETE" || !deleteId) return;
     setIsActionLoading(true);
     const { error } = await supabase.from("apps").delete().eq("id", deleteId);
     setIsActionLoading(false);
-    
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "App deleted", description: "Your app has been removed forever." });
-      setDeleteId(null);
-      setDeleteConfirm("");
-      fetchApps();
+      setDeleteId(null); setDeleteConfirm(""); fetchApps();
     }
   };
 
@@ -134,14 +121,11 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
       .update({ status: "draft", unpublish_reason: unpublishReason } as any)
       .eq("id", unpublishId);
     setIsActionLoading(false);
-
     if (error) {
       toast({ title: "Operation failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Moved to Drafts", description: "Your app has been saved as a draft." });
-      setUnpublishId(null);
-      setUnpublishReason("");
-      fetchApps();
+      setUnpublishId(null); setUnpublishReason(""); fetchApps();
     }
   };
 
@@ -175,56 +159,54 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {apps.map((app) => (
           <div key={app.id} className="relative group/card">
-            {isOwnProfile ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div>
-                    <AppCard 
-                      post={app} 
-                      onClick={(e) => {
-                        // The DropdownMenuTrigger handles the click
-                      }}
-                    />
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
-                  <DropdownMenuItem 
-                    onClick={() => navigate(`/app/${app.slug || app.id}`)}
-                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                  >
-                    <Eye size={14} className="text-sky-500" /> App Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => navigate(`/publish?edit=${app.id}`)}
-                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                  >
-                    <Edit3 size={14} className="text-amber-500" /> Update App
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator className="my-2 opacity-50" />
-                  
-                  <DropdownMenuItem 
-                    onClick={() => setUnpublishId(app.id)}
-                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-muted-foreground"
-                  >
-                    <PowerOff size={14} /> Unpublish App
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    variant="destructive"
-                    onClick={() => setDeleteId(app.id)}
-                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
-                  >
-                    <Trash2 size={14} /> Delete App
-                  </DropdownMenuItem>
-
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
+            <div onClick={() => navigate(`/app/${app.slug || app.id}`)}>
               <AppCard post={app} />
+            </div>
+
+            {isOwnProfile && (
+              <div className="absolute top-3 right-3 z-20">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-sm border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-0 group-hover/card:opacity-100 focus:opacity-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical size={14} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/app/${app.slug || app.id}`)}
+                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                    >
+                      <Eye size={14} className="text-sky-500" /> App Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/publish?edit=${app.id}`)}
+                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                    >
+                      <Edit3 size={14} className="text-amber-500" /> Update App
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-2 opacity-50" />
+                    <DropdownMenuItem 
+                      onClick={() => setUnpublishId(app.id)}
+                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                    >
+                      <PowerOff size={14} /> Unpublish App
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      variant="destructive"
+                      onClick={() => setDeleteId(app.id)}
+                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
+                    >
+                      <Trash2 size={14} /> Delete App
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
 
             {app.status === "unpublished" && (
-
               <div className="absolute top-2 left-2 z-10">
                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/90 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg backdrop-blur-sm">
                   <AlertCircle size={10} /> Unpublished
@@ -256,10 +238,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
           <AlertDialogFooter className="gap-3 mt-6">
             <AlertDialogCancel className="rounded-xl h-12 font-black uppercase tracking-widest border-border/40">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleDelete();
-              }}
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
               disabled={deleteConfirm !== "DELETE" || isActionLoading}
               className="rounded-xl h-12 px-8 font-black uppercase tracking-widest bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xl shadow-destructive/20"
             >
@@ -277,7 +256,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
             <AlertDialogDescription className="text-muted-foreground font-medium pt-2">
               Your app will be hidden from the Home and Trending feeds. You can republish it at any time.
               <div className="mt-6 space-y-2">
-                <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Reason for unpublishing</Label>
+                <LabelEl className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Reason for unpublishing</LabelEl>
                 <Input 
                   value={unpublishReason}
                   onChange={(e) => setUnpublishReason(e.target.value)}
@@ -290,10 +269,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
           <AlertDialogFooter className="gap-3 mt-6">
             <AlertDialogCancel className="rounded-xl h-12 font-black uppercase tracking-widest border-border/40">Keep Published</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleUnpublish();
-              }}
+              onClick={(e) => { e.preventDefault(); handleUnpublish(); }}
               disabled={!unpublishReason.trim() || isActionLoading}
               className="rounded-xl h-12 px-8 font-black uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20"
             >
@@ -306,7 +282,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
   );
 };
 
-const Label = ({ children, className }: any) => (
+const LabelEl = ({ children, className }: any) => (
   <h3 className={className}>{children}</h3>
 );
 
