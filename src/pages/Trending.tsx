@@ -12,7 +12,12 @@ import type { TrendingApp } from "@/data/mockTrending";
 const Trending = () => {
   const [loading, setLoading] = useState(true);
   const [apps, setApps] = useState<(TrendingApp & { slug?: string })[]>([]);
-  const [filters, setFilters] = useState<TrendingFilterState>({ time: "This Week", category: "" });
+  const [filters, setFilters] = useState<TrendingFilterState>(() => {
+    try {
+      const saved = sessionStorage.getItem("trending-filters");
+      return saved ? JSON.parse(saved) : { time: "This Week", category: "" };
+    } catch { return { time: "This Week", category: "" }; }
+  });
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showFilters, setShowFilters] = useState(true);
   const lastScrollY = useRef(0);
@@ -63,7 +68,10 @@ const Trending = () => {
     setLoading(false);
   }, [filters]);
 
-  useEffect(() => { fetchTrending(); }, [fetchTrending]);
+  useEffect(() => {
+    sessionStorage.setItem("trending-filters", JSON.stringify(filters));
+    fetchTrending();
+  }, [fetchTrending]);
 
   useEffect(() => {
     if (loading) return;

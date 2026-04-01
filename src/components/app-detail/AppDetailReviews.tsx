@@ -31,7 +31,7 @@ interface ReviewItem {
   displayName: string; 
   avatar: string; 
   likes_count: number;
-  hasLiked?: boolean;
+  hasLiked: boolean;
 }
 
 const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
@@ -50,7 +50,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   const [existingRating, setExistingRating] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Edit State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editComment, setEditComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -69,6 +68,20 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
       .in("user_id", userIds);
     
     const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+    // Fetch user's likes for these comments
+    let userLikes = new Set<string>();
+    if (user) {
+      const commentIds = rawComments.map((c) => c.id);
+      const { data: likes } = await supabase
+        .from("comment_likes" as any)
+        .select("comment_id")
+        .eq("user_id", user.id)
+        .in("comment_id", commentIds);
+      if (likes) {
+        userLikes = new Set((likes as any[]).map((l) => l.comment_id));
+      }
+    }
     
     return rawComments.map((c) => {
       const p = profileMap.get(c.user_id);
@@ -80,10 +93,11 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
         created_at: c.created_at, 
         displayName: name, 
         avatar: name.substring(0, 2).toUpperCase(),
-        likes_count: c.likes_count || 0
+        likes_count: c.likes_count || 0,
+        hasLiked: userLikes.has(c.id),
       };
     });
-  }, []);
+  }, [user]);
 
   const fetchRecentReviews = useCallback(async () => {
     const { data: rawComments } = await supabase
@@ -183,7 +197,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
     if (!user || isEditOverLimit || !editingCommentId) return;
     
     try {
-      // Update specific comment in database
       const { error } = await supabase
         .from("comments")
         .update({ text: editComment.trim() })
@@ -195,7 +208,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 3000);
       
-      // Refresh all related data
       await fetchData();
       if (isDialogOpen) {
         await fetchMoreReviews(true);
@@ -213,12 +225,24 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
 
   const handleLike = async (reviewId: string) => {
     if (!user) return;
-    const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1, hasLiked: true } : r);
-    setReviews(updateLikes(reviews));
-    setAllReviews(updateLikes(allReviews));
+
     const review = [...reviews, ...allReviews].find(r => r.id === reviewId);
-    if (review) {
-      await (supabase as any).from("comments").update({ likes_count: (review.likes_count || 0) + 1 }).eq("id", reviewId);
+    if (!review) return;
+
+    if (review.hasLiked) {
+      // Unlike: remove from comment_likes, decrement
+      const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: Math.max(0, r.likes_count - 1), hasLiked: false } : r);
+      setReviews(updateLikes(reviews));
+      setAllReviews(updateLikes(allReviews));
+      await supabase.from("comment_likes" as any).delete().eq("comment_id", reviewId).eq("user_id", user.id);
+      await supabase.from("comments").update({ likes_count: Math.max(0, (review.likes_count || 0) - 1) } as any).eq("id", reviewId);
+    } else {
+      // Like: insert into comment_likes, increment
+      const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1, hasLiked: true } : r);
+      setReviews(updateLikes(reviews));
+      setAllReviews(updateLikes(allReviews));
+      await supabase.from("comment_likes" as any).insert({ comment_id: reviewId, user_id: user.id });
+      await supabase.from("comments").update({ likes_count: (review.likes_count || 0) + 1 } as any).eq("id", reviewId);
     }
   };
 
@@ -255,7 +279,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
         <p className="text-[13px] text-muted-foreground leading-snug mb-2 whitespace-pre-wrap">{review.text}</p>
         <button 
           onClick={() => handleLike(review.id)}
-          disabled={review.hasLiked}
           className={cn(
             "flex items-center gap-1 text-[10px] font-bold transition-all px-2 py-1 rounded-md border border-transparent",
             review.hasLiked ? "text-primary bg-primary/5" : "text-muted-foreground/60 hover:text-primary hover:bg-primary/5 hover:border-primary/20"
@@ -367,7 +390,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
                   <DialogContent className="max-w-xl h-[80vh] flex flex-col p-0 overflow-hidden rounded-3xl border-border/40">
                     <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
                       <DialogTitle className="text-xl font-black uppercase tracking-tight">All Reviews</DialogTitle>
-                      <DialogDescription className="text-xs text-muted-foreground px-6">
+                      <DialogDescription className="text-xs text-muted-foreground">
                         Browse the complete community feedback history for this application.
                       </DialogDescription>
                     </DialogHeader>

@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Home, TrendingUp, Bell, User, Plus, LogOut, Settings } from "lucide-react";
+import { Search, Home, TrendingUp, Bell, User, Plus, Settings } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -85,11 +85,6 @@ const FeedNavbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/settings")} className="rounded-md py-2 gap-2 cursor-pointer text-sm">
                   <Settings size={16} className="text-muted-foreground" />
                   Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} variant="destructive" className="rounded-md py-2 gap-2 text-destructive focus:text-destructive cursor-pointer text-sm">
-                  <LogOut size={16} />
-                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -13,8 +13,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { SocialLink } from "@/components/edit-profile/EditProfileLinks";
 
-const tabs = ["Profile", "Experience", "Development"] as const;
+const tabs = ["Profile", "Links", "Experience", "Development"] as const;
 type Tab = (typeof tabs)[number];
+
+const socialPlatformToColumn: Record<string, string> = {
+  GitHub: "github_url",
+  Twitter: "twitter_url",
+  LinkedIn: "linkedin_url",
+  Website: "website",
+  Portfolio: "portfolio_url",
+  Instagram: "instagram_url",
+  LeetCode: "leetcode_url",
+};
+
+const columnToPlatform: Record<string, string> = Object.fromEntries(
+  Object.entries(socialPlatformToColumn).map(([k, v]) => [v, k])
+);
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -41,9 +55,18 @@ const EditProfile = () => {
         setProfile({ username: data.username || "", fullName: data.display_name || "", gender: data.gender || "Prefer not to say", dob: data.date_of_birth || "", title: data.professional_title || "", location: data.location || "", bio: data.bio || "", avatarUrl: data.avatar_url });
         setDevelopment({ primarySkill: data.primary_skill || "", secondaryTools: data.secondary_tools || [], preferredPlatforms: data.preferred_platforms || [], isFindingWork: data.looking_for_work || false, isOpenToCollaboration: data.open_to_collaboration || false, lookingFor: data.collaboration_looking_for || [] });
         setExperience({ 
-        education: (data.education as any[]) || [], 
+          education: (data.education as any[]) || [], 
           work: (data.work_experience as any[] || [])
         });
+
+        // Populate social links from DB columns
+        const loadedLinks: SocialLink[] = [];
+        for (const [col, platform] of Object.entries(columnToPlatform)) {
+          if (data[col]) {
+            loadedLinks.push({ id: crypto.randomUUID(), platform, url: data[col] });
+          }
+        }
+        setLinks(loadedLinks);
       }
 
       setLoading(false); setIsFirstLoad(false);
@@ -59,11 +82,33 @@ const EditProfile = () => {
     if (!user) return;
     setIsSaving(true); setSaveStatus("Saving…");
     try {
+      // Build social link columns from links array
+      const socialColumns: Record<string, string | null> = {};
+      for (const col of Object.values(socialPlatformToColumn)) {
+        socialColumns[col] = null; // Reset all
+      }
+      for (const link of links) {
+        const col = socialPlatformToColumn[link.platform];
+        if (col) socialColumns[col] = link.url;
+      }
+
       const { error } = await supabase.from("profiles").update({
-        display_name: profile.fullName, gender: profile.gender, date_of_birth: profile.dob || null, professional_title: profile.title, location: profile.location, bio: profile.bio, avatar_url: profile.avatarUrl,
-        primary_skill: development.primarySkill, secondary_tools: development.secondaryTools, preferred_platforms: development.preferredPlatforms, looking_for_work: development.isFindingWork, open_to_collaboration: development.isOpenToCollaboration, collaboration_looking_for: development.lookingFor, 
+        display_name: profile.fullName, 
+        gender: profile.gender, 
+        date_of_birth: profile.dob || null, 
+        professional_title: profile.title, 
+        location: profile.location, 
+        bio: profile.bio, 
+        avatar_url: profile.avatarUrl,
+        primary_skill: development.primarySkill, 
+        secondary_tools: development.secondaryTools, 
+        preferred_platforms: development.preferredPlatforms, 
+        looking_for_work: development.isFindingWork, 
+        open_to_collaboration: development.isOpenToCollaboration, 
+        collaboration_looking_for: development.lookingFor, 
         education: experience.education as any,
         work_experience: experience.work as any,
+        ...socialColumns,
       } as any).eq("user_id", user.id);
       if (error) throw error;
       setSaveStatus("Saved ✓"); setHasChanges(false); setTimeout(() => setSaveStatus(""), 3000);
@@ -112,6 +157,7 @@ const EditProfile = () => {
             </div>
 
             {activeTab === "Profile" && <EditProfileIdentity data={profile} onChange={handleProfileChange} />}
+            {activeTab === "Links" && <EditProfileLinks links={links} onChange={(newLinks) => { setLinks(newLinks); markChanged(); }} />}
             {activeTab === "Experience" && <EditProfileExperience education={experience.education} work={experience.work} onEducationChange={(edu) => { setExperience(prev => ({ ...prev, education: edu })); markChanged(); }} onWorkChange={(w) => { setExperience(prev => ({ ...prev, work: w })); markChanged(); }} />}
             {activeTab === "Development" && <EditProfileDevelopment {...development} onDataChange={handleDevChange} />}
           </div>
