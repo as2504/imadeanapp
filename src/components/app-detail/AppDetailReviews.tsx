@@ -240,20 +240,32 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
     if (!review) return;
 
     if (review.hasLiked) {
-      // Unlike: remove from comment_likes, decrement
+      // Optimistic update
       const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: Math.max(0, r.likes_count - 1), hasLiked: false } : r);
       setReviews(updateLikes(reviews));
       setAllReviews(updateLikes(allReviews));
       await supabase.from("comment_likes" as any).delete().eq("comment_id", reviewId).eq("user_id", user.id);
-      await supabase.from("comments").update({ likes_count: Math.max(0, (review.likes_count || 0) - 1) } as any).eq("id", reviewId);
     } else {
-      // Like: insert into comment_likes, increment
       const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1, hasLiked: true } : r);
       setReviews(updateLikes(reviews));
       setAllReviews(updateLikes(allReviews));
       await supabase.from("comment_likes" as any).insert({ comment_id: reviewId, user_id: user.id });
-      await supabase.from("comments").update({ likes_count: (review.likes_count || 0) + 1 } as any).eq("id", reviewId);
     }
+
+    // Refetch actual count from DB
+    const { count } = await supabase.from("comment_likes" as any).select("*", { count: "exact", head: true }).eq("comment_id", reviewId);
+    const realCount = count || 0;
+    await supabase.from("comments").update({ likes_count: realCount } as any).eq("id", reviewId);
+    const syncCount = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: realCount } : r);
+    setReviews(syncCount(reviews));
+    setAllReviews(syncCount(allReviews));
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!user) return;
+    await supabase.from("comments").delete().eq("id", reviewId).eq("user_id", user.id);
+    await fetchData();
+    if (isDialogOpen) await fetchMoreReviews(true);
   };
 
   const getTimeAgo = (dateStr: string) => {
