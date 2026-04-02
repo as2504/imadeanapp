@@ -22,6 +22,7 @@ interface AppDetailHeaderProps {
 const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true }: AppDetailHeaderProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
