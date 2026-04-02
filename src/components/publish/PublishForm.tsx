@@ -200,6 +200,7 @@ const PublishForm = () => {
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIconFile(file);
       setIconPreview(URL.createObjectURL(file));
       setErrors(prev => ({ ...prev, icon: "" }));
     }
@@ -210,6 +211,7 @@ const PublishForm = () => {
     const remaining = 3 - screenshotPreviews.length;
     if (remaining <= 0) return;
     const toAdd = files.slice(0, remaining);
+    setScreenshotFiles(prev => [...prev, ...toAdd]);
     setScreenshotPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
   };
 
