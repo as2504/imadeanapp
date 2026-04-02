@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface AppDetailHeaderProps {
-  app: { id?: string; name: string; publisher: string; icon: string; publishedDate: string; platforms: string[]; slug?: string; };
+  app: { id?: string; name: string; publisher: string; publisherUserId?: string; icon: string; publishedDate: string; platforms: string[]; slug?: string; };
   avgRating: number;
   totalRatings: number;
   isAuthenticated?: boolean;
