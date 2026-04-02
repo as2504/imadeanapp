@@ -106,7 +106,9 @@ const PublishForm = () => {
   });
 
   const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
