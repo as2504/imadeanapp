@@ -1,86 +1,65 @@
 
 
-# Plan: Trending Numbers, Reviews, Settings, Mobile Touch, Social Links, Docs
+# Plan: Fix Uploads, Remove Fake Data, Reviews, Trending Medals, Landing Redirect
 
-## 1. Trending Card — Rank Number on Icon
+## 1. Fix App Icon Upload (PublishForm)
 
-**Problem:** Double-digit rank numbers appear behind/below the icon, not overlaid on it.
+**Problem:** `PublishForm.tsx` saves `URL.createObjectURL(file)` as the `app_icon_url` — a blob URL that's only valid in the current session.
 
-**Fix in `TrendingCard.tsx`:** Move the rank number from an `absolute -left-1` sibling into an overlay badge positioned on the bottom-left corner of the icon `div`. Use a small circular badge with dark background and bold text sitting on the icon.
+**Fix:** Upload the icon file to the `app-assets` storage bucket, get the public URL, and save that instead. Same for screenshots. Store the `File` objects in state and upload them in `handleSubmit` before inserting the app record.
 
-## 2. Trending Filters — Persist Selection
+## 2. Fix Profile Avatar — "Bucket not found"
 
-**Fix in `Trending.tsx`:** Store the filter state in `sessionStorage` on change, and initialize from `sessionStorage` on mount. This way navigating away and back preserves the filter.
+**Problem:** `EditProfileAvatar.tsx` uploads to bucket `avatars` which doesn't exist. Only `app-assets` exists.
 
-## 3. Move Log Out to Settings Page
+**Fix:** Change the bucket from `'avatars'` to `'app-assets'` and use a path prefix like `avatars/{user_id}/...`.
 
-**`FeedNavbar.tsx`:** Remove the "Log out" `DropdownMenuItem` from the avatar dropdown.
+## 3. Publisher Name Links to Profile
 
-**`Settings.tsx`:** Add a new "Account" section (or append to "General") with a "Log out" button at the bottom, styled as a destructive action.
+**Fix in `AppDetailHeader.tsx`:** Wrap the publisher name in a clickable link that navigates to `/profile/{publisherUserId}`. Pass `publisherUserId` through the `app` prop (already available in `AppDetail.tsx` as `appData.publisherUserId`).
 
-## 4. Beta Badge on App Feedback in Settings
+## 4. Review Likes Fix + Delete Review
 
-**`Settings.tsx`:** Add a small "Beta" badge next to the "App Feedback" label in the sidebar/mobile dropdown.
+**Likes issue:** The `handleLike` function updates `likes_count` on the `comments` table using stale values. Fix by using a DB increment approach or refetching after mutation.
 
-## 5. Generate `supabasedb.md` and `supabaseauth.md`
+**Delete review:** Add a `Trash2` icon button next to the edit `Pencil` button in `ReviewCard` (only for the review author). On click, delete from `comments` table and refresh.
 
-Create two markdown files at the project root with detailed step-by-step migration and auth integration guides based on the current schema and auth setup.
+## 5. Trending Card Medals (Gold/Silver/Bronze)
 
-## 6. Fix Mobile Touch — Published Apps Dropdown Trigger
+**Fix in `TrendingCard.tsx`:** For rank 1, 2, 3 — add a colored border/outline to the card:
+- Rank 1: `border-yellow-500/60` (gold)
+- Rank 2: `border-gray-400/60` (silver)  
+- Rank 3: `border-amber-700/60` (bronze)
 
-**Problem:** On mobile, wrapping `AppCard` inside `DropdownMenuTrigger` means any touch (including scroll) opens the dropdown.
+## 6. Remove ALL Fake/Mock Data
 
-**Fix in `ProfilePublishedApps.tsx`:** Remove the `DropdownMenuTrigger` wrapping the entire card. Instead, add a small "more options" button (`MoreVertical` icon) in the top-right corner of each card. The card itself navigates to the app detail page on click. The three-dot button opens the dropdown. This separates navigation from actions and prevents scroll-triggered menus.
+**Delete files:**
+- `src/data/mockPosts.ts`
+- `src/data/mockTrending.ts`
 
-## 7. Reviews — Edit Not Reflecting, Likes Resetting
+**Update components that import them:**
+- `TrendingCard.tsx` — remove `TrendingApp` import, define a local interface
+- `Trending.tsx` — remove `TrendingApp` import, use local type
 
-**Edit not reflecting:** The `comments` table RLS is missing an UPDATE policy. Users can't update their own comments. Need a migration to add UPDATE policy.
+**Replace fake sidebar data with real DB queries:**
+- `FeedSidebar.tsx` — fetch top creators (by app count), most rated apps, most reviewed apps from DB
+- `TrendingSidebar.tsx` — fetch real trending tech stacks and tags from published apps via DB aggregation
 
-**Likes resetting:** `handleLike` does optimistic update but on page change/refresh, `likes_count` is fetched from DB. The update uses the stale `review.likes_count` from the found item (which may already be optimistically incremented). Also, there's no per-user like tracking — any user can like infinitely and likes reset because there's no `comment_likes` table.
+## 7. Landing Page Redirect for Logged-in Users
 
-**Fix:**
-- Migration: Add UPDATE RLS policy on `comments` for own comments.
-- For likes: Create a `comment_likes` table (`id, comment_id, user_id, created_at`) with unique constraint on `(comment_id, user_id)`. Add RLS. Update `handleLike` to insert into `comment_likes` and increment `likes_count` via a DB function or direct increment. On fetch, check if current user has liked each comment.
+**Fix in `App.tsx`:** Wrap the `"/"` route with `PublicOnlyRoute` so logged-in users get redirected to `/home`.
 
-## 8. Social Links Not Saving from Edit Profile
+## 8. Fix Edge Function Build Error
 
-**Problem:** `EditProfile.tsx` `handleSave` doesn't write `github_url`, `twitter_url`, `linkedin_url`, `website`, `portfolio_url`, `instagram_url`, `leetcode_url` to the profiles table. The `EditProfileLinks` component manages `links` state but it's never persisted.
-
-**Fix in `EditProfile.tsx`:** In `handleSave`, extract social link URLs from the `links` array by platform and include them in the update payload. Also on fetch, populate `links` from the profile's social URL columns.
+**Fix in `supabase/functions/og-meta/index.ts` line 72:** Change `err.message` to `(err as Error).message`.
 
 ---
 
 ## Database Migration
 
-```sql
--- Allow users to update their own comments
-CREATE POLICY "Users can update their own comments"
-ON public.comments FOR UPDATE TO authenticated
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+Create an `avatars` path in `app-assets` bucket (no migration needed, just use path prefix).
 
--- Comment likes table for persistent per-user likes
-CREATE TABLE public.comment_likes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  comment_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(comment_id, user_id)
-);
-
-ALTER TABLE public.comment_likes ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Comment likes viewable by everyone"
-ON public.comment_likes FOR SELECT TO public USING (true);
-
-CREATE POLICY "Users can like"
-ON public.comment_likes FOR INSERT TO authenticated
-WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can unlike"
-ON public.comment_likes FOR DELETE TO authenticated
-USING (auth.uid() = user_id);
-```
+No new tables required.
 
 ---
 
@@ -88,14 +67,16 @@ USING (auth.uid() = user_id);
 
 | File | Change |
 |---|---|
-| `src/components/trending/TrendingCard.tsx` | Rank badge overlaid on icon |
-| `src/pages/Trending.tsx` | Persist filters in sessionStorage |
-| `src/components/feed/FeedNavbar.tsx` | Remove logout from dropdown |
-| `src/pages/Settings.tsx` | Add logout button, beta badge on feedback |
-| `src/components/profile/ProfilePublishedApps.tsx` | Replace card-as-trigger with MoreVertical button |
-| `src/components/app-detail/AppDetailReviews.tsx` | Fix likes with `comment_likes` table, fix edit refresh |
-| `src/pages/EditProfile.tsx` | Save/load social link URLs |
-| `supabasedb.md` | **New** — DB migration guide |
-| `supabaseauth.md` | **New** — Auth integration guide |
-| **Migration SQL** | UPDATE policy on comments, `comment_likes` table |
+| `src/components/publish/PublishForm.tsx` | Upload icon/screenshots to `app-assets` bucket |
+| `src/components/edit-profile/EditProfileAvatar.tsx` | Change bucket from `avatars` to `app-assets` |
+| `src/components/app-detail/AppDetailHeader.tsx` | Make publisher name clickable → `/profile/:userId` |
+| `src/components/app-detail/AppDetailReviews.tsx` | Fix likes, add delete review button |
+| `src/components/trending/TrendingCard.tsx` | Gold/silver/bronze border for top 3, remove mock import |
+| `src/pages/Trending.tsx` | Remove mock data import, use local type |
+| `src/components/feed/FeedSidebar.tsx` | Replace hardcoded data with real DB queries |
+| `src/components/trending/TrendingSidebar.tsx` | Replace hardcoded data with real DB queries |
+| `src/data/mockPosts.ts` | **Delete** |
+| `src/data/mockTrending.ts` | **Delete** |
+| `src/App.tsx` | Wrap `/` route with `PublicOnlyRoute` |
+| `supabase/functions/og-meta/index.ts` | Fix `err` type cast |
 
