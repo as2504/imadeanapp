@@ -41,7 +41,7 @@ const Auth = () => {
         <div className="bg-card border border-border/40 rounded-xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
           <div className="text-center mb-8">
             <h1 className="text-xl font-bold text-foreground">
-              Showcase<span className="text-primary">.</span>
+              <span className="text-primary">I</span>MAA
             </h1>
             <p className="text-sm text-muted-foreground mt-2">
               {isSignUp ? "Create your account" : "Welcome back"}

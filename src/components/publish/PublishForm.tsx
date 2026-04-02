@@ -5,12 +5,18 @@ import {
   Github, Play, Globe, Smartphone, Monitor, 
   Twitter, Instagram, Youtube, Linkedin, MessageSquare, 
   MoreHorizontal, Check, ArrowRight, ArrowLeft,
-  Trash2, ShieldCheck, Sparkles,
+  Trash2, ShieldCheck, Sparkles, Zap,
   History as HistoryIcon,
   Link as LinkIcon,
   ExternalLink,
   Search
 } from "lucide-react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -148,10 +154,16 @@ const PublishForm = () => {
         else if (formData.platforms.includes("web") && !isValidUrl(formData.urls.web, true)) stepErrors.webUrl = "Invalid URL format";
 
         if (formData.platforms.includes("android") && !formData.urls.android.trim()) stepErrors.androidUrl = "Android URL is required";
-        else if (formData.platforms.includes("android") && !isValidUrl(formData.urls.android, true)) stepErrors.androidUrl = "Invalid URL format";
+        else if (formData.platforms.includes("android")) {
+          if (!isValidUrl(formData.urls.android, true)) stepErrors.androidUrl = "Invalid URL format";
+          else if (!formData.urls.android.startsWith("https://play.google.com/")) stepErrors.androidUrl = "Must be a valid Google Play link";
+        }
 
         if (formData.platforms.includes("ios") && !formData.urls.ios.trim()) stepErrors.iosUrl = "iOS URL is required";
-        else if (formData.platforms.includes("ios") && !isValidUrl(formData.urls.ios, true)) stepErrors.iosUrl = "Invalid URL format";
+        else if (formData.platforms.includes("ios")) {
+          if (!isValidUrl(formData.urls.ios, true)) stepErrors.iosUrl = "Invalid URL format";
+          else if (!formData.urls.ios.startsWith("https://apps.apple.com/")) stepErrors.iosUrl = "Must be a valid App Store link";
+        }
       }
       
       if (formData.urls.github && !isValidUrl(formData.urls.github)) stepErrors.githubUrl = "Invalid URL format";
@@ -461,38 +473,70 @@ const PublishForm = () => {
 
                 <div className="space-y-6 pt-2">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Platforms</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { id: "web", label: "Web", icon: Globe },
-                        { id: "android", label: "Android", icon: Smartphone },
-                        { id: "ios", label: "iOS", icon: Monitor },
-                      ].map((p) => (
-                        <div
-                          key={p.id}
-                          onClick={() => togglePlatform(p.id)}
-                          className={cn(
-                            "flex items-center justify-between px-3 py-2 rounded-lg border transition-all duration-200 cursor-pointer",
-                            formData.platforms.includes(p.id) 
-                              ? "border-primary bg-primary/5 text-primary shadow-sm" 
-                              : "border-border/40 bg-background text-muted-foreground hover:border-border"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <p.icon size={14} />
-                            <span className="text-[11px] font-bold">{p.label}</span>
-                          </div>
-                          <Switch 
-                            checked={formData.platforms.includes(p.id)} 
-                            className="scale-75 data-[state=checked]:bg-primary pointer-events-none" 
-                            onCheckedChange={() => {}} 
-                          />
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5 flex items-center gap-2">
+                        Platforms *
+                        {formData.platforms.length > 0 && (
+                          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[8px]">{formData.platforms.length}</span>
+                        )}
+                      </label>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1 rounded-md hover:bg-secondary transition-colors group">
+                            <Plus size={14} className="text-primary group-hover:rotate-90 transition-transform" strokeWidth={3} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-border bg-popover/95 backdrop-blur-xl shadow-2xl">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-2 py-1.5 mb-1">Add Platform</p>
+                          {[
+                            { id: "web", label: "Web", icon: Globe },
+                            { id: "android", label: "Android", icon: Smartphone },
+                            { id: "ios", label: "iOS", icon: Monitor },
+                          ].map((p) => (
+                            <DropdownMenuItem 
+                              key={p.id} 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                togglePlatform(p.id);
+                              }}
+                              className="rounded-lg py-1.5 gap-2.5 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors"
+                            >
+                              <div className={cn(
+                                "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                                formData.platforms.includes(p.id) ? "bg-primary border-primary text-white" : "border-border/40"
+                              )}>
+                                {formData.platforms.includes(p.id) && <Check size={10} strokeWidth={4} />}
+                              </div>
+                              <p.icon size={14} className="opacity-60" />
+                              <span className="text-[11px] font-bold">{p.label}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {formData.platforms.map(p => {
+                        const label = p === 'web' ? 'Web' : p === 'android' ? 'Android' : 'iOS';
+                        const Icon = p === 'web' ? Globe : p === 'android' ? Smartphone : Monitor;
+                        return (
+                          <div key={p} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 text-primary animate-in zoom-in-95 duration-200">
+                            <Icon size={12} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+                            <button onClick={() => togglePlatform(p)} className="hover:text-destructive transition-colors ml-1">
+                              <X size={10} strokeWidth={3} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {formData.platforms.length === 0 && (
+                        <p className="text-[9px] text-muted-foreground/30 font-bold uppercase tracking-widest pt-1 pl-1 italic">Click + to select at least one platform</p>
+                      )}
+                    </div>
+                    
                     {errors.platforms && <p className="text-[9px] text-destructive font-bold ml-1">{errors.platforms}</p>}
 
-                    <div className="space-y-2.5 animate-in fade-in duration-500">
+                    <div className="space-y-3 animate-in fade-in duration-500">
                       {formData.platforms.includes("web") && (
                         <div className="space-y-1">
                           <label className="text-[9px] font-bold text-muted-foreground/60 uppercase ml-1">Web URL</label>
@@ -514,7 +558,7 @@ const PublishForm = () => {
                             onChange={e => setFormData({ ...formData, urls: { ...formData.urls, android: e.target.value }})} 
                             className={cn("h-9 rounded-lg bg-background border-border/40 text-[11px]", errors.androidUrl && "border-destructive")}
                           />
-                          {errors.androidUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
+                          {errors.androidUrl && <p className="text-[9px] text-destructive font-bold ml-1">{errors.androidUrl}</p>}
                         </div>
                       )}
                       {formData.platforms.includes("ios") && (
@@ -526,7 +570,7 @@ const PublishForm = () => {
                             onChange={e => setFormData({ ...formData, urls: { ...formData.urls, ios: e.target.value }})} 
                             className={cn("h-9 rounded-lg bg-background border-border/40 text-[11px]", errors.iosUrl && "border-destructive")}
                           />
-                          {errors.iosUrl && <p className="text-[9px] text-destructive font-bold ml-1">Give a correct URL</p>}
+                          {errors.iosUrl && <p className="text-[9px] text-destructive font-bold ml-1">{errors.iosUrl}</p>}
                         </div>
                       )}
                     </div>
@@ -567,11 +611,38 @@ const PublishForm = () => {
             {step === 4 && (
               <div className="space-y-6">
                 <div className="space-y-0.5">
-                   <h2 className="text-lg font-black">Tags & Tech</h2>
-                   <p className="text-[11px] text-muted-foreground">Classify your app and specify its tech stack.</p>
+                   <h2 className="text-lg font-black">Tags, Tech & Pricing</h2>
+                   <p className="text-[11px] text-muted-foreground">Classify your app, specify its tech stack and pricing model.</p>
                 </div>
 
                 <div className="space-y-6 pt-2">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Pricing Model</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: "free", label: "Free", icon: Sparkles, color: "text-emerald-500" },
+                        { id: "freemium", label: "Freemium", icon: Zap, color: "text-primary" },
+                        { id: "paid", label: "Paid", icon: ShieldCheck, color: "text-amber-500" },
+                      ].map((p) => (
+                        <div
+                          key={p.id}
+                          onClick={() => setFormData({ ...formData, pricing: p.id })}
+                          className={cn(
+                            "flex flex-col items-center justify-center gap-2 px-3 py-4 rounded-xl border transition-all duration-200 cursor-pointer",
+                            formData.pricing === p.id 
+                              ? "border-primary bg-primary/5 shadow-sm" 
+                              : "border-border/40 bg-background text-muted-foreground hover:border-border"
+                          )}
+                        >
+                          <p.icon size={18} className={cn(formData.pricing === p.id ? p.color : "opacity-40")} />
+                          <span className={cn("text-[10px] font-black uppercase tracking-widest", formData.pricing === p.id ? "text-foreground" : "text-muted-foreground/60")}>
+                            {p.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <TagSelector 
                     label="Tech Stack"
                     suggestions={TECH_OPTIONS}
@@ -665,7 +736,7 @@ const PublishForm = () => {
 
           <Button 
             onClick={step === 4 ? handleSubmit : nextStep} 
-            disabled={isSubmitting}
+            disabled={isSubmitting || (step === 4 && (formData.techStack.length === 0 || formData.tags.length === 0 || !formData.pricing))}
             className="rounded-lg px-6 font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-primary/10 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
           >
             {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : step === 4 ? "Publish App" : "Next"} 

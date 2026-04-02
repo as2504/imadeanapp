@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { LayoutGrid, Users, MessageSquare, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface ProfileStatsStripProps {
   profileUserId?: string;
@@ -67,10 +68,22 @@ const ProfileStatsStrip = ({ profileUserId }: ProfileStatsStripProps) => {
     { icon: Eye, value: formatNum(stats.views), label: "Views", color: "text-amber-500" },
   ];
 
+  const [isExtraSmall, setIsExtraSmall] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => setIsExtraSmall(window.innerWidth < 300);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-card border border-border/40 rounded-3xl shadow-sm">
+    <div className={cn(
+      "grid gap-3 p-4 bg-card border border-border/40 rounded-3xl shadow-sm",
+      isExtraSmall ? "grid-cols-1" : "grid-cols-2 md:grid-cols-4"
+    )}>
       {quickStats.map((s) => (
-        <div key={s.label} className="flex items-center gap-4 p-3 rounded-2xl bg-surface/30 border border-border/20 group hover:border-primary/20 transition-all">
+        <div key={s.label} className="flex items-center gap-4 p-3 rounded-2xl bg-surface/30 border border-border/20 group hover:border-primary/20 transition-all flex-1">
           <div className={`p-2 rounded-xl bg-background group-hover:scale-110 transition-transform ${s.color}`}>
             <s.icon size={18} />
           </div>

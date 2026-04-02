@@ -159,10 +159,10 @@
 .animate-reveal-delay-3 { animation-delay: 240ms; }
 
 /* Hide scrollbar */
-.scrollbar-hide {
-  -ms-overflow-style: none;
+* {
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.scrollbar-hide::-webkit-scrollbar {
+*::-webkit-scrollbar {
   display: none;
 }

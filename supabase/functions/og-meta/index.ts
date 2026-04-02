@@ -37,8 +37,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const title = `${app.app_name} — Showcase`;
-    const description = app.tagline || app.short_description || "Discover this app on Showcase";
+    const title = `${app.app_name} — imadeanapp`;
+    const description = app.tagline || app.short_description || "Discover this app on imadeanapp";
     const image = app.app_icon_url || "";
     const appUrl = `https://showcase-umber-one.vercel.app/app/${app.slug || appId}`;
 

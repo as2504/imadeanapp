@@ -50,7 +50,7 @@ const TestimonialSection = () => {
             </div>
             
             <blockquote className="text-2xl md:text-4xl font-bold text-foreground leading-[1.1] tracking-tight relative z-10">
-              "Showcase is the first platform that actually understands the <span className="text-primary">aesthetic of AI.</span> It's not just a directory; it's a launchpad for modern software."
+              "imadeanapp is the first platform that actually understands the <span className="text-primary">aesthetic of AI.</span> It's not just a directory; it's a launchpad for modern software."
             </blockquote>
             
             <div className="mt-12 flex items-center gap-4 relative z-10">

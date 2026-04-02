@@ -60,38 +60,59 @@ const AppDetailDescription = ({ description, userTried, userReviewed, onRateClic
 
       {/* Rate this app CTA */}
       {!userReviewed && (
-        <section className="p-8 rounded-[2rem] bg-surface border border-border/40 text-center">
-          <h2 className="text-xl font-black text-foreground tracking-tight mb-2 uppercase tracking-[0.1em]">
-            Rate this app
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-            Share your experience with the community and help the creator improve.
-          </p>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="inline-block">
-                  <Button 
-                    onClick={onRateClick}
-                    disabled={!userTried}
-                    className={cn(
-                      "rounded-full px-8 py-6 h-auto font-bold uppercase tracking-widest text-xs transition-all",
-                      userTried ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
-                    )}
-                  >
-                    <Star size={16} className={cn("mr-2", userTried && "fill-current")} />
-                    Write a review
-                  </Button>
+        <section className="relative group overflow-hidden rounded-3xl">
+          {!userTried && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/40 backdrop-blur-[2px] cursor-not-allowed group/blur">
+              <div className="bg-background/90 px-5 py-2.5 rounded-full border border-border/40 shadow-2xl opacity-0 group-hover/blur:opacity-100 transition-all duration-300 transform translate-y-2 group-hover/blur:translate-y-0">
+                <p className="text-[10px] font-black text-foreground uppercase tracking-[0.15em] flex items-center gap-2">
+                  <Star size={12} className="text-primary fill-primary" />
+                  Please try the app first to rate
+                </p>
+              </div>
+            </div>
+          )}
+          <div className={cn(
+            "absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/5 to-primary/20 rounded-3xl blur-xl opacity-50 transition duration-1000",
+            userTried && "group-hover:opacity-100 group-hover:duration-200"
+          )}></div>
+          <div className={cn(
+            "relative p-6 rounded-3xl bg-card border border-border/40 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500",
+            !userTried && "opacity-50 grayscale-[0.5] blur-[1px]"
+          )}>
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Star size={14} className="text-primary fill-primary/20" />
                 </div>
-              </TooltipTrigger>
-              {!userTried && (
-                <TooltipContent>
-                  <p>Please try the app first before giving the rating.</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+                <h2 className="text-base font-black text-foreground uppercase tracking-wider">
+                  Rate this app
+                </h2>
+              </div>
+              <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed font-medium">
+                Your feedback drives innovation. Share your thoughts and help shape the future of this app.
+              </p>
+            </div>
+            
+            <div className="shrink-0 w-full md:w-auto">
+              <Button 
+                onClick={onRateClick}
+                disabled={!userTried}
+                className={cn(
+                  "w-full md:w-auto rounded-xl px-8 py-5 h-auto font-black uppercase tracking-[0.2em] text-[9px] transition-all duration-300 relative group/btn overflow-hidden",
+                  userTried 
+                    ? "bg-foreground text-background hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-primary/5" 
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  Write a review
+                </span>
+                {userTried && (
+                  <div className="absolute inset-0 bg-primary translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300 -z-0"></div>
+                )}
+              </Button>
+            </div>
+          </div>
         </section>
       )}
     </div>

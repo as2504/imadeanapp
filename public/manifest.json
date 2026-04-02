@@ -1,6 +1,6 @@
 {
-  "name": "Showcase",
-  "short_name": "Showcase",
+  "name": "imadeanapp",
+  "short_name": "imadeanapp",
   "description": "Discover & publish AI-crafted apps",
   "start_url": "/",
   "display": "standalone",

@@ -12,9 +12,21 @@ import AppUpdateHistory from "@/components/app-detail/AppUpdateHistory";
 import RelatedApps from "@/components/app-detail/RelatedApps";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+const platformConfig: Record<string, { label: string; icon: string }> = {
+  web: { label: "Web App", icon: "/webapp.png" },
+  android: { label: "Android", icon: "/android.png" },
+  ios: { label: "iOS", icon: "/app-store.png" },
+};
 
 const AppDetail = () => {
   const { id } = useParams();
@@ -62,7 +74,7 @@ const AppDetail = () => {
       }
 
       // Update document title for browser tab
-      document.title = `${app.app_name} — Showcase`;
+      document.title = `${app.app_name} — imadeanapp`;
 
       setAppData({
         id: app.id, slug: app.slug, name: app.app_name,
@@ -82,17 +94,17 @@ const AppDetail = () => {
       setLoading(false);
     };
     fetchApp();
-    return () => { document.title = "Showcase – Discover & Publish AI-Crafted Apps"; };
+    return () => { document.title = "imadeanapp – Discover & Publish AI-Crafted Apps"; };
   }, [id, user]);
 
-  const handleTryApp = async () => {
+  const handleTryApp = async (url?: string) => {
     if (user && appData && !userTried) {
       await supabase.from("app_tries").insert({ app_id: appData.id, user_id: user.id });
       setUserTried(true);
     }
     if (!appData) return;
-    const url = appData.websiteUrl || appData.appStoreUrl || appData.playStoreUrl;
-    if (url) window.open(url, "_blank");
+    const finalUrl = url || appData.websiteUrl || appData.appStoreUrl || appData.playStoreUrl;
+    if (finalUrl) window.open(finalUrl, "_blank");
   };
 
   const handleRateClick = () => {
@@ -114,6 +126,12 @@ const AppDetail = () => {
     </div>
   );
 
+  const availableLinks = [
+    { type: 'web', url: appData.websiteUrl },
+    { type: 'android', url: appData.playStoreUrl },
+    { type: 'ios', url: appData.appStoreUrl },
+  ].filter(link => !!link.url);
+
   return (
     <div className="min-h-screen bg-background">
       {isAuthenticated ? <FeedNavbar /> : <PublicNavbar />}
@@ -125,12 +143,42 @@ const AppDetail = () => {
         <AppDetailHeader app={appData} avgRating={avgRating} totalRatings={totalRatings} isAuthenticated={isAuthenticated} />
 
         <div className="mt-6">
-          <button
-            onClick={handleTryApp}
-            className="w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-[0.98]"
-          >
-            Try App
-          </button>
+          {availableLinks.length > 1 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
+                >
+                  Try App <ChevronDown size={18} className="transition-transform group-data-[state=open]:rotate-180" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40 p-1.5 rounded-xl border-border/40 bg-popover/95 backdrop-blur-xl shadow-2xl">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-2 py-1.5 mb-1">Select Platform</p>
+                {availableLinks.map((link) => {
+                  const config = platformConfig[link.type];
+                  return (
+                    <DropdownMenuItem 
+                      key={link.type} 
+                      onClick={() => handleTryApp(link.url)}
+                      className="rounded-lg py-1.5 gap-2.5 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors"
+                    >
+                      <div className="w-6 h-6 rounded-md bg-background border border-border/40 flex items-center justify-center p-1">
+                        <img src={config.icon} alt={config.label} className="w-full h-full object-contain dark:invert" />
+                      </div>
+                      <span className="text-xs font-bold tracking-tight">{config.label}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              onClick={() => handleTryApp()}
+              className="w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-[0.98]"
+            >
+              Try App
+            </button>
+          )}
         </div>
 
         {/* Tabs */}

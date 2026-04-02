@@ -53,6 +53,8 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editComment, setEditComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const PAGE_SIZE = 10;
   const MAX_CHARS = 200;
@@ -165,13 +167,17 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSubmit = async () => {
-    if (rating === 0 || !user || isOverLimit) return;
+    if (!user || isOverLimit || (rating === 0 && !comment.trim())) return;
+    setIsSubmitting(true);
     
     try {
-      if (existingRating !== null) {
-        await supabase.from("ratings").update({ rating, review_text: comment || null }).eq("app_id", appId).eq("user_id", user.id);
-      } else {
-        await supabase.from("ratings").insert({ app_id: appId, user_id: user.id, rating, review_text: comment || null });
+      if (rating > 0) {
+        if (existingRating !== null) {
+          await supabase.from("ratings").update({ rating, review_text: comment || null }).eq("app_id", appId).eq("user_id", user.id);
+        } else {
+          await supabase.from("ratings").insert({ app_id: appId, user_id: user.id, rating, review_text: comment || null });
+        }
+        setExistingRating(rating);
       }
       
       if (comment.trim()) {
@@ -185,16 +191,18 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
       
       setSubmitted(true); 
       setComment(""); 
-      setExistingRating(rating);
       setTimeout(() => setSubmitted(false), 3000);
       await fetchData();
     } catch (error) {
       console.error("Error submitting review:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateEdit = async () => {
     if (!user || isEditOverLimit || !editingCommentId) return;
+    setIsUpdating(true);
     
     try {
       const { error } = await supabase
@@ -214,6 +222,8 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
       }
     } catch (error) {
       console.error("Error updating review:", error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -316,8 +326,10 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button variant="ghost" onClick={() => setIsEditModalOpen(false)} className="rounded-full px-6 font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
-            <Button onClick={handleUpdateEdit} disabled={isEditOverLimit || !editComment.trim()} className="rounded-full px-8 bg-primary hover:bg-primary/90 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">Update</Button>
+            <Button variant="ghost" disabled={isUpdating} onClick={() => setIsEditModalOpen(false)} className="rounded-full px-6 font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
+            <Button onClick={handleUpdateEdit} disabled={isEditOverLimit || !editComment.trim() || isUpdating} className="rounded-full px-8 bg-primary hover:bg-primary/90 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 min-w-[100px]">
+              {isUpdating ? <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> : "Update"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -362,13 +374,36 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
             </div>
           </div>
           <div className="relative">
-            <Textarea placeholder="Tell others what you think..." value={comment} onChange={(e) => setComment(e.target.value)} className={cn("min-h-[72px] bg-background/50 border-border/40 rounded-xl p-3 text-[13px] focus:ring-primary/20 leading-tight", isOverLimit && "border-destructive focus:ring-destructive/20")} />
+            <div className="relative">
+              <Textarea 
+                placeholder="Tell others what you think..." 
+                value={comment} 
+                onChange={(e) => setComment(e.target.value)} 
+                className={cn(
+                  "min-h-[84px] bg-background/50 border-border/40 rounded-xl p-3 pr-10 text-[13px] focus:ring-primary/20 leading-tight", 
+                  isOverLimit && "border-destructive focus:ring-destructive/20"
+                )} 
+              />
+              <button 
+                onClick={handleSubmit} 
+                disabled={(!comment.trim() && rating === 0) || !user || isOverLimit || isSubmitting} 
+                className={cn(
+                  "absolute bottom-2.5 right-2.5 p-1.5 transition-all duration-200",
+                  (!comment.trim() && rating === 0) || !user || isOverLimit || isSubmitting
+                    ? "text-muted-foreground/20 cursor-not-allowed"
+                    : "text-primary hover:scale-110 active:scale-90"
+                )}
+              >
+                {isSubmitting ? (
+                  <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                ) : (
+                  <Send size={18} />
+                )}
+              </button>
+            </div>
             <div className="flex items-center justify-between mt-2 px-1">
               <div className="flex items-center gap-1.5">{isOverLimit && <div className="flex items-center gap-1 text-[10px] font-bold text-destructive uppercase tracking-tight animate-in fade-in slide-in-from-left-2"><AlertCircle size={10} /><span>Max {MAX_CHARS} characters reached</span></div>}</div>
               <div className={cn("text-[9px] font-bold uppercase tracking-widest", isOverLimit ? "text-destructive" : "text-muted-foreground/40")}>{comment.length}/{MAX_CHARS} characters</div>
-            </div>
-            <div className="absolute bottom-10 right-3">
-              <Button onClick={handleSubmit} disabled={rating === 0 || !user || isOverLimit} className="rounded-full px-4 bg-primary hover:bg-primary/90 font-bold uppercase tracking-widest text-[9px] h-7 shadow-lg shadow-primary/20">Submit <Send size={12} className="ml-1.5" /></Button>
             </div>
           </div>
         </div>

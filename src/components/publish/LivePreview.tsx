@@ -8,7 +8,7 @@ interface LivePreviewProps {
 }
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
-  web: { label: "Web", icon: "/world-wide-web.png" },
+  web: { label: "Web", icon: "/webapp.png" },
   android: { label: "Android", icon: "/android.png" },
   ios: { label: "iOS", icon: "/app-store.png" },
 };

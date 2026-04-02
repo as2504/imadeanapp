@@ -8,7 +8,7 @@ const tabs = [
   { id: "for-you", label: "For You", icon: Heart, image: "/ForYou.png", title: "Personalized discovery.", description: "A smart feed that surfaces high-quality apps based on community signal.", bullets: ["Smart recommendations", "Design-first feed", "One-tap try"] },
   { id: "publish", label: "Publish", icon: Sparkles, image: "/Publish.png", title: "Launch in seconds.", description: "The fastest workflow to showcase your creations with rich metadata.", bullets: ["Auto-previews", "Multi-platform links", "Global indexing"] },
   { id: "profile", label: "Profile", icon: User, image: "/Profile.png", title: "Proof of Work.", description: "A professional identity hub for your tech stack and portfolio.", bullets: ["Verified status", "Tech stack display", "Collab-ready"] },
-  { id: "showcase", label: "Showcase", icon: LayoutGrid, image: "/Showcase.png", title: "Global Momentum.", description: "Real-time leaderboards tracking the fastest growing apps.", bullets: ["Trending algorithm", "User feedback", "Growth analytics"] },
+  { id: "showcase", label: "imadeanapp", icon: LayoutGrid, image: "/Showcase.png", title: "Global Momentum.", description: "Real-time leaderboards tracking the fastest growing apps.", bullets: ["Trending algorithm", "User feedback", "Growth analytics"] },
 ];
 
 const HeroSection = () => {

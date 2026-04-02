@@ -10,9 +10,9 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
-          className="text-lg font-bold text-foreground tracking-tight"
+          className="text-lg font-black text-foreground tracking-tighter uppercase"
         >
-          Showcase<span className="text-primary">.</span>
+          <span className="text-primary">I</span>MAA
         </button>
 
         <div className="flex items-center gap-3">

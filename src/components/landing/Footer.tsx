@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="container mx-auto max-w-7xl px-6">
         <div className="flex flex-col md:flex-row justify-between items-start gap-12">
           <div className="space-y-4">
-            <h3 className="text-xl font-black tracking-tighter text-foreground">Showcase<span className="text-primary">.</span></h3>
+            <h3 className="text-xl font-black tracking-tighter text-foreground uppercase"><span className="text-primary">I</span>MAA</h3>
             <p className="text-sm text-muted-foreground font-medium max-w-xs">
               The premium platform for the next generation of builders.
             </p>
@@ -20,7 +20,7 @@ const Footer = () => {
               <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">Product</h4>
               <ul className="space-y-2">
                 <li><button onClick={() => navigate("/")} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Home</button></li>
-                <li><button onClick={() => navigate("/trending")} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Showcase</button></li>
+                <li><button onClick={() => navigate("/trending")} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">imadeanapp</button></li>
                 <li><button onClick={() => navigate("/publish")} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Publish</button></li>
               </ul>
             </div>
@@ -35,7 +35,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-20 pt-8 border-t border-border/40 flex justify-between items-center">
-          <p className="text-xs font-bold text-muted-foreground/40 tracking-wider uppercase">© {year} Showcase. All rights reserved.</p>
+          <p className="text-xs font-bold text-muted-foreground/40 tracking-wider uppercase">© {year} imadeanapp. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <button className="text-xs font-bold text-muted-foreground/40 hover:text-foreground transition-colors uppercase tracking-widest">Twitter</button>
             <button className="text-xs font-bold text-muted-foreground/40 hover:text-foreground transition-colors uppercase tracking-widest">GitHub</button>

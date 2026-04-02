@@ -26,7 +26,7 @@ export interface AppPost {
 }
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
-  web: { label: "Web", icon: "/world-wide-web.png" },
+  web: { label: "Web", icon: "/webapp.png" },
   android: { label: "Android", icon: "/android.png" },
   ios: { label: "iOS", icon: "/app-store.png" },
 };
@@ -90,9 +90,9 @@ const AppCard = ({ post, actions, onClick }: AppCardProps) => {
           <span className="text-muted-foreground/30">·</span>
           <span className="text-[11px] text-muted-foreground">{post.timeAgo}</span>
           <div className="flex items-center gap-1.5 ml-1">
-            {post.platforms.map((p) => {
+            {['ios', 'android', 'web'].map((p) => {
+              if (!post.platforms.includes(p as any)) return null;
               const config = platformConfig[p];
-              if (!config) return null;
               return <img key={p} src={config.icon} className="w-3.5 h-3.5 object-contain opacity-60 dark:invert" alt={config.label} />;
             })}
           </div>

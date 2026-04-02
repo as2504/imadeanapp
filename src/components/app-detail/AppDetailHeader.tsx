@@ -32,7 +32,7 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: app.name, text: `Check out ${app.name} on Showcase!`, url });
+        await navigator.share({ title: app.name, text: `Check out ${app.name} on imadeanapp!`, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast({ title: "Link Copied!", description: "App link copied to clipboard." });

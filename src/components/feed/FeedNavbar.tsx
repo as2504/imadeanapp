@@ -29,8 +29,8 @@ const FeedNavbar = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--navbar))]/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-[1200px] w-full mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
           {/* Logo */}
-          <button onClick={() => navigate("/home")} className="text-lg font-bold text-foreground tracking-tight shrink-0">
-            Showcase<span className="text-primary">.</span>
+          <button onClick={() => navigate("/home")} className="text-lg font-black text-foreground tracking-tighter shrink-0 uppercase">
+            <span className="text-primary">I</span>MAA
           </button>
 
           {/* Search */}

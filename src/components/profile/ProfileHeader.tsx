@@ -2,9 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Settings, CheckCircle2 } from "lucide-react";
+import { Settings, CheckCircle2, UserCircle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import FollowListDialog from "./FollowListDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProfileHeaderProps { profileUserId?: string; }
 
@@ -37,6 +43,15 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
   const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
   const username = profile?.username || user?.email?.split("@")[0] || "user";
 
+  const [isExtraSmall, setIsExtraSmall] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => setIsExtraSmall(window.innerWidth < 300);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   return (
     <>
       <div className="flex items-start gap-5">
@@ -59,8 +74,32 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
           <div className="flex items-center gap-2 mt-3">
             {isOwnProfile ? (
               <>
-                <Button size="sm" onClick={() => navigate("/edit-profile")} variant="outline" className="h-8 gap-1 text-xs"><Settings size={14} /> Edit Profile</Button>
-                <Button size="sm" onClick={() => navigate("/publish")} className="h-8 text-xs">Publish App</Button>
+                {!isExtraSmall ? (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => navigate("/edit-profile")} variant="outline" className="h-8 gap-1 text-xs"><Settings size={14} /> Edit Profile</Button>
+                    <Button size="sm" onClick={() => navigate("/publish")} className="h-8 text-xs">Publish App</Button>
+                  </div>
+                ) : (
+                  <div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline" className="h-8 px-2.5 rounded-lg border-border/40">
+                          <Settings size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-44 p-1.5 rounded-xl border-border bg-popover/95 backdrop-blur-xl shadow-2xl">
+                        <DropdownMenuItem onClick={() => navigate("/edit-profile")} className="rounded-lg py-2 gap-3 focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer">
+                          <UserCircle size={14} />
+                          <span className="text-xs font-bold tracking-tight">Edit Profile</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/publish")} className="rounded-lg py-2 gap-3 focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer">
+                          <Plus size={14} />
+                          <span className="text-xs font-bold tracking-tight">Publish App</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </>
             ) : (
               <Button size="sm" onClick={handleFollow} variant={isFollowing ? "outline" : "default"} className="h-8 text-xs">
