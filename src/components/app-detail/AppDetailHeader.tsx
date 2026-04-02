@@ -78,7 +78,7 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight truncate">{app.name}</h1>
-              <p className="text-sm sm:text-base text-primary font-medium mt-0.5">{app.publisher}</p>
+              <button onClick={() => app.publisherUserId && navigate(`/profile/${app.publisherUserId}`)} className="text-sm sm:text-base text-primary font-medium mt-0.5 hover:underline cursor-pointer text-left">{app.publisher}</button>
             </div>
             
             {isAuthenticated && (

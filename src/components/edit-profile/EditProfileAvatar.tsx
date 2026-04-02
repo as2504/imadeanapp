@@ -30,14 +30,14 @@ const EditProfileAvatar = ({ initial, avatarUrl, onImageChange }: EditProfileAva
             const filePath = `${user.id}/${Math.random()}.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file);
+                .from('app-assets')
+                .upload(`avatars/${filePath}`, file, { upsert: true });
 
             if (uploadError) throw uploadError;
 
             const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
+                .from('app-assets')
+                .getPublicUrl(`avatars/${filePath}`);
 
             onImageChange(publicUrl);
             toast({ title: "Success", description: "Avatar uploaded successfully." });

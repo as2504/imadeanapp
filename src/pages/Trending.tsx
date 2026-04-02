@@ -4,10 +4,10 @@ import TrendingFilters from "@/components/trending/TrendingFilters";
 import type { TrendingFilterState } from "@/components/trending/TrendingFilters";
 import TrendingSidebar from "@/components/trending/TrendingSidebar";
 import TrendingCard from "@/components/trending/TrendingCard";
+import type { TrendingApp } from "@/components/trending/TrendingCard";
 import FeedLayout from "@/components/layout/FeedLayout";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
 import { supabase } from "@/integrations/supabase/client";
-import type { TrendingApp } from "@/data/mockTrending";
 
 const Trending = () => {
   const [loading, setLoading] = useState(true);
