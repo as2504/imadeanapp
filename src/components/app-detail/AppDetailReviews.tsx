@@ -284,18 +284,26 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
         {review.avatar}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-0.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <h4 className="text-[13px] font-bold text-foreground truncate tracking-tight leading-none">{review.displayName}</h4>
-            {user?.id === review.user_id && (
-              <button 
-                onClick={() => openEditModal(review)}
-                className="p-1 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all"
-              >
-                <Pencil size={10} />
-              </button>
-            )}
-          </div>
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <h4 className="text-[13px] font-bold text-foreground truncate tracking-tight leading-none">{review.displayName}</h4>
+              {user?.id === review.user_id && (
+                <>
+                  <button 
+                    onClick={() => openEditModal(review)}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all"
+                  >
+                    <Pencil size={10} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteReview(review.id)}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-all"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </>
+              )}
+            </div>
           <span className="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-wider">{getTimeAgo(review.created_at)}</span>
         </div>
         <p className="text-[13px] text-muted-foreground leading-snug mb-2 whitespace-pre-wrap">{review.text}</p>
