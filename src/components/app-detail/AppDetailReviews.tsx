@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Star, Send, CheckCircle2, ThumbsUp, MessageSquare, Info, AlertCircle, Pencil, X as CloseIcon } from "lucide-react";
+import { Star, Send, CheckCircle2, ThumbsUp, MessageSquare, Info, AlertCircle, Pencil, Trash2, X as CloseIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -240,20 +240,32 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
     if (!review) return;
 
     if (review.hasLiked) {
-      // Unlike: remove from comment_likes, decrement
+      // Optimistic update
       const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: Math.max(0, r.likes_count - 1), hasLiked: false } : r);
       setReviews(updateLikes(reviews));
       setAllReviews(updateLikes(allReviews));
       await supabase.from("comment_likes" as any).delete().eq("comment_id", reviewId).eq("user_id", user.id);
-      await supabase.from("comments").update({ likes_count: Math.max(0, (review.likes_count || 0) - 1) } as any).eq("id", reviewId);
     } else {
-      // Like: insert into comment_likes, increment
       const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1, hasLiked: true } : r);
       setReviews(updateLikes(reviews));
       setAllReviews(updateLikes(allReviews));
       await supabase.from("comment_likes" as any).insert({ comment_id: reviewId, user_id: user.id });
-      await supabase.from("comments").update({ likes_count: (review.likes_count || 0) + 1 } as any).eq("id", reviewId);
     }
+
+    // Refetch actual count from DB
+    const { count } = await supabase.from("comment_likes" as any).select("*", { count: "exact", head: true }).eq("comment_id", reviewId);
+    const realCount = count || 0;
+    await supabase.from("comments").update({ likes_count: realCount } as any).eq("id", reviewId);
+    const syncCount = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: realCount } : r);
+    setReviews(syncCount(reviews));
+    setAllReviews(syncCount(allReviews));
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!user) return;
+    await supabase.from("comments").delete().eq("id", reviewId).eq("user_id", user.id);
+    await fetchData();
+    if (isDialogOpen) await fetchMoreReviews(true);
   };
 
   const getTimeAgo = (dateStr: string) => {
@@ -272,18 +284,26 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
         {review.avatar}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-0.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <h4 className="text-[13px] font-bold text-foreground truncate tracking-tight leading-none">{review.displayName}</h4>
-            {user?.id === review.user_id && (
-              <button 
-                onClick={() => openEditModal(review)}
-                className="p-1 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all"
-              >
-                <Pencil size={10} />
-              </button>
-            )}
-          </div>
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <h4 className="text-[13px] font-bold text-foreground truncate tracking-tight leading-none">{review.displayName}</h4>
+              {user?.id === review.user_id && (
+                <>
+                  <button 
+                    onClick={() => openEditModal(review)}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all"
+                  >
+                    <Pencil size={10} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteReview(review.id)}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-all"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </>
+              )}
+            </div>
           <span className="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-wider">{getTimeAgo(review.created_at)}</span>
         </div>
         <p className="text-[13px] text-muted-foreground leading-snug mb-2 whitespace-pre-wrap">{review.text}</p>

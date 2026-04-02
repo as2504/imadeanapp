@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Star, Share2, Bookmark, Calendar, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface AppDetailHeaderProps {
-  app: { id?: string; name: string; publisher: string; icon: string; publishedDate: string; platforms: string[]; slug?: string; };
+  app: { id?: string; name: string; publisher: string; publisherUserId?: string; icon: string; publishedDate: string; platforms: string[]; slug?: string; };
   avgRating: number;
   totalRatings: number;
   isAuthenticated?: boolean;
@@ -21,6 +22,7 @@ interface AppDetailHeaderProps {
 const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true }: AppDetailHeaderProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight truncate">{app.name}</h1>
-              <p className="text-sm sm:text-base text-primary font-medium mt-0.5">{app.publisher}</p>
+              <button onClick={() => app.publisherUserId && navigate(`/profile/${app.publisherUserId}`)} className="text-sm sm:text-base text-primary font-medium mt-0.5 hover:underline cursor-pointer text-left">{app.publisher}</button>
             </div>
             
             {isAuthenticated && (

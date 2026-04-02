@@ -106,7 +106,9 @@ const PublishForm = () => {
   });
 
   const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -198,6 +200,7 @@ const PublishForm = () => {
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIconFile(file);
       setIconPreview(URL.createObjectURL(file));
       setErrors(prev => ({ ...prev, icon: "" }));
     }
@@ -208,6 +211,7 @@ const PublishForm = () => {
     const remaining = 3 - screenshotPreviews.length;
     if (remaining <= 0) return;
     const toAdd = files.slice(0, remaining);
+    setScreenshotFiles(prev => [...prev, ...toAdd]);
     setScreenshotPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
   };
 
@@ -227,6 +231,32 @@ const PublishForm = () => {
 
     setIsSubmitting(true);
     try {
+      // Upload icon
+      let iconUrl = iconPreview;
+      if (iconFile) {
+        const ext = iconFile.name.split('.').pop();
+        const path = `icons/${user.id}/${Date.now()}.${ext}`;
+        const { error: iconErr } = await supabase.storage.from('app-assets').upload(path, iconFile, { upsert: true });
+        if (iconErr) throw iconErr;
+        const { data: { publicUrl } } = supabase.storage.from('app-assets').getPublicUrl(path);
+        iconUrl = publicUrl;
+      }
+
+      // Upload screenshots
+      const screenshotUrls: string[] = [];
+      for (let i = 0; i < screenshotFiles.length; i++) {
+        const file = screenshotFiles[i];
+        const ext = file.name.split('.').pop();
+        const path = `screenshots/${user.id}/${Date.now()}_${i}.${ext}`;
+        const { error: ssErr } = await supabase.storage.from('app-assets').upload(path, file, { upsert: true });
+        if (ssErr) throw ssErr;
+        const { data: { publicUrl } } = supabase.storage.from('app-assets').getPublicUrl(path);
+        screenshotUrls.push(publicUrl);
+      }
+      // Keep any existing URLs (from edit mode) that aren't blob URLs
+      const existingUrls = screenshotPreviews.filter(u => !u.startsWith('blob:'));
+      const finalScreenshots = [...existingUrls, ...screenshotUrls];
+
       const appData = {
         app_name: formData.appName,
         slug: slugify(formData.appName),
@@ -241,8 +271,8 @@ const PublishForm = () => {
         github_url: formData.urls.github || null,
         demo_video_url: formData.urls.demo || null,
         pricing: formData.pricing,
-        app_icon_url: iconPreview,
-        screenshots: screenshotPreviews,
+        app_icon_url: iconUrl,
+        screenshots: finalScreenshots,
         user_id: user.id,
         status: "published"
       };

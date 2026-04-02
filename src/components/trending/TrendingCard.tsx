@@ -2,7 +2,29 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Star, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { TrendingApp } from "@/data/mockTrending";
+
+export interface TrendingApp {
+  id: string;
+  rank: number;
+  appName: string;
+  appIcon: string;
+  publisherName: string;
+  publisherAvatar: string;
+  verified: boolean;
+  timeAgo: string;
+  caption: string;
+  tags: string[];
+  platforms: ("web" | "android" | "ios")[];
+  techStack: string[];
+  likes: number;
+  comments: number;
+  views: number;
+  liked: boolean;
+  saved: boolean;
+  trendLabel: string;
+  growthPercent: number;
+  topComment?: string;
+}
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
   web: { label: "Web", icon: "/webapp.png" },
@@ -11,6 +33,13 @@ const platformConfig: Record<string, { label: string; icon: string }> = {
 };
 
 const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
+
+const medalBorder = (rank: number) => {
+  if (rank === 1) return "border-yellow-500/60 shadow-yellow-500/10 shadow-md";
+  if (rank === 2) return "border-gray-400/60 shadow-gray-400/10 shadow-md";
+  if (rank === 3) return "border-amber-700/60 shadow-amber-700/10 shadow-md";
+  return "border-border/10";
+};
 
 const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
   const navigate = useNavigate();
@@ -33,7 +62,7 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
   return (
     <article
       onClick={() => navigate(`/app/${(app as any).slug || app.id}`)}
-      className="relative flex items-center gap-4 px-4 py-3 rounded-xl border-b border-border/10 last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group"
+      className={`relative flex items-center gap-4 px-4 py-3 rounded-xl border last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group ${medalBorder(app.rank)}`}
     >
       {/* Icon with Rank Badge */}
       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden relative z-10">
