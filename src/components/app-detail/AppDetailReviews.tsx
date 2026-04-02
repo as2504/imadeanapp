@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Star, Send, CheckCircle2, ThumbsUp, MessageSquare, Info, AlertCircle, Pencil, X as CloseIcon } from "lucide-react";
+import { Star, Send, CheckCircle2, ThumbsUp, MessageSquare, Info, AlertCircle, Pencil, Trash2, X as CloseIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
