@@ -34,6 +34,13 @@ const platformConfig: Record<string, { label: string; icon: string }> = {
 
 const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
 
+const medalBorder = (rank: number) => {
+  if (rank === 1) return "border-yellow-500/60 shadow-yellow-500/10 shadow-md";
+  if (rank === 2) return "border-gray-400/60 shadow-gray-400/10 shadow-md";
+  if (rank === 3) return "border-amber-700/60 shadow-amber-700/10 shadow-md";
+  return "border-border/10";
+};
+
 const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
   const navigate = useNavigate();
   const [avgRating, setAvgRating] = useState<number | null>(null);
