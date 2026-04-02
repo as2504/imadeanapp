@@ -2,7 +2,29 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Star, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { TrendingApp } from "@/data/mockTrending";
+
+export interface TrendingApp {
+  id: string;
+  rank: number;
+  appName: string;
+  appIcon: string;
+  publisherName: string;
+  publisherAvatar: string;
+  verified: boolean;
+  timeAgo: string;
+  caption: string;
+  tags: string[];
+  platforms: ("web" | "android" | "ios")[];
+  techStack: string[];
+  likes: number;
+  comments: number;
+  views: number;
+  liked: boolean;
+  saved: boolean;
+  trendLabel: string;
+  growthPercent: number;
+  topComment?: string;
+}
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
   web: { label: "Web", icon: "/webapp.png" },
