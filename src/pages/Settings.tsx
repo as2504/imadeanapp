@@ -5,29 +5,22 @@ import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/integrations/supabase/client";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import FeedbackDashboard from "@/components/feedback/FeedbackDashboard";
 import { 
   ChevronLeft, 
   Moon, 
   Sun, 
   MessageSquare, 
   Settings as SettingsIcon,
-  Shield,
-  Bell,
+  Star,
   Loader2,
   Check,
   ChevronDown,
-  LogOut
+  LogOut,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Command,
   CommandEmpty,
@@ -41,28 +34,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { toast } = useToast();
   
   const [activeSection, setActiveSection] = useState("general");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [myApps, setMyApps] = useState<any[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
-  const [selectedApp, setSelectedApp] = useState<string | null>(null);
-  const [feedbackConfig, setFeedbackConfig] = useState({
-    enabled: true,
-    type: "text"
-  });
-  const [isSaving, setIsSaving] = useState(false);
+  const [feedbackConfigs, setFeedbackConfigs] = useState<any[]>([]);
+  const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
+  const [addPopoverOpen, setAddPopoverOpen] = useState(false);
+  const [dashboardApp, setDashboardApp] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchMyApps();
+      fetchFeedbackConfigs();
     }
   }, [user]);
 
@@ -70,62 +61,50 @@ const Settings = () => {
     setLoadingApps(true);
     const { data } = await supabase
       .from("apps")
-      .select("id, app_name, slug")
+      .select("id, app_name, slug, app_icon_url")
       .eq("user_id", user?.id)
       .eq("status", "published");
     setMyApps(data || []);
     setLoadingApps(false);
   };
 
-  const fetchFeedbackConfig = async (appId: string) => {
+  const fetchFeedbackConfigs = async () => {
+    if (!user) return;
     const { data } = await supabase
       .from("app_feedback_config" as any)
       .select("*")
-      .eq("app_id", appId)
-      .maybeSingle();
+      .eq("user_id", user.id);
     
-    if (data) {
-      const cfg = data as any;
-      setFeedbackConfig({
-        enabled: cfg.is_enabled,
-        type: cfg.feedback_type
-      });
-    } else {
-      setFeedbackConfig({ enabled: true, type: "text" });
+    const configs = (data as any[]) || [];
+    setFeedbackConfigs(configs);
+
+    // Fetch response counts
+    const counts: Record<string, number> = {};
+    for (const cfg of configs) {
+      const { count } = await supabase
+        .from("app_feedback_responses" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("config_id", cfg.id);
+      counts[cfg.app_id] = count || 0;
     }
+    setResponseCounts(counts);
   };
 
-  const handleAppSelect = (appId: string) => {
-    setSelectedApp(appId);
-    fetchFeedbackConfig(appId);
-  };
+  const configuredAppIds = new Set(feedbackConfigs.map((c: any) => c.app_id));
 
-  const saveFeedbackSettings = async () => {
-    if (!selectedApp) return;
-    setIsSaving(true);
-    
-    const { error } = await supabase
-      .from("app_feedback_config" as any)
-      .upsert({
-        app_id: selectedApp,
-        is_enabled: true,
-        feedback_type: feedbackConfig.type,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'app_id' });
-
-    setIsSaving(false);
-    if (error) {
-      toast({ title: "Error", description: "Failed to save feedback settings", variant: "destructive" });
-    } else {
-      toast({ title: "Settings saved", description: "Feedback form has been added to your app details page." });
+  const handleAddApp = (appId: string) => {
+    if (configuredAppIds.has(appId)) {
+      toast.info("Feedback is already added for this app.");
+      return;
     }
+    setAddPopoverOpen(false);
+    navigate(`/feedback-setup/${appId}`);
   };
 
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
-    { id: "notifications", label: "Notifications", icon: Bell, badge: null },
-    { id: "privacy", label: "Privacy & Security", icon: Shield, badge: null },
+    { id: "reviews", label: "Reviews Analytics", icon: Star, badge: "Beta" },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -144,7 +123,7 @@ const Settings = () => {
         <h1 className="text-xl font-bold text-foreground tracking-tight mb-8">Settings</h1>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Mobile Dropdown with Search */}
+          {/* Mobile Dropdown */}
           <div className="lg:hidden mb-6">
             <Popover open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
               <PopoverTrigger asChild>
@@ -211,7 +190,7 @@ const Settings = () => {
           </div>
 
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block lg:w-48 shrink-0">
+          <div className="hidden lg:block lg:w-52 shrink-0">
             <div className="flex lg:flex-col gap-1">
               {sections.map((s) => (
                 <button
@@ -243,15 +222,46 @@ const Settings = () => {
                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                   {activeSectionData.label}
                 </h2>
-                {activeSection === "feedback" && selectedApp && (
-                  <button 
-                    onClick={saveFeedbackSettings}
-                    disabled={isSaving}
-                    className="text-sm font-bold text-primary hover:opacity-80 transition-opacity disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {isSaving && <Loader2 size={14} className="animate-spin" />}
-                    Save Changes
-                  </button>
+                {activeSection === "feedback" && !dashboardApp && (
+                  <Popover open={addPopoverOpen} onOpenChange={setAddPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <button className="w-8 h-8 rounded-xl bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors">
+                        <Plus size={16} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0 rounded-2xl border-border/40 bg-card overflow-hidden" align="end">
+                      <Command className="bg-transparent">
+                        <CommandInput placeholder="Search apps..." className="h-10 border-none focus:ring-0 text-sm" />
+                        <CommandList className="max-h-[200px]">
+                          <CommandEmpty>No apps found.</CommandEmpty>
+                          <CommandGroup>
+                            {myApps.map((app) => {
+                              const hasConfig = configuredAppIds.has(app.id);
+                              return (
+                                <CommandItem
+                                  key={app.id}
+                                  value={app.app_name}
+                                  onSelect={() => handleAddApp(app.id)}
+                                  className={cn(
+                                    "flex items-center gap-3 px-3 py-2 cursor-pointer",
+                                    hasConfig && "opacity-50"
+                                  )}
+                                >
+                                  <div className="w-7 h-7 rounded-lg bg-background border border-border/40 overflow-hidden flex-shrink-0">
+                                    {app.app_icon_url && (
+                                      <img src={app.app_icon_url} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs font-medium truncate">{app.app_name}</span>
+                                  {hasConfig && <Check size={12} className="ml-auto text-primary" />}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
 
@@ -285,10 +295,8 @@ const Settings = () => {
                       </div>
                     </div>
 
-                    {/* Separator */}
                     <div className="border-t border-border/40" />
 
-                    {/* Log out */}
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <p className="text-sm font-bold text-foreground">Log Out</p>
@@ -308,75 +316,73 @@ const Settings = () => {
                 )}
 
                 {activeSection === "feedback" && (
-                  <div className="space-y-5 animate-reveal">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-bold text-foreground">App Feedback Configuration</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        A feedback button will be added to the app details page for your users to share their thoughts.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Select App</Label>
-                        <Select onValueChange={handleAppSelect} value={selectedApp || undefined}>
-                          <SelectTrigger className="h-10 bg-surface/30 border-border/40 rounded-xl text-sm font-medium focus:ring-primary/20 transition-all">
-                            <SelectValue placeholder={loadingApps ? "Loading apps..." : "Choose a published app"} />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-border/40">
-                            {myApps.map(app => (
-                              <SelectItem key={app.id} value={app.id} className="rounded-lg my-0.5">
-                                {app.app_name}
-                              </SelectItem>
-                            ))}
-                            {myApps.length === 0 && !loadingApps && (
-                              <p className="text-xs text-center py-4 text-muted-foreground">No published apps found</p>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {selectedApp && (
-                        <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="space-y-2">
-                            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Feedback Type</Label>
-                            <Select 
-                              value={feedbackConfig.type} 
-                              onValueChange={(val) => setFeedbackConfig(prev => ({ ...prev, type: val }))}
-                            >
-                              <SelectTrigger className="h-10 bg-surface/30 border-border/40 rounded-xl text-sm font-medium focus:ring-primary/20 transition-all">
-                                <SelectValue placeholder="Select feedback style" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-border/40">
-                                <SelectItem value="text" className="rounded-lg my-0.5">
-                                  <div className="flex flex-col py-0.5">
-                                    <span className="text-sm font-medium">Open Text Feedback</span>
-                                    <span className="text-[10px] text-muted-foreground">Phase 1: Simple comment box for users</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="satisfaction" disabled className="rounded-lg my-0.5 opacity-50">
-                                  <div className="flex flex-col py-0.5">
-                                    <span className="text-sm font-medium">Satisfaction Scale (Coming Soon)</span>
-                                    <span className="text-[10px] text-muted-foreground">Phase 2: Great / Okay / Bad ratings</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="qna" disabled className="rounded-lg my-0.5 opacity-50">
-                                  <div className="flex flex-col py-0.5">
-                                    <span className="text-sm font-medium">Custom Q&A (Coming Soon)</span>
-                                    <span className="text-[10px] text-muted-foreground">Phase 3: Multi-question custom forms</span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                  <div className="space-y-5 animate-in fade-in duration-300">
+                    {dashboardApp ? (
+                      <FeedbackDashboard
+                        appId={dashboardApp.id}
+                        appName={dashboardApp.name}
+                        onBack={() => setDashboardApp(null)}
+                      />
+                    ) : (
+                      <>
+                        <div className="space-y-1">
+                          <h3 className="text-base font-bold text-foreground">Your Feedback Forms</h3>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Manage feedback forms for your published apps. Click the + to add a new one.
+                          </p>
                         </div>
-                      )}
-                    </div>
+
+                        {feedbackConfigs.length === 0 ? (
+                          <div className="text-center py-12 space-y-3">
+                            <MessageSquare size={32} className="mx-auto text-muted-foreground/30" />
+                            <p className="text-sm text-muted-foreground">No feedback forms yet.</p>
+                            <p className="text-xs text-muted-foreground/60">
+                              Click the + button above to create one.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {feedbackConfigs.map((cfg: any) => {
+                              const app = myApps.find((a) => a.id === cfg.app_id);
+                              const count = responseCounts[cfg.app_id] || 0;
+                              return (
+                                <button
+                                  key={cfg.id}
+                                  onClick={() => setDashboardApp({ id: cfg.app_id, name: app?.app_name || "App" })}
+                                  className="w-full flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                                >
+                                  <div className="w-10 h-10 rounded-xl bg-card border border-border/40 overflow-hidden flex-shrink-0">
+                                    {app?.app_icon_url && (
+                                      <img src={app.app_icon_url} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-foreground truncate">
+                                      {app?.app_name || "Unknown App"}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                                      {cfg.feedback_type === "qna" ? "Q&A" : "Satisfaction"}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-lg font-black text-foreground">{count}</p>
+                                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
+                                      responses
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
 
-                {(activeSection === "notifications" || activeSection === "privacy") && (
+                {activeSection === "reviews" && (
                   <div className="text-center py-12">
+                    <Star size={32} className="mx-auto text-muted-foreground/30 mb-3" />
                     <p className="text-sm font-medium text-muted-foreground italic">
                       This section is currently under development.
                     </p>

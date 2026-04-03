@@ -1,38 +1,46 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 interface AppFeedbackProps {
   appId: string;
+  userTried?: boolean;
 }
 
-const AppFeedback = ({ appId }: AppFeedbackProps) => {
+const AppFeedback = ({ appId, userTried }: AppFeedbackProps) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [config, setConfig] = useState<{ is_enabled: boolean; feedback_type: string } | null>(null);
-  const [feedback, setFeedback] = useState("");
-  const [isSubmitting, setIsSaving] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
+  const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
   useEffect(() => {
     fetchConfig();
-  }, [appId]);
+  }, [appId, user]);
 
   const fetchConfig = async () => {
     try {
       const { data } = await supabase
         .from("app_feedback_config" as any)
-        .select("is_enabled, feedback_type")
+        .select("id, is_enabled")
         .eq("app_id", appId)
         .maybeSingle();
       
-      setConfig(data as any);
+      setConfig(data);
+
+      // Check if user already submitted
+      if (user && data) {
+        const { data: existing } = await supabase
+          .from("app_feedback_responses" as any)
+          .select("id")
+          .eq("config_id", (data as any).id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setAlreadySubmitted(!!existing);
+      }
     } catch (error) {
       console.error("Error fetching feedback config:", error);
     } finally {
@@ -40,81 +48,29 @@ const AppFeedback = ({ appId }: AppFeedbackProps) => {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!user || !feedback.trim()) return;
-    
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from("app_feedback_responses" as any)
-        .insert({
-          app_id: appId,
-          user_id: user.id,
-          response_data: { text: feedback.trim() },
-          feedback_type: config?.feedback_type || "text"
-        });
-
-      if (error) throw error;
-
-      setSubmitted(true);
-      setFeedback("");
-      toast({ title: "Feedback sent", description: "Thanks for your feedback!" });
-      setTimeout(() => setSubmitted(false), 5000);
-    } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to send feedback", 
-        variant: "destructive" 
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (loading || !config?.is_enabled) return null;
+  // Only show if: authenticated, tried the app, config exists & enabled, not already submitted
+  if (loading || !user || !userTried || !config || !(config as any).is_enabled || alreadySubmitted) return null;
 
   return (
-    <section className="p-8 rounded-[2rem] bg-surface border border-border/40 space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-          <MessageSquare size={20} />
+    <section className="p-6 rounded-2xl bg-card border border-border/40">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+            <MessageSquare size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">Share your feedback</p>
+            <p className="text-[10px] text-muted-foreground">Help the developer improve this app</p>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <h3 className="text-lg font-black text-foreground uppercase tracking-tight leading-none">Developer Feedback</h3>
-          <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Share your thoughts directly with the creator</p>
-        </div>
+        <Button
+          onClick={() => navigate(`/feedback/${appId}`)}
+          size="sm"
+          className="rounded-xl font-bold text-xs px-5 bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+        >
+          Give Feedback
+        </Button>
       </div>
-
-      <div className="relative">
-        <Textarea 
-          placeholder="How can we improve this app? What features are you looking for?"
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          className="min-h-[120px] bg-background/50 border-border/40 rounded-2xl p-4 text-sm focus:ring-primary/20 resize-none leading-relaxed"
-          disabled={submitted}
-        />
-        <div className="absolute bottom-4 right-4">
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!feedback.trim() || isSubmitting || submitted}
-            className="rounded-full px-6 bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] h-9 shadow-lg shadow-primary/20"
-          >
-            {isSubmitting ? (
-              <Loader2 className="animate-spin" size={14} />
-            ) : submitted ? (
-              <><CheckCircle2 size={14} className="mr-2" /> Sent</>
-            ) : (
-              <><Send size={12} className="mr-2" /> Submit Feedback</>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {submitted && (
-        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest text-center animate-in fade-in slide-in-from-top-1">
-          Your response has been delivered to the developer.
-        </p>
-      )}
     </section>
   );
 };

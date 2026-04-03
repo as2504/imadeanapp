@@ -112,6 +112,22 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/feedback-setup/:appId"
+                element={
+                  <ProtectedRoute>
+                    <FeedbackSetup />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/feedback/:appId"
+                element={
+                  <ProtectedRoute>
+                    <FeedbackFlow />
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
