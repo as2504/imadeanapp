@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_feedback_config: {
+        Row: {
+          app_id: string
+          created_at: string
+          feedback_type: string
+          id: string
+          is_enabled: boolean
+          questions: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          is_enabled?: boolean
+          questions?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          is_enabled?: boolean
+          questions?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_feedback_responses: {
+        Row: {
+          app_id: string
+          config_id: string
+          created_at: string
+          feedback_type: string
+          id: string
+          response_data: Json
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          config_id: string
+          created_at?: string
+          feedback_type: string
+          id?: string
+          response_data?: Json
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          config_id?: string
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          response_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_tries: {
         Row: {
           app_id: string
