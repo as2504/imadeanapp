@@ -210,6 +210,7 @@ const AppDetail = () => {
                   userReviewed={userReviewed}
                   onRateClick={isAuthenticated ? handleRateClick : undefined}
                 />
+                <AppFeedback appId={appData.id} userTried={userTried} />
               </div>
             )}
             {activeTab === "Reviews" && isAuthenticated && <AppDetailReviews appId={appData.id} userTried={userTried} />}

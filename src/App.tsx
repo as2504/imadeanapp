@@ -13,6 +13,8 @@ import PublishApp from "./pages/PublishApp.tsx";
 import AppDetail from "./pages/AppDetail.tsx";
 import EditProfile from "./pages/EditProfile.tsx";
 import Settings from "./pages/Settings.tsx";
+import FeedbackSetup from "./pages/FeedbackSetup.tsx";
+import FeedbackFlow from "./pages/FeedbackFlow.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ScrollToTop from "./components/layout/ScrollToTop.tsx";
 
@@ -107,6 +109,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/feedback-setup/:appId"
+                element={
+                  <ProtectedRoute>
+                    <FeedbackSetup />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/feedback/:appId"
+                element={
+                  <ProtectedRoute>
+                    <FeedbackFlow />
                   </ProtectedRoute>
                 }
               />
