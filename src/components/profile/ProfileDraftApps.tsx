@@ -132,43 +132,52 @@ const ProfileDraftApps = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {apps.map((app) => (
           <div key={app.id} className="relative group/card">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div>
-                  <AppCard post={app} onClick={(e) => {}} />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
-                <DropdownMenuItem
-                  onClick={() => navigate(`/app/${app.slug || app.id}`)}
-                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                >
-                  <Eye size={14} className="text-sky-500" /> View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => navigate(`/publish?edit=${app.id}`)}
-                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                >
-                  <Edit3 size={14} className="text-amber-500" /> Edit App
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handlePublish(app.id)}
-                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-emerald-500"
-                >
-                  <Send size={14} /> Publish
-                </DropdownMenuItem>
+            <div onClick={() => navigate(`/app/${app.slug || app.id}`)}>
+              <AppCard post={app} />
+            </div>
 
-                <DropdownMenuSeparator className="my-2 opacity-50" />
+            <div className="absolute top-3 right-3 z-20">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-sm border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-60 hover:opacity-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/app/${app.slug || app.id}`)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                  >
+                    <Eye size={14} className="text-sky-500" /> View Details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/publish?edit=${app.id}`)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                  >
+                    <Edit3 size={14} className="text-amber-500" /> Edit App
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handlePublish(app.id)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-emerald-500"
+                  >
+                    <Send size={14} /> Publish
+                  </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setDeleteId(app.id)}
-                  className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
-                >
-                  <Trash2 size={14} /> Delete App
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuSeparator className="my-2 opacity-50" />
+
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setDeleteId(app.id)}
+                    className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
+                  >
+                    <Trash2 size={14} /> Delete App
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             <div className="absolute top-2 left-2 z-10">
               <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/90 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg backdrop-blur-sm">
