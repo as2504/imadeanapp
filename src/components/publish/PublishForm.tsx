@@ -85,6 +85,9 @@ const PublishForm = () => {
   const [step, setStep] = useState(1);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLive, setIsLive] = useState(false);
+  const [editAppStatus, setEditAppStatus] = useState<string | null>(null);
+  const [showUpdateNoteModal, setShowUpdateNoteModal] = useState(false);
+  const [updateNote, setUpdateNote] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
