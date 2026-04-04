@@ -846,6 +846,42 @@ const PublishForm = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Update Note Modal */}
+        <Dialog open={showUpdateNoteModal} onOpenChange={setShowUpdateNoteModal}>
+          <DialogContent className="rounded-3xl border-border/40 shadow-2xl p-8 max-w-[400px]">
+            <DialogHeader className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
+                <HistoryIcon size={24} className="text-primary" />
+              </div>
+              <DialogTitle className="text-2xl font-black">What's new?</DialogTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Describe what you updated so your users know what changed.
+              </p>
+            </DialogHeader>
+            <Textarea
+              placeholder="e.g. Fixed bugs, added dark mode support..."
+              value={updateNote}
+              onChange={(e) => setUpdateNote(e.target.value)}
+              className="min-h-[100px] rounded-xl bg-background border-border/40 text-sm mt-2"
+            />
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button variant="ghost" className="flex-1 rounded-xl font-bold h-11" onClick={() => setShowUpdateNoteModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 rounded-xl font-bold h-11"
+                disabled={!updateNote.trim() || isSubmitting}
+                onClick={() => {
+                  setShowUpdateNoteModal(false);
+                  handleSubmit(updateNote);
+                }}
+              >
+                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : "Save & Publish"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
