@@ -814,7 +814,7 @@ const PublishForm = () => {
           </div>
 
           <Button 
-            onClick={step === 4 ? handleSubmit : nextStep} 
+            onClick={step === 4 ? () => handleSubmit() : nextStep} 
             disabled={isSubmitting || (step === 4 && (formData.techStack.length === 0 || formData.tags.length === 0 || !formData.pricing))}
             className="rounded-lg px-6 font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-primary/10 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
           >
