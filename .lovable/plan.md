@@ -1,192 +1,68 @@
-# Plan: Complete App Feedback System Overhaul
+# Plan: Settings Alignment, Feedback Dashboard Actions, Edit App Flow, Favicon, Published Apps UX
 
-## Summary
+## 1. Align Settings Page Content with Navbar
 
-Transform the "App Feedback (Beta)" section from a simple config dropdown into a full-featured feedback creation, collection, and analytics system. This involves new database tables, new pages/components, and premium animations.
+**Problem:** The "Back" button, "Settings" heading, sidebar, and content panel don't align with the IMAA logo (left) and profile icon (right) in the navbar.
 
----
+**Fix in `Settings.tsx`:** Change `max-w-[1000px]` to `max-w-[1200px]` to match the navbar's `max-w-[1200px]`. This aligns the left edge of "Back"/sidebar with the logo and the right edge of the content card with the profile icon.
 
-## Database Migration
+## 2. Feedback Dashboard — 3-Dot Menu with Edit/Delete
 
-```sql
--- Feedback forms (one per app)
-CREATE TABLE public.app_feedback_config (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  app_id uuid NOT NULL UNIQUE,
-  user_id uuid NOT NULL,
-  feedback_type text NOT NULL DEFAULT 'qna', -- 'qna' or 'satisfaction'
-  is_enabled boolean NOT NULL DEFAULT true,
-  questions jsonb NOT NULL DEFAULT '[]',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+**Fix in `Settings.tsx` (feedback list items):** Add a `DropdownMenu` with a 3-dot (`MoreVertical`) icon on each feedback config row. Options:
 
-ALTER TABLE public.app_feedback_config ENABLE ROW LEVEL SECURITY;
+- **Edit** — navigates to `/feedback-setup/:appId` (the existing setup page loads current questions for editing)
+- **Delete** — deletes the `app_feedback_config` row and refreshes the list with a confirmation toast
 
-CREATE POLICY "Feedback config viewable by everyone"
-ON public.app_feedback_config FOR SELECT TO public USING (true);
+**Also show total response count** in the dashboard header area (already shown, confirm it's visible).
 
-CREATE POLICY "Users can insert own feedback config"
-ON public.app_feedback_config FOR INSERT TO authenticated
-WITH CHECK (auth.uid() = user_id);
+## 3. "Update App" Opens Edit Page with Update Note 
 
-CREATE POLICY "Users can update own feedback config"
-ON public.app_feedback_config FOR UPDATE TO authenticated
-USING (auth.uid() = user_id);
+**Problem:** "Update App" in ProfilePublishedApps navigates to `/publish?edit=appId` which opens the full publish form. Instead it should open an edit page that pre-fills current details AND asks for an update note.
 
-CREATE POLICY "Users can delete own feedback config"
-ON public.app_feedback_config FOR DELETE TO authenticated
-USING (auth.uid() = user_id);
+**Fix:**
 
--- Feedback responses from users
-CREATE TABLE public.app_feedback_responses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  app_id uuid NOT NULL,
-  config_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  response_data jsonb NOT NULL DEFAULT '{}',
-  feedback_type text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+- Keep navigating to `/publish?edit=appId` — the `PublishForm.tsx` already handles edit mode
+- In `PublishForm.tsx`, when in edit mode (`editId` present) and the app status is `"published"`:
+  - After user clicks "Save Changes", show a dialog asking for an **update note** (required text input)
+  - On submit, update the app row AND insert a row into `app_updates` with the note
+- For draft apps (status !== `"published"`), skip the update note dialog
 
-ALTER TABLE public.app_feedback_responses ENABLE ROW LEVEL SECURITY;
+## 4. Draft Apps — Edit Without Update Note
 
-CREATE POLICY "Responses viewable by app owner"
-ON public.app_feedback_responses FOR SELECT TO authenticated
-USING (
-  auth.uid() = user_id OR
-  EXISTS (
-    SELECT 1 FROM public.app_feedback_config fc
-    WHERE fc.id = config_id AND fc.user_id = auth.uid()
-  )
-);
+**Fix in `ProfileDraftApps.tsx`:** The "Edit" action already navigates to `/publish?edit=appId`. Since drafts aren't published, `PublishForm` will skip the update note dialog (per step 3 logic).
 
-CREATE POLICY "Users can submit responses"
-ON public.app_feedback_responses FOR INSERT TO authenticated
-WITH CHECK (auth.uid() = user_id);
-```
+## 5. Favicon — Use IMAA Logo
 
-`**questions` jsonb format:**
+**Fix in `index.html`:** Change `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />` to `<link rel="icon" type="image/png" href="/logos/IMAAx192x192w.png" />`.
 
-```json
-[
-  {
-    "id": "q1",
-    "text": "How would you rate the UI?",
-    "type": "single" | "multi",
-    "options": ["Great", "Good", "Okay", "Bad"]
-  }
-]
-```
+## 6. Reviews Analytics Icon
 
-For satisfaction type, `questions` will be auto-populated with a single predefined question.
+**Fix in `Settings.tsx`:** The `Star` icon is already used for "Reviews Analytics". This looks fine — no change needed unless a different icon is preferred. Already has an icon.
 
----
+## 7. Published Apps — Remove 3-Dot Hover, Click-Only Dropdown
 
-## Architecture: New Files
+**Problem:** The 3-dot button appears on hover (`opacity-0 group-hover/card:opacity-100`), and on mobile touching/scrolling triggers it.
 
+**Fix in `ProfilePublishedApps.tsx`:**
 
-| File                                            | Purpose                                                                                    |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `src/pages/FeedbackSetup.tsx`                   | Full-page form builder (Cancel/Done, add questions, add options, max 5 limit)              |
-| `src/pages/FeedbackFlow.tsx`                    | Full-page user-facing feedback experience (stack animation, back button, thank you screen) |
-| `src/components/feedback/QuestionCard.tsx`      | Reusable question card with options editor (publisher) and answer selector (user)          |
-| `src/components/feedback/FeedbackDashboard.tsx` | Analytics view: questions + % per option                                                   |
-| `src/components/feedback/ThankYouScreen.tsx`    | Post-feedback: publisher profile, follow button, go to profile                             |
+- Remove `opacity-0 group-hover/card:opacity-100` classes from the 3-dot button — make it always visible (subtle styling)
+- OR better: remove the visible 3-dot icon entirely. Instead, make the entire card clickable to navigate to app details, and use a **long-press or right-click context menu** approach
+- **Chosen approach:** Remove the hover-triggered 3-dot. Instead, make the card navigate on click. Add a small persistent but subtle 3-dot button (always visible, not hover-dependent). On mobile, this prevents scroll-triggered menus since the button is a discrete tap target, not a hover effect.
+- Change the button styling: remove `opacity-0 group-hover/card:opacity-100`, keep it always visible with subtle muted styling (`opacity-60 hover:opacity-100`).
 
+## 8. Same Fix for Draft Apps
 
----
-
-## Settings Page — Feedback Section Redesign
-
-**Remove:** Notifications and Privacy & Security sections. Replace with "Reviews Analytics (Beta)" showing "under development" message.
-
-**Feedback section redesign:**
-
-- Show list of apps that already have feedback configured (fetched from `app_feedback_config`), each showing response count on the right. Clicking opens `FeedbackDashboard`.
-- A "+" button on the right side of the section header opens a popover/dropdown listing the user's published apps. Apps with existing feedback are disabled (clicking shows toast: "Feedback is already added for this app"). Selecting an available app navigates to `/feedback-setup/:appId`.
-
----
-
-## Feedback Setup Page (`/feedback-setup/:appId`)
-
-- **Header:** Cancel (top-left, navigates back) | Done (top-right, saves and shows confetti)
-- **App name** displayed at top
-- **Feedback type selector:** QnA or Satisfaction (radio/toggle)
-- **If QnA:**
-  - Input field for question text
-  - "+" button to add answer options (text inputs)
-  - Toggle for single-choice vs multi-choice per question
-  - "Add Question" button (max 5, show subtle note "Maximum 5 questions allowed")
-  - List of added questions with edit/delete
-- **If Satisfaction:**
-  - Auto-generates one question with options: Great, Good, Okay, Bad
-  - Note: "If user selects Bad, a follow-up text input will appear"
-  - No custom questions needed
-- **Done** saves to `app_feedback_config`, shows confetti via `canvas-confetti` (or CSS-based), then redirects back to settings
-- **Test Feedback** button appears after saving — opens `/feedback/:appId?test=true`
-
----
-
-## User Feedback Flow (`/feedback/:appId`)
-
-- **Gate:** Only users who have tried the app (check `app_tries`) can access. Others see a message.
-- **App name** at the top
-- **Stack animation:** Current question card lifts/flies off screen, next slides up from underneath. Use CSS transforms + `animate-in`/`animate-out`.
-- **Single-choice:** Auto-advance on selection
-- **Multi-choice:** Show "Next" button after at least one selection
-- **Satisfaction "Bad":** Shows follow-up text input just below the question: "What's the #1 thing we should fix?"
-- **Back button** to revisit previous questions
-- **Thank You screen** after last question:
-  - Publisher avatar + name
-  - Follow button (instant toggle to "Following" on click, inserts into `follows`)
-  - "Go to Profile" button → `/profile/:publisherId`
-- **Test mode** (`?test=true`): No responses saved, follow disabled
-
----
-
-## Feedback Dashboard (in Settings)
-
-When publisher clicks an app from the feedback list:
-
-- Show each question
-- For each option, show a horizontal bar with the % of users who selected it
-- Show total response count
-- No additional analytics
-
----
-
-## App Detail Page Update
-
-Replace the existing `AppFeedback` component with a "Give Feedback" button that navigates to `/feedback/:appId`. Only show if:
-
-1. User is authenticated
-2. User has tried the app (`app_tries`)
-3. Feedback config exists and is enabled for this app
-
----
-
-## Routes (App.tsx)
-
-Add protected routes:
-
-- `/feedback-setup/:appId` → `FeedbackSetup`
-- `/feedback/:appId` → `FeedbackFlow`
+**Fix in `ProfileDraftApps.tsx`:** Apply the same pattern — remove hover-triggered 3-dot, make it always visible but subtle.
 
 ---
 
 ## Files Summary
 
 
-| File                                            | Change                                                                                                                  |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Migration SQL**                               | Create `app_feedback_config` and `app_feedback_responses` tables                                                        |
-| `src/App.tsx`                                   | Add routes for feedback-setup and feedback                                                                              |
-| `src/pages/Settings.tsx`                        | Redesign feedback section (app list + "+" + dashboard), remove Notifications/Privacy, add Reviews Analytics placeholder |
-| `src/pages/FeedbackSetup.tsx`                   | **New** — Full form builder page                                                                                        |
-| `src/pages/FeedbackFlow.tsx`                    | **New** — User feedback experience with stack animations                                                                |
-| `src/components/feedback/QuestionCard.tsx`      | **New** — Question display/edit component                                                                               |
-| `src/components/feedback/FeedbackDashboard.tsx` | **New** — Response analytics per question                                                                               |
-| `src/components/feedback/ThankYouScreen.tsx`    | **New** — Post-feedback follow/profile screen                                                                           |
-| `src/components/app-detail/AppFeedback.tsx`     | Replace with "Give Feedback" navigation button                                                                          |
-| `src/pages/AppDetail.tsx`                       | Pass `userTried` to updated AppFeedback                                                                                 |
+| File                                              | Change                                                                        |
+| ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `src/pages/Settings.tsx`                          | Align to `max-w-[1200px]`, add 3-dot edit/delete on feedback items            |
+| `src/components/profile/ProfilePublishedApps.tsx` | Remove hover 3-dot, make always-visible subtle button                         |
+| `src/components/profile/ProfileDraftApps.tsx`     | Same 3-dot fix                                                                |
+| `src/components/publish/PublishForm.tsx`          | Add update note dialog when editing published apps, insert into `app_updates` |
+| `index.html`                                      | Update favicon to IMAA logo                                                   |
