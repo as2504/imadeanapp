@@ -85,6 +85,9 @@ const PublishForm = () => {
   const [step, setStep] = useState(1);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLive, setIsLive] = useState(false);
+  const [editAppStatus, setEditAppStatus] = useState<string | null>(null);
+  const [showUpdateNoteModal, setShowUpdateNoteModal] = useState(false);
+  const [updateNote, setUpdateNote] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -111,6 +114,36 @@ const PublishForm = () => {
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Load edit data
+  useEffect(() => {
+    if (!isEditMode || !editId || !user) return;
+    const loadEditData = async () => {
+      const { data } = await supabase.from("apps").select("*").eq("id", editId).maybeSingle();
+      if (!data) return;
+      setEditAppStatus(data.status);
+      setFormData({
+        appName: data.app_name || "",
+        caption: data.caption || data.tagline || "",
+        about: data.full_description || "",
+        platforms: (data.platforms as string[]) || ["web"],
+        techStack: data.tech_stack || [],
+        tags: data.tags || [],
+        pricing: data.pricing || "free",
+        urls: {
+          web: data.website_url || "",
+          android: data.play_store_url || "",
+          ios: data.app_store_url || "",
+          github: data.github_url || "",
+          demo: data.demo_video_url || "",
+        },
+        socialLinks: [],
+      });
+      if (data.app_icon_url) setIconPreview(data.app_icon_url);
+      if (data.screenshots?.length) setScreenshotPreviews(data.screenshots);
+    };
+    loadEditData();
+  }, [editId, isEditMode, user]);
 
   // Progress Calculation
   const progress = useMemo(() => {
@@ -225,9 +258,15 @@ const PublishForm = () => {
     setErrors(prev => ({ ...prev, platforms: "" }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (noteOverride?: string) => {
     if (!validateStep(4)) return;
     if (!user) return;
+
+    // If editing a published app and no update note yet, show dialog
+    if (isEditMode && editAppStatus === "published" && !noteOverride && !updateNote) {
+      setShowUpdateNoteModal(true);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -279,6 +318,16 @@ const PublishForm = () => {
 
       if (isEditMode && editId) {
         await supabase.from("apps").update(appData).eq("id", editId);
+        
+        // Insert update note for published apps
+        const finalNote = noteOverride || updateNote;
+        if (editAppStatus === "published" && finalNote?.trim()) {
+          await supabase.from("app_updates").insert({
+            app_id: editId,
+            user_id: user.id,
+            version_notes: finalNote.trim(),
+          });
+        }
       } else {
         await supabase.from("apps").insert(appData);
       }
@@ -765,7 +814,7 @@ const PublishForm = () => {
           </div>
 
           <Button 
-            onClick={step === 4 ? handleSubmit : nextStep} 
+            onClick={step === 4 ? () => handleSubmit() : nextStep} 
             disabled={isSubmitting || (step === 4 && (formData.techStack.length === 0 || formData.tags.length === 0 || !formData.pricing))}
             className="rounded-lg px-6 font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-primary/10 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
           >
@@ -792,6 +841,42 @@ const PublishForm = () => {
               </Button>
               <Button className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
                 Save & Exit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Update Note Modal */}
+        <Dialog open={showUpdateNoteModal} onOpenChange={setShowUpdateNoteModal}>
+          <DialogContent className="rounded-3xl border-border/40 shadow-2xl p-8 max-w-[400px]">
+            <DialogHeader className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
+                <HistoryIcon size={24} className="text-primary" />
+              </div>
+              <DialogTitle className="text-2xl font-black">What's new?</DialogTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Describe what you updated so your users know what changed.
+              </p>
+            </DialogHeader>
+            <Textarea
+              placeholder="e.g. Fixed bugs, added dark mode support..."
+              value={updateNote}
+              onChange={(e) => setUpdateNote(e.target.value)}
+              className="min-h-[100px] rounded-xl bg-background border-border/40 text-sm mt-2"
+            />
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button variant="ghost" className="flex-1 rounded-xl font-bold h-11" onClick={() => setShowUpdateNoteModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 rounded-xl font-bold h-11"
+                disabled={!updateNote.trim() || isSubmitting}
+                onClick={() => {
+                  setShowUpdateNoteModal(false);
+                  handleSubmit(updateNote);
+                }}
+              >
+                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : "Save & Publish"}
               </Button>
             </DialogFooter>
           </DialogContent>

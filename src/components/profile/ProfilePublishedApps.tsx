@@ -168,7 +168,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-sm border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-0 group-hover/card:opacity-100 focus:opacity-100"
+                      className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-sm border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-60 hover:opacity-100"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoreVertical size={14} />
