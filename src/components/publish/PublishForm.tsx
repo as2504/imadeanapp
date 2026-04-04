@@ -115,6 +115,36 @@ const PublishForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Load edit data
+  useEffect(() => {
+    if (!isEditMode || !editId || !user) return;
+    const loadEditData = async () => {
+      const { data } = await supabase.from("apps").select("*").eq("id", editId).maybeSingle();
+      if (!data) return;
+      setEditAppStatus(data.status);
+      setFormData({
+        appName: data.app_name || "",
+        caption: data.caption || data.tagline || "",
+        about: data.full_description || "",
+        platforms: (data.platforms as string[]) || ["web"],
+        techStack: data.tech_stack || [],
+        tags: data.tags || [],
+        pricing: data.pricing || "free",
+        urls: {
+          web: data.website_url || "",
+          android: data.play_store_url || "",
+          ios: data.app_store_url || "",
+          github: data.github_url || "",
+          demo: data.demo_video_url || "",
+        },
+        socialLinks: [],
+      });
+      if (data.app_icon_url) setIconPreview(data.app_icon_url);
+      if (data.screenshots?.length) setScreenshotPreviews(data.screenshots);
+    };
+    loadEditData();
+  }, [editId, isEditMode, user]);
+
   // Progress Calculation
   const progress = useMemo(() => {
     // Step 1: 0-25%
