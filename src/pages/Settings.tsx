@@ -357,31 +357,72 @@ const Settings = () => {
                               const app = myApps.find((a) => a.id === cfg.app_id);
                               const count = responseCounts[cfg.app_id] || 0;
                               return (
-                                <button
+                                <div
                                   key={cfg.id}
-                                  onClick={() => setDashboardApp({ id: cfg.app_id, name: app?.app_name || "App" })}
-                                  className="w-full flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                                  className="flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all group"
                                 >
-                                  <div className="w-10 h-10 rounded-xl bg-card border border-border/40 overflow-hidden flex-shrink-0">
-                                    {app?.app_icon_url && (
-                                      <img src={app.app_icon_url} alt="" className="w-full h-full object-cover" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-foreground truncate">
-                                      {app?.app_name || "Unknown App"}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                                      {cfg.feedback_type === "qna" ? "Q&A" : "Satisfaction"}
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-lg font-black text-foreground">{count}</p>
-                                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
-                                      responses
-                                    </p>
-                                  </div>
-                                </button>
+                                  <button
+                                    onClick={() => setDashboardApp({ id: cfg.app_id, name: app?.app_name || "App" })}
+                                    className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                                  >
+                                    <div className="w-10 h-10 rounded-xl bg-card border border-border/40 overflow-hidden flex-shrink-0">
+                                      {app?.app_icon_url && (
+                                        <img src={app.app_icon_url} alt="" className="w-full h-full object-cover" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-bold text-foreground truncate">
+                                        {app?.app_name || "Unknown App"}
+                                      </p>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                                        {cfg.feedback_type === "qna" ? "Q&A" : "Satisfaction"}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-lg font-black text-foreground">{count}</p>
+                                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
+                                        responses
+                                      </p>
+                                    </div>
+                                  </button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all flex-shrink-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <MoreVertical size={14} />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
+                                      <DropdownMenuItem
+                                        onClick={() => navigate(`/feedback-setup/${cfg.app_id}`)}
+                                        className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
+                                      >
+                                        <Edit3 size={14} className="text-amber-500" /> Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator className="my-1 opacity-50" />
+                                      <DropdownMenuItem
+                                        variant="destructive"
+                                        onClick={async () => {
+                                          const { error } = await supabase
+                                            .from("app_feedback_config" as any)
+                                            .delete()
+                                            .eq("id", cfg.id);
+                                          if (error) {
+                                            toast.error("Failed to delete feedback config.");
+                                          } else {
+                                            toast.success("Feedback form deleted.");
+                                            fetchFeedbackConfigs();
+                                          }
+                                        }}
+                                        className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
+                                      >
+                                        <Trash2 size={14} /> Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               );
                             })}
                           </div>
