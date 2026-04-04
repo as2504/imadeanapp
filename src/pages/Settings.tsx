@@ -123,7 +123,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-background">
       <FeedNavbar />
-      <main className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-20 pb-24">
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-20 pb-24">
         <button 
           onClick={() => navigate(-1)} 
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
