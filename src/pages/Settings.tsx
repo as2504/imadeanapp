@@ -115,7 +115,7 @@ const Settings = () => {
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
-    { id: "reviews", label: "Reviews Analytics", icon: Star, badge: "Beta" },
+    { id: "reviews", label: "Reviews Analytics", icon: BarChart3, badge: "Beta" },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
