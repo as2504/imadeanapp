@@ -258,9 +258,15 @@ const PublishForm = () => {
     setErrors(prev => ({ ...prev, platforms: "" }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (noteOverride?: string) => {
     if (!validateStep(4)) return;
     if (!user) return;
+
+    // If editing a published app and no update note yet, show dialog
+    if (isEditMode && editAppStatus === "published" && !noteOverride && !updateNote) {
+      setShowUpdateNoteModal(true);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -312,6 +318,16 @@ const PublishForm = () => {
 
       if (isEditMode && editId) {
         await supabase.from("apps").update(appData).eq("id", editId);
+        
+        // Insert update note for published apps
+        const finalNote = noteOverride || updateNote;
+        if (editAppStatus === "published" && finalNote?.trim()) {
+          await supabase.from("app_updates").insert({
+            app_id: editId,
+            user_id: user.id,
+            version_notes: finalNote.trim(),
+          });
+        }
       } else {
         await supabase.from("apps").insert(appData);
       }
