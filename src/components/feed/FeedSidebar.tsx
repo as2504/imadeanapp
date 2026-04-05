@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const FeedSidebar = () => {
   const navigate = useNavigate();
-  const [topCreators, setTopCreators] = useState<{ name: string; handle: string; apps: number }[]>([]);
+  const [topCreators, setTopCreators] = useState<{ name: string; handle: string; apps: number; userId: string }[]>([]);
   const [mostRated, setMostRated] = useState<{ name: string; rating: string; count: string }[]>([]);
   const [mostReviewed, setMostReviewed] = useState<{ name: string; comments: string }[]>([]);
 
@@ -22,7 +22,7 @@ const FeedSidebar = () => {
         const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
         setTopCreators(sorted.map(([uid, count]) => {
           const p = profileMap.get(uid);
-          return { name: p?.display_name || p?.username || "Unknown", handle: `@${p?.username || "user"}`, apps: count };
+          return { name: p?.display_name || p?.username || "Unknown", handle: `@${p?.username || "user"}`, apps: count, userId: uid };
         }));
       }
 
@@ -73,7 +73,11 @@ const FeedSidebar = () => {
           </h3>
           <div className="space-y-3">
             {topCreators.map((creator, i) => (
-              <div key={creator.handle} className="flex items-center gap-3 px-1">
+              <div
+                key={creator.handle}
+                className="flex items-center gap-3 px-1 cursor-pointer hover:bg-secondary/50 rounded-lg py-1 transition-colors"
+                onClick={() => navigate(`/profile/${creator.userId}`)}
+              >
                 <span className="text-xs font-bold text-muted-foreground/40 tabular-nums w-4">
                   {i + 1}
                 </span>
@@ -84,9 +88,7 @@ const FeedSidebar = () => {
                   <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
                   <p className="text-[11px] text-muted-foreground">{creator.apps} projects</p>
                 </div>
-                <button className="p-1.5 text-muted-foreground hover:text-primary rounded-md transition-colors shrink-0">
-                  <UserPlus size={16} />
-                </button>
+                <ArrowRight size={14} className="text-muted-foreground/30 shrink-0" />
               </div>
             ))}
           </div>
