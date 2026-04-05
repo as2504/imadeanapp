@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { UserPlus, ArrowRight, Star, MessageSquare } from "lucide-react";
+import { ArrowRight, Star, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
