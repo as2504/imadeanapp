@@ -34,10 +34,10 @@ const platformConfig: Record<string, { label: string; icon: string }> = {
 
 const isUrl = (str: string) => str.startsWith("http") || str.startsWith("/");
 
-const medalBorder = (rank: number) => {
-  if (rank === 1) return "border-yellow-500/60 shadow-yellow-500/10 shadow-md";
-  if (rank === 2) return "border-gray-400/60 shadow-gray-400/10 shadow-md";
-  if (rank === 3) return "border-amber-700/60 shadow-amber-700/10 shadow-md";
+const medalBottomBorder = (rank: number) => {
+  if (rank === 1) return "border-b-2 border-b-yellow-500 border-border/10";
+  if (rank === 2) return "border-b-2 border-b-gray-400 border-border/10";
+  if (rank === 3) return "border-b-2 border-b-amber-700 border-border/10";
   return "border-border/10";
 };
 
@@ -62,7 +62,7 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
   return (
     <article
       onClick={() => navigate(`/app/${(app as any).slug || app.id}`)}
-      className={`relative flex items-center gap-4 px-4 py-3 rounded-xl border last:border-b-0 hover:bg-secondary/40 transition-all cursor-pointer group ${medalBorder(app.rank)}`}
+      className={`relative flex items-center gap-4 px-4 py-3 rounded-xl border hover:bg-secondary/40 transition-all cursor-pointer group ${medalBottomBorder(app.rank)}`}
     >
       {/* Icon with Rank Badge */}
       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden relative z-10">

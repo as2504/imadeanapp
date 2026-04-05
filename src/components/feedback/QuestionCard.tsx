@@ -33,11 +33,18 @@ const QuestionCard = ({
   const isSatisfaction = feedbackType === "satisfaction";
   const showBadFollowUp = isSatisfaction && selectedAnswers.includes("Bad");
 
-  const satisfactionEmojis: Record<string, string> = {
-    Great: "🤩",
-    Good: "😊",
-    Okay: "😐",
-    Bad: "😞",
+  const satisfactionIcons: Record<string, string> = {
+    Great: "✦",
+    Good: "●",
+    Okay: "◐",
+    Bad: "✕",
+  };
+
+  const satisfactionColors: Record<string, string> = {
+    Great: "text-emerald-500",
+    Good: "text-sky-500",
+    Okay: "text-amber-500",
+    Bad: "text-rose-500",
   };
 
   return (
@@ -69,8 +76,8 @@ const QuestionCard = ({
                 )}
               >
                 <span className="flex items-center gap-3">
-                  {isSatisfaction && satisfactionEmojis[option] && (
-                    <span className="text-2xl">{satisfactionEmojis[option]}</span>
+                  {isSatisfaction && satisfactionIcons[option] && (
+                    <span className={`text-xl font-bold ${satisfactionColors[option] || ""}`}>{satisfactionIcons[option]}</span>
                   )}
                   <span className="font-semibold text-sm">{option}</span>
                 </span>

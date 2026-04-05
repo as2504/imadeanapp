@@ -87,6 +87,14 @@ const ThankYouScreen = ({ publisherId, publisherName, publisherAvatar, isTestMod
         >
           Go to Profile <ArrowRight size={14} className="ml-2" />
         </Button>
+
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/settings")}
+          className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
+        >
+          Return to Feedback Settings <ArrowRight size={14} className="ml-2" />
+        </Button>
       </div>
 
       {isTestMode && (

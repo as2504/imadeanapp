@@ -245,7 +245,7 @@ const FeedbackFlow = () => {
               onClick={() => advanceToNext()}
               className="w-full rounded-2xl h-12 font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20"
             >
-              Submit
+              {currentIndex < questions.length - 1 ? "Next" : "Submit"}
             </Button>
           </div>
         )}
