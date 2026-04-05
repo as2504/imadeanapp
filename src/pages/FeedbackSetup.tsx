@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { X, Plus, Trash2, Sparkles, TestTube } from "lucide-react";
+import { X, Plus, Trash2, Sparkles, TestTube, Pencil, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Question {
@@ -16,6 +16,8 @@ interface Question {
   type: "single" | "multi";
   options: string[];
 }
+
+const SATISFACTION_OPTIONS = ["Great", "Good", "Okay", "Bad"];
 
 const FeedbackSetup = () => {
   const { appId } = useParams();
@@ -32,6 +34,12 @@ const FeedbackSetup = () => {
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionType, setNewQuestionType] = useState<"single" | "multi">("single");
   const [newOptions, setNewOptions] = useState<string[]>(["", ""]);
+
+  // Editing existing question
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editType, setEditType] = useState<"single" | "multi">("single");
+  const [editOptions, setEditOptions] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAppAndConfig();
@@ -56,14 +64,32 @@ const FeedbackSetup = () => {
     }
   };
 
-  const satisfactionDefaults: Question[] = [
-    {
-      id: "satisfaction-1",
-      text: "How would you rate this app?",
-      type: "single",
-      options: ["Great", "Good", "Okay", "Bad"],
-    },
-  ];
+  const startEditing = (q: Question) => {
+    setEditingId(q.id);
+    setEditText(q.text);
+    setEditType(q.type);
+    setEditOptions([...q.options]);
+  };
+
+  const saveEditing = () => {
+    if (!editText.trim()) {
+      toast.error("Question text is required");
+      return;
+    }
+    const validOpts = feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : editOptions.filter(o => o.trim());
+    if (feedbackType !== "satisfaction" && validOpts.length < 2) {
+      toast.error("At least 2 options required");
+      return;
+    }
+    setQuestions(questions.map(q =>
+      q.id === editingId ? { ...q, text: editText.trim(), type: feedbackType === "satisfaction" ? "single" : editType, options: validOpts } : q
+    ));
+    setEditingId(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+  };
 
   const handleAddQuestion = () => {
     if (questions.length >= 5) {
@@ -74,19 +100,28 @@ const FeedbackSetup = () => {
       toast.error("Please enter a question");
       return;
     }
-    const validOptions = newOptions.filter((o) => o.trim());
-    if (validOptions.length < 2) {
-      toast.error("Add at least 2 options");
-      return;
+    if (feedbackType === "qna") {
+      const validOptions = newOptions.filter((o) => o.trim());
+      if (validOptions.length < 2) {
+        toast.error("Add at least 2 options");
+        return;
+      }
+      const q: Question = {
+        id: `q-${Date.now()}`,
+        text: newQuestionText.trim(),
+        type: newQuestionType,
+        options: validOptions,
+      };
+      setQuestions([...questions, q]);
+    } else {
+      const q: Question = {
+        id: `q-${Date.now()}`,
+        text: newQuestionText.trim(),
+        type: "single",
+        options: SATISFACTION_OPTIONS,
+      };
+      setQuestions([...questions, q]);
     }
-
-    const q: Question = {
-      id: `q-${Date.now()}`,
-      text: newQuestionText.trim(),
-      type: newQuestionType,
-      options: validOptions,
-    };
-    setQuestions([...questions, q]);
     setNewQuestionText("");
     setNewOptions(["", ""]);
     setNewQuestionType("single");
@@ -94,6 +129,7 @@ const FeedbackSetup = () => {
 
   const removeQuestion = (id: string) => {
     setQuestions(questions.filter((q) => q.id !== id));
+    if (editingId === id) setEditingId(null);
   };
 
   const addOptionField = () => {
@@ -112,11 +148,27 @@ const FeedbackSetup = () => {
     setNewOptions(newOptions.filter((_, i) => i !== index));
   };
 
+  const addEditOptionField = () => {
+    if (editOptions.length >= 6) return;
+    setEditOptions([...editOptions, ""]);
+  };
+
+  const updateEditOption = (index: number, value: string) => {
+    const updated = [...editOptions];
+    updated[index] = value;
+    setEditOptions(updated);
+  };
+
+  const removeEditOption = (index: number) => {
+    if (editOptions.length <= 2) return;
+    setEditOptions(editOptions.filter((_, i) => i !== index));
+  };
+
   const handleDone = async () => {
     if (!user || !appId) return;
 
-    const finalQuestions = feedbackType === "satisfaction" ? satisfactionDefaults : questions;
-    if (feedbackType === "qna" && finalQuestions.length === 0) {
+    const finalQuestions = questions;
+    if (finalQuestions.length === 0) {
       toast.error("Add at least one question");
       return;
     }
@@ -152,7 +204,7 @@ const FeedbackSetup = () => {
     }
 
     showConfetti();
-    toast.success("Feedback form created!");
+    toast.success("Feedback form saved!");
     setTimeout(() => navigate("/settings"), 1500);
   };
 
@@ -173,9 +225,23 @@ const FeedbackSetup = () => {
       container.appendChild(piece);
     }
     const style = document.createElement("style");
-    style.textContent = `@keyframes confetti-fall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(${360 + Math.random()*360}deg);opacity:0} }`;
+    style.textContent = `@keyframes confetti-fall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(${360 + Math.random() * 360}deg);opacity:0} }`;
     container.appendChild(style);
     setTimeout(() => container.remove(), 3000);
+  };
+
+  const satisfactionIcons: Record<string, string> = {
+    Great: "✦",
+    Good: "●",
+    Okay: "◐",
+    Bad: "✕",
+  };
+
+  const satisfactionColors: Record<string, string> = {
+    Great: "text-emerald-500",
+    Good: "text-sky-500",
+    Okay: "text-amber-500",
+    Bad: "text-rose-500",
   };
 
   return (
@@ -207,8 +273,8 @@ const FeedbackSetup = () => {
           <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Feedback Type</Label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: "qna" as const, label: "Q&A", desc: "Custom questions" },
-              { value: "satisfaction" as const, label: "Satisfaction", desc: "Quick rating scale" },
+              { value: "qna" as const, label: "Q&A", desc: "Custom questions & options" },
+              { value: "satisfaction" as const, label: "Satisfaction", desc: "Custom questions, fixed scale" },
             ].map((opt) => (
               <button
                 key={opt.value}
@@ -229,16 +295,13 @@ const FeedbackSetup = () => {
 
         {feedbackType === "satisfaction" && (
           <div className="bg-card border border-border/40 rounded-2xl p-5 space-y-3">
-            <p className="text-sm font-bold text-foreground">Auto-generated question</p>
-            <div className="bg-background/50 rounded-xl p-4 border border-border/20">
-              <p className="text-sm text-foreground font-medium mb-3">How would you rate this app?</p>
-              <div className="flex gap-2 flex-wrap">
-                {["🤩 Great", "😊 Good", "😐 Okay", "😞 Bad"].map((o) => (
-                  <span key={o} className="px-3 py-1.5 rounded-full bg-secondary text-xs font-medium text-muted-foreground">
-                    {o}
-                  </span>
-                ))}
-              </div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fixed options for all questions</p>
+            <div className="flex gap-2 flex-wrap">
+              {SATISFACTION_OPTIONS.map((o) => (
+                <span key={o} className={`px-3 py-1.5 rounded-full bg-secondary text-xs font-bold flex items-center gap-1.5 ${satisfactionColors[o]}`}>
+                  <span className="text-base leading-none">{satisfactionIcons[o]}</span> {o}
+                </span>
+              ))}
             </div>
             <p className="text-[10px] text-muted-foreground italic">
               If user selects "Bad", a follow-up text input will appear automatically.
@@ -246,15 +309,76 @@ const FeedbackSetup = () => {
           </div>
         )}
 
-        {feedbackType === "qna" && (
-          <div className="space-y-6">
-            {questions.length > 0 && (
-              <div className="space-y-3">
-                <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Questions ({questions.length}/5)
-                </Label>
-                {questions.map((q, idx) => (
-                  <div key={q.id} className="bg-card border border-border/40 rounded-2xl p-4 group">
+        {/* Existing questions */}
+        <div className="space-y-6">
+          {questions.length > 0 && (
+            <div className="space-y-3">
+              <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                Questions ({questions.length}/5)
+              </Label>
+              {questions.map((q, idx) => (
+                <div key={q.id} className="bg-card border border-border/40 rounded-2xl p-4 group/q">
+                  {editingId === q.id ? (
+                    /* Inline edit mode */
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Q{idx + 1}</span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase">Editing</span>
+                      </div>
+                      <Input
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="rounded-xl bg-background/50 border-border/40"
+                        placeholder="Question text..."
+                      />
+                      {feedbackType === "qna" && (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
+                            <Switch
+                              checked={editType === "multi"}
+                              onCheckedChange={(c) => setEditType(c ? "multi" : "single")}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
+                            {editOptions.map((opt, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <Input
+                                  value={opt}
+                                  onChange={(e) => updateEditOption(i, e.target.value)}
+                                  placeholder={`Option ${i + 1}`}
+                                  className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
+                                />
+                                {editOptions.length > 2 && (
+                                  <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            {editOptions.length < 6 && (
+                              <button
+                                onClick={addEditOptionField}
+                                className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
+                              >
+                                <Plus size={12} /> Add Option
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      <div className="flex gap-2 pt-1">
+                        <Button size="sm" onClick={saveEditing} className="rounded-xl h-8 text-xs font-bold gap-1">
+                          <Check size={12} /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEditing} className="rounded-xl h-8 text-xs font-bold">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* View mode */
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -266,84 +390,103 @@ const FeedbackSetup = () => {
                         <p className="text-sm font-medium text-foreground">{q.text}</p>
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {q.options.map((o) => (
-                            <span key={o} className="px-2.5 py-1 rounded-lg bg-background text-[11px] font-medium text-muted-foreground border border-border/30">
-                              {o}
+                            <span key={o} className={`px-2.5 py-1 rounded-lg bg-background text-[11px] font-medium border border-border/30 ${feedbackType === "satisfaction" ? satisfactionColors[o] || "text-muted-foreground" : "text-muted-foreground"}`}>
+                              {feedbackType === "satisfaction" && satisfactionIcons[o] ? `${satisfactionIcons[o]} ` : ""}{o}
                             </span>
                           ))}
                         </div>
                       </div>
-                      <button
-                        onClick={() => removeQuestion(q.id)}
-                        className="text-muted-foreground/40 hover:text-destructive transition-colors p-1"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {questions.length < 5 && (
-              <div className="bg-card border border-border/40 border-dashed rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-primary" />
-                  <p className="text-xs font-bold text-foreground uppercase tracking-wider">Add Question</p>
-                </div>
-
-                <Input
-                  value={newQuestionText}
-                  onChange={(e) => setNewQuestionText(e.target.value)}
-                  placeholder="Enter your question..."
-                  className="rounded-xl bg-background/50 border-border/40"
-                />
-
-                <div className="flex items-center gap-3">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
-                  <Switch
-                    checked={newQuestionType === "multi"}
-                    onCheckedChange={(c) => setNewQuestionType(c ? "multi" : "single")}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                  {newOptions.map((opt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Input
-                        value={opt}
-                        onChange={(e) => updateOption(i, e.target.value)}
-                        placeholder={`Option ${i + 1}`}
-                        className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
-                      />
-                      {newOptions.length > 2 && (
-                        <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                          <X size={14} />
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEditing(q)}
+                          className="text-muted-foreground/40 hover:text-primary transition-colors p-1 opacity-0 group-hover/q:opacity-100"
+                        >
+                          <Pencil size={14} />
                         </button>
-                      )}
+                        <button
+                          onClick={() => removeQuestion(q.id)}
+                          className="text-muted-foreground/40 hover:text-destructive transition-colors p-1 opacity-0 group-hover/q:opacity-100"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                  {newOptions.length < 6 && (
-                    <button
-                      onClick={addOptionField}
-                      className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
-                    >
-                      <Plus size={12} /> Add Option
-                    </button>
                   )}
                 </div>
+              ))}
+            </div>
+          )}
 
-                <Button onClick={handleAddQuestion} variant="secondary" className="w-full rounded-xl h-10 font-bold text-xs">
-                  <Plus size={14} className="mr-1" /> Add Question
-                </Button>
+          {/* Add new question form */}
+          {questions.length < 5 && (
+            <div className="bg-card border border-border/40 border-dashed rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-primary" />
+                <p className="text-xs font-bold text-foreground uppercase tracking-wider">Add Question</p>
               </div>
-            )}
 
-            <p className="text-[10px] text-muted-foreground text-center italic">
-              Maximum 5 questions allowed.
-            </p>
-          </div>
-        )}
+              <Input
+                value={newQuestionText}
+                onChange={(e) => setNewQuestionText(e.target.value)}
+                placeholder="Enter your question..."
+                className="rounded-xl bg-background/50 border-border/40"
+              />
+
+              {feedbackType === "qna" && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
+                    <Switch
+                      checked={newQuestionType === "multi"}
+                      onCheckedChange={(c) => setNewQuestionType(c ? "multi" : "single")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
+                    {newOptions.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          value={opt}
+                          onChange={(e) => updateOption(i, e.target.value)}
+                          placeholder={`Option ${i + 1}`}
+                          className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
+                        />
+                        {newOptions.length > 2 && (
+                          <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {newOptions.length < 6 && (
+                      <button
+                        onClick={addOptionField}
+                        className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
+                      >
+                        <Plus size={12} /> Add Option
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {feedbackType === "satisfaction" && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Options will be: Great, Good, Okay, Bad (fixed for satisfaction type)
+                </p>
+              )}
+
+              <Button onClick={handleAddQuestion} variant="secondary" className="w-full rounded-xl h-10 font-bold text-xs">
+                <Plus size={14} className="mr-1" /> Add Question
+              </Button>
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground text-center italic">
+            Maximum 5 questions allowed.
+          </p>
+        </div>
 
         {existingConfigId && (
           <div className="border-t border-border/40 pt-6">
