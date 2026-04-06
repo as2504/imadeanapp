@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import PublicNavbar from "@/components/layout/PublicNavbar";
 import AppDetailHeader from "@/components/app-detail/AppDetailHeader";
+
 import AppDetailScreenshots from "@/components/app-detail/AppDetailScreenshots";
 import AppDetailStats from "@/components/app-detail/AppDetailStats";
 import AppDetailDescription from "@/components/app-detail/AppDetailDescription";
@@ -12,7 +13,7 @@ import AppUpdateHistory from "@/components/app-detail/AppUpdateHistory";
 import RelatedApps from "@/components/app-detail/RelatedApps";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronsUpDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,11 +39,11 @@ const AppDetail = () => {
   const [totalRatings, setTotalRatings] = useState(0);
   const [userTried, setUserTried] = useState(false);
   const [userReviewed, setUserReviewed] = useState(false);
-  const [activeTab, setActiveTab] = useState<"Overview" | "Reviews" | "Updates">("Overview");
+  const [activeTab, setActiveTab] = useState<"Overview" | "Reviews" | "Updates" | "Feedback">("Overview");
 
   const isAuthenticated = !!user;
   const visibleTabs = isAuthenticated
-    ? (["Overview", "Reviews", "Updates"] as const)
+    ? (["Overview", "Reviews", "Updates", "Feedback"] as const)
     : (["Overview"] as const);
 
   useEffect(() => {
@@ -181,20 +182,64 @@ const AppDetail = () => {
           )}
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 mt-8 border-b border-border/40">
-          {visibleTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`relative px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab}
-              {activeTab === tab && <span className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary rounded-full" />}
-            </button>
-          ))}
+        {/* Tabs — normal on ≥300px, dropdown on <300px */}
+        <div className="mt-8 border-b border-border/40">
+          {/* Wide: inline tabs */}
+          <div className="hidden min-[300px]:flex items-center gap-1">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`relative px-4 py-3 text-sm font-medium transition-colors ${
+                  tab === "Feedback"
+                    ? activeTab === tab
+                      ? "text-amber-500"
+                      : "text-amber-400/70 hover:text-amber-500"
+                    : activeTab === tab
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className={tab === "Feedback" ? "flex items-center gap-1" : ""}>
+                  {tab === "Feedback" && <span className="text-[10px]">✦</span>}
+                  {tab}
+                </span>
+                {activeTab === tab && (
+                  <span className={`absolute bottom-0 left-1 right-1 h-0.5 rounded-full ${
+                    tab === "Feedback" ? "bg-amber-500" : "bg-primary"
+                  }`} />
+                )}
+              </button>
+            ))}
+          </div>
+          {/* Narrow (<300px): dropdown */}
+          <div className="flex min-[300px]:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-3 text-sm font-medium text-foreground">
+                  {activeTab} <ChevronsUpDown size={14} className="text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[140px] p-1 rounded-xl border-border/40 bg-card shadow-xl">
+                {visibleTabs.map((tab) => (
+                  <DropdownMenuItem
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`rounded-lg px-3 py-2 cursor-pointer text-xs font-medium ${
+                      tab === "Feedback"
+                        ? "text-amber-500 bg-amber-500/5 font-bold"
+                        : activeTab === tab
+                          ? "text-primary bg-primary/5"
+                          : ""
+                    }`}
+                  >
+                    {tab === "Feedback" && <span className="mr-1">✦</span>}
+                    {tab}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Content */}
@@ -215,6 +260,11 @@ const AppDetail = () => {
             )}
             {activeTab === "Reviews" && isAuthenticated && <AppDetailReviews appId={appData.id} userTried={userTried} />}
             {activeTab === "Updates" && isAuthenticated && <AppUpdateHistory appId={appData.id} />}
+            {activeTab === "Feedback" && isAuthenticated && (
+              <div className="py-4">
+                <AppFeedback appId={appData.id} userTried={userTried} />
+              </div>
+            )}
           </div>
           <aside className="space-y-6">
             <RelatedApps currentId={appData.id} currentTags={appData.tags} />
