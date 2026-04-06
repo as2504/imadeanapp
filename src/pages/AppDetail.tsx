@@ -13,7 +13,7 @@ import AppUpdateHistory from "@/components/app-detail/AppUpdateHistory";
 import RelatedApps from "@/components/app-detail/RelatedApps";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronsUpDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
