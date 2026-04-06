@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import PublicNavbar from "@/components/layout/PublicNavbar";
 import AppDetailHeader from "@/components/app-detail/AppDetailHeader";
-import { ChevronsUpDown } from "lucide-react";
+
 import AppDetailScreenshots from "@/components/app-detail/AppDetailScreenshots";
 import AppDetailStats from "@/components/app-detail/AppDetailStats";
 import AppDetailDescription from "@/components/app-detail/AppDetailDescription";
