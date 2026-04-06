@@ -89,6 +89,7 @@ const HomeFeed = () => {
   return (
     <div className="min-h-screen bg-background">
       <FeedNavbar />
+      <UsernamePrompt />
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<FeedSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
