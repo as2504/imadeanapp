@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, Globe, Smartphone, Filter, Code2 } from "lucide-react";
+import { ChevronDown, Globe, Filter, Code2 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuSeparator, DropdownMenuLabel,
