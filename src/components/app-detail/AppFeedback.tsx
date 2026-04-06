@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ const AppFeedback = ({ appId, userTried }: AppFeedbackProps) => {
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     fetchConfig();
@@ -23,18 +24,30 @@ const AppFeedback = ({ appId, userTried }: AppFeedbackProps) => {
 
   const fetchConfig = async () => {
     try {
+      // Check if current user is the app owner
+      if (user) {
+        const { data: app } = await supabase
+          .from("apps")
+          .select("user_id")
+          .eq("id", appId)
+          .maybeSingle();
+        if (app?.user_id === user.id) {
+          setIsOwner(true);
+        }
+      }
+
       const { data } = await supabase
-        .from("app_feedback_config" as any)
+        .from("app_feedback_config")
         .select("id, is_enabled")
         .eq("app_id", appId)
         .maybeSingle();
-      
+
       setConfig(data);
 
       // Check if user already submitted
       if (user && data) {
         const { data: existing } = await supabase
-          .from("app_feedback_responses" as any)
+          .from("app_feedback_responses")
           .select("id")
           .eq("config_id", (data as any).id)
           .eq("user_id", user.id)
@@ -48,8 +61,36 @@ const AppFeedback = ({ appId, userTried }: AppFeedbackProps) => {
     }
   };
 
-  // Only show if: authenticated, tried the app, config exists & enabled, not already submitted
-  if (loading || !user || !userTried || !config || !(config as any).is_enabled || alreadySubmitted) return null;
+  if (loading) return null;
+
+  // If owner and no config exists, show "add feedback" CTA
+  if (isOwner && (!config || !(config as any).is_enabled)) {
+    return (
+      <section className="p-6 rounded-2xl bg-card border border-border/40">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+              <MessageSquare size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Add a feedback form</p>
+              <p className="text-[10px] text-muted-foreground">Collect feedback from users who try your app</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => navigate(`/feedback-setup/${appId}`)}
+            size="sm"
+            className="rounded-xl font-bold text-xs px-5 bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+          >
+            <Plus size={14} className="mr-1" /> Setup
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  // Only show feedback CTA if: authenticated, tried the app, config exists & enabled, not already submitted, not owner
+  if (!user || !userTried || !config || !(config as any).is_enabled || alreadySubmitted || isOwner) return null;
 
   return (
     <section className="p-6 rounded-2xl bg-card border border-border/40">

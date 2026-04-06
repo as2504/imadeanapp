@@ -17,11 +17,21 @@ const sortOptions = [
   { id: "viewed", label: "Most Viewed" },
 ];
 
+const PlatformIcon = ({ type, size = 14 }: { type: string; size?: number }) => {
+  const iconMap: Record<string, string> = {
+    web: "/webapp.png",
+    ios: "/app-store.png",
+    android: "/android.png",
+  };
+  if (!iconMap[type]) return <Globe size={size} />;
+  return <img src={iconMap[type]} alt={type} className="dark:invert object-contain" style={{ width: size, height: size }} />;
+};
+
 const platforms = [
   { id: "all", label: "All Platforms", icon: <Globe size={14} /> },
-  { id: "web", label: "Web Apps", icon: <Globe size={14} /> },
-  { id: "ios", label: "iOS Apps", icon: <Smartphone size={14} /> },
-  { id: "android", label: "Android Apps", icon: <Smartphone size={14} /> },
+  { id: "web", label: "Web Apps", icon: <PlatformIcon type="web" /> },
+  { id: "ios", label: "iOS Apps", icon: <PlatformIcon type="ios" /> },
+  { id: "android", label: "Android Apps", icon: <PlatformIcon type="android" /> },
 ];
 
 const techStacks = ["React", "Next.js", "Tailwind CSS", "Supabase", "Framer Motion"];
