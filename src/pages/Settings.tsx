@@ -22,7 +22,7 @@ import {
   MoreVertical,
   Edit3,
   Trash2,
-  BarChart3,
+  
 } from "lucide-react";
 import {
   DropdownMenu,
