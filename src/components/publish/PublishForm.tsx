@@ -830,18 +830,35 @@ const PublishForm = () => {
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-2">
                 <HistoryIcon size={24} className="text-amber-500" />
               </div>
-              <DialogTitle className="text-2xl font-black">Save draft before leaving?</DialogTitle>
+              <DialogTitle className="text-2xl font-black">
+                {isEditMode ? "Discard changes?" : "Save draft before leaving?"}
+              </DialogTitle>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                You have unsaved changes. Do you want to save them as a draft or discard everything?
+                {isEditMode
+                  ? "Your changes will not be saved. Are you sure you want to leave?"
+                  : "You have unsaved changes. Do you want to save them as a draft or discard everything?"}
               </p>
             </DialogHeader>
             <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-6">
-              <Button variant="ghost" className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
-                Discard
-              </Button>
-              <Button className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
-                Save & Exit
-              </Button>
+              {isEditMode ? (
+                <>
+                  <Button variant="ghost" className="flex-1 rounded-xl font-bold h-11" onClick={() => setShowCancelModal(false)}>
+                    Keep Editing
+                  </Button>
+                  <Button variant="destructive" className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
+                    Discard & Leave
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
+                    Discard
+                  </Button>
+                  <Button className="flex-1 rounded-xl font-bold h-11" onClick={() => navigate(-1)}>
+                    Save & Exit
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -22,7 +22,7 @@ import {
   MoreVertical,
   Edit3,
   Trash2,
-  BarChart3
+  
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -115,7 +115,7 @@ const Settings = () => {
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
-    { id: "reviews", label: "Reviews Analytics", icon: BarChart3, badge: "Beta" },
+    { id: "reviews", label: "Reviews Analytics", icon: Star, badge: "Beta" },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -434,7 +434,7 @@ const Settings = () => {
 
                 {activeSection === "reviews" && (
                   <div className="text-center py-12">
-                    <BarChart3 size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+                    <Star size={32} className="mx-auto text-muted-foreground/30 mb-3" />
                     <p className="text-sm font-medium text-muted-foreground italic">
                       This section is currently under development.
                     </p>

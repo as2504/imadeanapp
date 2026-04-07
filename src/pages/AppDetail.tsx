@@ -254,6 +254,7 @@ const AppDetail = () => {
                   userTried={userTried}
                   userReviewed={userReviewed}
                   onRateClick={isAuthenticated ? handleRateClick : undefined}
+                  isAuthenticated={isAuthenticated}
                 />
                 <AppFeedback appId={appData.id} userTried={userTried} />
               </div>

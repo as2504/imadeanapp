@@ -13,10 +13,11 @@ interface AppDetailDescriptionProps {
   description: string;
   userTried: boolean;
   userReviewed: boolean;
-  onRateClick: () => void;
+  onRateClick?: () => void;
+  isAuthenticated?: boolean;
 }
 
-const AppDetailDescription = ({ description, userTried, userReviewed, onRateClick }: AppDetailDescriptionProps) => {
+const AppDetailDescription = ({ description, userTried, userReviewed, onRateClick, isAuthenticated = true }: AppDetailDescriptionProps) => {
   const [expanded, setExpanded] = useState(false);
 
   // Simple formatter to handle bold (**text**) and bullets (- text) without markdown chars
@@ -59,7 +60,33 @@ const AppDetailDescription = ({ description, userTried, userReviewed, onRateClic
       </section>
 
       {/* Rate this app CTA */}
-      {!userReviewed && (
+      {!isAuthenticated ? (
+        <section className="relative overflow-hidden rounded-3xl">
+          <div className="relative p-6 rounded-3xl bg-card border border-border/40 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Star size={14} className="text-primary fill-primary/20" />
+                </div>
+                <h2 className="text-base font-black text-foreground uppercase tracking-wider">
+                  Rate this app
+                </h2>
+              </div>
+              <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed font-medium">
+                Log in to share your thoughts and rate this app.
+              </p>
+            </div>
+            <div className="shrink-0 w-full md:w-auto">
+              <Button
+                onClick={() => window.location.href = "/auth"}
+                className="w-full md:w-auto rounded-xl px-8 py-5 h-auto font-black uppercase tracking-[0.2em] text-[9px] bg-foreground text-background hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-primary/5"
+              >
+                Login to Review
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : !userReviewed ? (
         <section className="relative group overflow-hidden rounded-3xl">
           {!userTried && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/40 backdrop-blur-[2px] cursor-not-allowed group/blur">
@@ -114,7 +141,7 @@ const AppDetailDescription = ({ description, userTried, userReviewed, onRateClic
             </div>
           </div>
         </section>
-      )}
+      ) : null}
     </div>
   );
 };

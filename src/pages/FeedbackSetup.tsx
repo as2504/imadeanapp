@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { X, Plus, Trash2, Sparkles, TestTube, Pencil, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -270,27 +277,16 @@ const FeedbackSetup = () => {
         </div>
 
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Feedback Type</Label>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { value: "qna" as const, label: "Q&A", desc: "Custom questions & options" },
-              { value: "satisfaction" as const, label: "Satisfaction", desc: "Custom questions, fixed scale" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFeedbackType(opt.value)}
-                className={cn(
-                  "p-4 rounded-2xl border-2 text-left transition-all",
-                  feedbackType === opt.value
-                    ? "border-primary bg-primary/5"
-                    : "border-border/40 bg-card hover:border-primary/30"
-                )}
-              >
-                <p className="text-sm font-bold text-foreground">{opt.label}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
-              </button>
-            ))}
-          </div>
+          <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Select Type of Feedback</Label>
+          <Select value={feedbackType} onValueChange={(v) => setFeedbackType(v as "qna" | "satisfaction")}>
+            <SelectTrigger className="rounded-xl h-11 bg-card border-border/40 font-bold text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-border/40">
+              <SelectItem value="qna" className="rounded-lg font-bold text-sm">Q&A — Custom questions & options</SelectItem>
+              <SelectItem value="satisfaction" className="rounded-lg font-bold text-sm">Satisfaction — Custom questions, fixed scale</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {feedbackType === "satisfaction" && (
