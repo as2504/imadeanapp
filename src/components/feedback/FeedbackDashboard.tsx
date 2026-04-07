@@ -52,6 +52,7 @@ const FeedbackDashboard = ({ appId, appName, onBack }: FeedbackDashboardProps) =
 
   const questions: Question[] = (config?.questions as any) || [];
   const totalResponses = responses.length;
+  const isSatisfaction = config?.feedback_type === "satisfaction";
 
   const getOptionPercentage = (questionId: string, option: string) => {
     if (totalResponses === 0) return 0;
@@ -64,6 +65,16 @@ const FeedbackDashboard = ({ appId, appName, onBack }: FeedbackDashboardProps) =
       return answer === option;
     }).length;
     return Math.round((count / totalResponses) * 100);
+  };
+
+  // Collect follow-up texts from "Bad" satisfaction responses
+  const getFollowUpTexts = (questionId: string) => {
+    return responses
+      .filter((r) => {
+        const data = (r as any).response_data as any;
+        return data?.answers?.[questionId] === "Bad" && data?.followUp;
+      })
+      .map((r) => (r as any).response_data?.followUp as string);
   };
 
   return (
@@ -84,33 +95,50 @@ const FeedbackDashboard = ({ appId, appName, onBack }: FeedbackDashboardProps) =
         <p className="text-sm text-muted-foreground text-center py-8">No questions configured.</p>
       ) : (
         <div className="space-y-6">
-          {questions.map((q, idx) => (
-            <div key={q.id} className="bg-background/50 border border-border/40 rounded-2xl p-5">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                Question {idx + 1}
-              </p>
-              <p className="text-sm font-bold text-foreground mb-4">{q.text}</p>
-              <div className="space-y-2.5">
-                {q.options.map((opt) => {
-                  const pct = getOptionPercentage(q.id, opt);
-                  return (
-                    <div key={opt} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-foreground">{opt}</span>
-                        <span className="font-bold text-muted-foreground">{pct}%</span>
+          {questions.map((q, idx) => {
+            const followUps = isSatisfaction ? getFollowUpTexts(q.id) : [];
+            return (
+              <div key={q.id} className="bg-background/50 border border-border/40 rounded-2xl p-5">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  Question {idx + 1}
+                </p>
+                <p className="text-sm font-bold text-foreground mb-4">{q.text}</p>
+                <div className="space-y-2.5">
+                  {q.options.map((opt) => {
+                    const pct = getOptionPercentage(q.id, opt);
+                    return (
+                      <div key={opt} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-foreground">{opt}</span>
+                          <span className="font-bold text-muted-foreground">{pct}%</span>
+                        </div>
+                        <div className="h-2 bg-border/30 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 bg-border/30 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                    );
+                  })}
+                </div>
+                {followUps.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-border/30">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                      "Bad" follow-up responses ({followUps.length})
+                    </p>
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {followUps.map((text, i) => (
+                        <p key={i} className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/10 rounded-lg px-3 py-2">
+                          "{text}"
+                        </p>
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

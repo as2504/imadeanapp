@@ -101,7 +101,7 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
                   </div>
                 )}
               </>
-            ) : (
+            ) : user ? (
               <Button size="sm" onClick={handleFollow} variant={isFollowing ? "outline" : "default"} className="h-8 text-xs">
                 {isFollowing ? "Following" : "Follow"}
               </Button>
