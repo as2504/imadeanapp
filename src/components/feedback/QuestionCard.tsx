@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Circle } from "lucide-react";
 
 interface QuestionCardProps {
   question: {
@@ -69,23 +68,36 @@ const QuestionCard = ({
                 key={option}
                 onClick={() => onSelect(option)}
                 className={cn(
-                  "w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 transition-all duration-200 text-left group",
+                  "w-full flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all duration-200 text-left group",
                   isSelected
                     ? "border-primary bg-primary/10 text-foreground shadow-md shadow-primary/10"
                     : "border-border/40 bg-background/50 text-muted-foreground hover:border-primary/40 hover:bg-primary/5"
                 )}
               >
-                <span className="flex items-center gap-3">
-                  {isSatisfaction && satisfactionIcons[option] && (
-                    <span className={`text-xl font-bold ${satisfactionColors[option] || ""}`}>{satisfactionIcons[option]}</span>
-                  )}
-                  <span className="font-semibold text-sm">{option}</span>
-                </span>
-                {isSelected && (
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                    <Check size={14} className="text-primary-foreground" />
+                {/* Left indicator */}
+                {isSatisfaction && satisfactionIcons[option] ? (
+                  <span className={`text-xl font-bold flex-shrink-0 ${satisfactionColors[option] || ""}`}>
+                    {satisfactionIcons[option]}
+                  </span>
+                ) : question.type === "single" ? (
+                  /* Radio button for single select */
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all",
+                    isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
+                  )}>
+                    {isSelected && <Circle size={8} className="fill-primary-foreground text-primary-foreground" />}
+                  </div>
+                ) : (
+                  /* Squircle checkbox for multi select */
+                  <div className={cn(
+                    "w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all",
+                    isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
+                  )}>
+                    {isSelected && <Check size={12} className="text-primary-foreground" strokeWidth={3} />}
                   </div>
                 )}
+
+                <span className="font-semibold text-sm">{option}</span>
               </button>
             );
           })}
