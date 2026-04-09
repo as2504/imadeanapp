@@ -47,6 +47,12 @@ const AppDetailScreenshots = ({ screenshots }: AppDetailScreenshotsProps) => {
                 alt={`Screenshot ${i + 1}`}
                 className="h-full w-full object-contain transition-transform duration-700 group-hover:scale-[1.02] rounded-xl"
               />
+              {/* Image indicator */}
+              {screenshots.length > 1 && (
+                <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-bold tracking-wide backdrop-blur-sm">
+                  {i + 1}/{screenshots.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -64,6 +70,10 @@ const AppDetailScreenshots = ({ screenshots }: AppDetailScreenshotsProps) => {
           >
             <X size={24} className="text-foreground" />
           </button>
+          {/* Fullscreen indicator */}
+          <span className="absolute bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-lg bg-black/60 text-white text-xs font-bold tracking-wide backdrop-blur-sm">
+            {screenshots.indexOf(selectedImage) + 1}/{screenshots.length}
+          </span>
           <img
             src={selectedImage}
             alt="Fullscreen screenshot"

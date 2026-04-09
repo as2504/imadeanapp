@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Star, Send, CheckCircle2, ThumbsUp, MessageSquare, Info, AlertCircle, Pencil, Trash2, X as CloseIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,13 +14,22 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface AppDetailReviewsProps { appId: string; userTried: boolean; }
 interface ReviewItem { 
@@ -52,15 +61,21 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editComment, setEditComment] = useState("");
+  const [originalEditComment, setOriginalEditComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
+
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const PAGE_SIZE = 10;
   const MAX_CHARS = 200;
 
   const isOverLimit = comment.length > MAX_CHARS;
   const isEditOverLimit = editComment.length > MAX_CHARS;
+  const isEditUnchanged = editComment.trim() === originalEditComment.trim();
 
   const enrichReviews = useCallback(async (rawComments: any[]): Promise<ReviewItem[]> => {
     const userIds = [...new Set(rawComments.map((c) => c.user_id))];
@@ -71,7 +86,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
     
     const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-    // Fetch user's likes for these comments
     let userLikes = new Set<string>();
     if (user) {
       const commentIds = rawComments.map((c) => c.id);
@@ -201,7 +215,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   };
 
   const handleUpdateEdit = async () => {
-    if (!user || isEditOverLimit || !editingCommentId) return;
+    if (!user || isEditOverLimit || !editingCommentId || isEditUnchanged) return;
     setIsUpdating(true);
     
     try {
@@ -229,9 +243,19 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
 
   const openEditModal = (review: ReviewItem) => {
     setEditComment(review.text);
+    setOriginalEditComment(review.text);
     setEditingCommentId(review.id);
     setIsEditModalOpen(true);
   };
+
+  // Focus textarea at end when edit modal opens
+  useEffect(() => {
+    if (isEditModalOpen && editTextareaRef.current) {
+      const ta = editTextareaRef.current;
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    }
+  }, [isEditModalOpen]);
 
   const handleLike = async (reviewId: string) => {
     if (!user) return;
@@ -240,7 +264,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
     if (!review) return;
 
     if (review.hasLiked) {
-      // Optimistic update
       const updateLikes = (list: ReviewItem[]) => list.map(r => r.id === reviewId ? { ...r, likes_count: Math.max(0, r.likes_count - 1), hasLiked: false } : r);
       setReviews(updateLikes(reviews));
       setAllReviews(updateLikes(allReviews));
@@ -252,7 +275,6 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
       await supabase.from("comment_likes" as any).insert({ comment_id: reviewId, user_id: user.id });
     }
 
-    // Refetch actual count from DB
     const { count } = await supabase.from("comment_likes" as any).select("*", { count: "exact", head: true }).eq("comment_id", reviewId);
     const realCount = count || 0;
     await supabase.from("comments").update({ likes_count: realCount } as any).eq("id", reviewId);
@@ -261,9 +283,10 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
     setAllReviews(syncCount(allReviews));
   };
 
-  const handleDeleteReview = async (reviewId: string) => {
-    if (!user) return;
-    await supabase.from("comments").delete().eq("id", reviewId).eq("user_id", user.id);
+  const confirmDeleteReview = async () => {
+    if (!user || !deleteReviewId) return;
+    await supabase.from("comments").delete().eq("id", deleteReviewId).eq("user_id", user.id);
+    setDeleteReviewId(null);
     await fetchData();
     if (isDialogOpen) await fetchMoreReviews(true);
   };
@@ -296,7 +319,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
                     <Pencil size={10} />
                   </button>
                   <button 
-                    onClick={() => handleDeleteReview(review.id)}
+                    onClick={() => setDeleteReviewId(review.id)}
                     className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-all"
                   >
                     <Trash2 size={10} />
@@ -323,6 +346,22 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteReviewId} onOpenChange={(open) => { if (!open) setDeleteReviewId(null); }}>
+        <AlertDialogContent className="rounded-2xl border-border/40">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-black uppercase tracking-tight">Delete Review</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Are you sure you want to delete this review? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full px-6 font-bold uppercase tracking-widest text-[10px]">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteReview} className="rounded-full px-6 bg-destructive hover:bg-destructive/90 font-bold uppercase tracking-widest text-[10px]">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="max-w-md rounded-3xl border-border/40 bg-card p-6">
@@ -335,6 +374,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
           <div className="space-y-4 py-4">
             <div className="relative">
               <Textarea 
+                ref={editTextareaRef}
                 placeholder="Update your thoughts..." 
                 value={editComment} 
                 onChange={(e) => setEditComment(e.target.value)} 
@@ -347,7 +387,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
           </div>
           <DialogFooter className="flex gap-2 sm:justify-end">
             <Button variant="ghost" disabled={isUpdating} onClick={() => setIsEditModalOpen(false)} className="rounded-full px-6 font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
-            <Button onClick={handleUpdateEdit} disabled={isEditOverLimit || !editComment.trim() || isUpdating} className="rounded-full px-8 bg-primary hover:bg-primary/90 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 min-w-[100px]">
+            <Button onClick={handleUpdateEdit} disabled={isEditOverLimit || !editComment.trim() || isUpdating || isEditUnchanged} className="rounded-full px-8 bg-primary hover:bg-primary/90 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 min-w-[100px]">
               {isUpdating ? <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> : "Update"}
             </Button>
           </DialogFooter>
@@ -369,7 +409,16 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
         </div>
         <div className="flex items-center justify-between flex-1">
           <h3 className="text-xs font-black text-foreground uppercase tracking-tight leading-[1.1] tracking-[-0.02em]">Community Feedback</h3>
-          <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground/40 hover:text-primary transition-colors"><Info size={14} /></button></TooltipTrigger><TooltipContent className="max-w-[200px]"><p className="text-[10px] leading-tight">Ratings are based on user experiences. Only verified users who have tried the app can leave a review.</p></TooltipContent></Tooltip></TooltipProvider>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="text-muted-foreground/40 hover:text-primary transition-colors">
+                <Info size={14} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="max-w-[220px] p-3" side="top" align="end">
+              <p className="text-[10px] leading-tight text-muted-foreground">Ratings are based on user experiences. Only verified users who have tried the app can leave a review.</p>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
