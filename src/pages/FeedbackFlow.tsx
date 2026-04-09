@@ -25,6 +25,7 @@ const FeedbackFlow = () => {
   const [appName, setAppName] = useState("");
   const [config, setConfig] = useState<any>(null);
   const [publisherInfo, setPublisherInfo] = useState<any>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [hasTried, setHasTried] = useState(false);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -44,6 +45,7 @@ const FeedbackFlow = () => {
     const { data: app } = await supabase.from("apps").select("app_name, user_id").eq("id", appId).maybeSingle();
     if (!app) { setLoading(false); return; }
     setAppName(app.app_name);
+    setIsOwner(!!user && user.id === app.user_id);
 
     const { data: profile } = await supabase.from("profiles").select("display_name, username, avatar_url, user_id").eq("user_id", app.user_id).maybeSingle();
     setPublisherInfo(profile);
@@ -78,6 +80,7 @@ const FeedbackFlow = () => {
 
   const questions: Question[] = (config?.questions as any) || [];
   const currentQuestion = questions[currentIndex];
+  const isLastQuestion = currentIndex === questions.length - 1;
 
   const handleSelect = (option: string) => {
     const q = currentQuestion;
@@ -86,7 +89,8 @@ const FeedbackFlow = () => {
     if (q.type === "single") {
       setAnswers({ ...answers, [q.id]: option });
       const isSatisfactionBad = (config as any)?.feedback_type === "satisfaction" && option === "Bad";
-      if (!isSatisfactionBad) {
+      // Don't auto-advance on last question or satisfaction bad
+      if (!isSatisfactionBad && !isLastQuestion) {
         setTimeout(() => advanceToNext({ ...answers, [q.id]: option }), 400);
       }
     } else {
@@ -112,16 +116,26 @@ const FeedbackFlow = () => {
       setSubmitting(true);
 
       if (!isTestMode && user && config) {
-        const responseData: any = { answers: finalAnswers };
-        if (followUpText.trim()) responseData.followUp = followUpText.trim();
+        // Double-check for duplicate before inserting
+        const { data: existingCheck } = await supabase
+          .from("app_feedback_responses")
+          .select("id")
+          .eq("config_id", (config as any).id)
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-        await supabase.from("app_feedback_responses" as any).insert({
-          app_id: appId,
-          config_id: (config as any).id,
-          user_id: user.id,
-          response_data: responseData,
-          feedback_type: (config as any).feedback_type,
-        } as any);
+        if (!existingCheck) {
+          const responseData: any = { answers: finalAnswers };
+          if (followUpText.trim()) responseData.followUp = followUpText.trim();
+
+          await supabase.from("app_feedback_responses" as any).insert({
+            app_id: appId,
+            config_id: (config as any).id,
+            user_id: user.id,
+            response_data: responseData,
+            feedback_type: (config as any).feedback_type,
+          } as any);
+        }
       }
 
       // Brief animation delay
@@ -230,6 +244,7 @@ const FeedbackFlow = () => {
           publisherName={publisherInfo?.display_name || publisherInfo?.username || "Developer"}
           publisherAvatar={publisherInfo?.avatar_url}
           isTestMode={isTestMode}
+          isOwner={isOwner}
         />
       </div>
     );
@@ -242,6 +257,10 @@ const FeedbackFlow = () => {
         ? [answers[currentQuestion.id] as string]
         : []
     : [];
+
+  // Determine if we should show the submit button at the bottom
+  const showSubmitButton = isLastQuestion && selectedAnswers.length > 0;
+  const isSatisfactionBad = (config as any)?.feedback_type === "satisfaction" && selectedAnswers.includes("Bad");
 
   return (
     <div className="min-h-screen bg-background">
@@ -290,22 +309,34 @@ const FeedbackFlow = () => {
             onFollowUp={setFollowUpText}
             onNext={() => advanceToNext()}
             animationState={animState}
+            isLastQuestion={isLastQuestion}
           />
         )}
       </div>
 
-      {/* Satisfaction Bad: next button after follow-up */}
-      {(config as any)?.feedback_type === "satisfaction" &&
-        selectedAnswers.includes("Bad") && (
-          <div className="max-w-lg mx-auto px-4 pb-8">
-            <Button
-              onClick={() => advanceToNext()}
-              className="w-full rounded-2xl h-12 font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-            >
-              {currentIndex < questions.length - 1 ? "Next" : "Submit"}
-            </Button>
-          </div>
-        )}
+      {/* Submit / Next button for satisfaction bad or last question */}
+      {isSatisfactionBad && (
+        <div className="max-w-lg mx-auto px-4 pb-8">
+          <Button
+            onClick={() => advanceToNext()}
+            className="w-full rounded-2xl h-12 font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+          >
+            {isLastQuestion ? "Submit" : "Next"}
+          </Button>
+        </div>
+      )}
+
+      {/* Submit button on last question for single-select (non-satisfaction-bad) */}
+      {isLastQuestion && !isSatisfactionBad && currentQuestion?.type === "single" && selectedAnswers.length > 0 && (
+        <div className="max-w-lg mx-auto px-4 pb-8">
+          <Button
+            onClick={() => advanceToNext()}
+            className="w-full rounded-2xl h-12 font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+          >
+            Submit
+          </Button>
+        </div>
+      )}
 
       {isTestMode && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-muted rounded-full">

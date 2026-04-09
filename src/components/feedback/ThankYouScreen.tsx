@@ -12,9 +12,10 @@ interface ThankYouScreenProps {
   publisherName: string;
   publisherAvatar?: string;
   isTestMode?: boolean;
+  isOwner?: boolean;
 }
 
-const ThankYouScreen = ({ appId, publisherId, publisherName, publisherAvatar, isTestMode }: ThankYouScreenProps) => {
+const ThankYouScreen = ({ appId, publisherId, publisherName, publisherAvatar, isTestMode, isOwner }: ThankYouScreenProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
@@ -86,13 +87,16 @@ const ThankYouScreen = ({ appId, publisherId, publisherName, publisherAvatar, is
           Go to Profile <ArrowRight size={14} className="ml-2" />
         </Button>
 
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/settings")}
-          className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
-        >
-          Return to Feedback Settings <ArrowRight size={14} className="ml-2" />
-        </Button>
+        {/* Only show "Return to Feedback Settings" for the app owner */}
+        {isOwner && (
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/settings")}
+            className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
+          >
+            Return to Feedback Settings <ArrowRight size={14} className="ml-2" />
+          </Button>
+        )}
 
         <Button
           variant="ghost"

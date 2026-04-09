@@ -17,6 +17,7 @@ interface QuestionCardProps {
   onFollowUp?: (text: string) => void;
   onNext?: () => void;
   animationState: "entering" | "active" | "exiting";
+  isLastQuestion?: boolean;
 }
 
 const QuestionCard = ({
@@ -28,6 +29,7 @@ const QuestionCard = ({
   onFollowUp,
   onNext,
   animationState,
+  isLastQuestion,
 }: QuestionCardProps) => {
   const isSatisfaction = feedbackType === "satisfaction";
   const showBadFollowUp = isSatisfaction && selectedAnswers.includes("Bad");
@@ -80,7 +82,6 @@ const QuestionCard = ({
                     {satisfactionIcons[option]}
                   </span>
                 ) : question.type === "single" ? (
-                  /* Radio button for single select */
                   <div className={cn(
                     "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all",
                     isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
@@ -88,7 +89,6 @@ const QuestionCard = ({
                     {isSelected && <Circle size={8} className="fill-primary-foreground text-primary-foreground" />}
                   </div>
                 ) : (
-                  /* Squircle checkbox for multi select */
                   <div className={cn(
                     "w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all",
                     isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
@@ -117,12 +117,13 @@ const QuestionCard = ({
           </div>
         )}
 
+        {/* Multi-select: show Next/Submit */}
         {question.type === "multi" && selectedAnswers.length > 0 && (
           <Button
             onClick={onNext}
             className="w-full mt-6 rounded-2xl h-12 font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20"
           >
-            Next <ChevronRight size={16} className="ml-1" />
+            {isLastQuestion ? "Submit" : "Next"} {!isLastQuestion && <ChevronRight size={16} className="ml-1" />}
           </Button>
         )}
       </div>

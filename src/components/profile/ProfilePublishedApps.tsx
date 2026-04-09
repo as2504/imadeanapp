@@ -1,20 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppCard from "@/components/feed/AppCard";
 import { 
-  MoreVertical, Edit3, Eye, Trash2, PowerOff, 
-  AlertCircle, Loader2 
+  Edit3, Eye, Trash2, PowerOff, 
+  AlertCircle, Loader2, X
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +39,12 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
   const [unpublishReason, setUnpublishReason] = useState("");
   const [isActionLoading, setIsActionLoading] = useState(false);
 
+  // Click-to-open options tray
+  const [openTrayId, setOpenTrayId] = useState<string | null>(null);
+  const trayRef = useRef<HTMLDivElement | null>(null);
+  // Prevent scroll-triggered taps on mobile
+  const touchStartY = useRef<number | null>(null);
+
   const targetUserId = profileUserId || user?.id;
   const isOwnProfile = !profileUserId || profileUserId === user?.id;
 
@@ -58,9 +57,8 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
       .eq("user_id", targetUserId)
       .order("created_at", { ascending: false });
 
-    if (!isOwnProfile) {
-      query = query.eq("status", "published");
-    }
+    // Only show published apps (filter out draft/unpublished)
+    query = query.eq("status", "published");
 
     const { data } = await query;
     if (!data) { setApps([]); setLoading(false); return; }
@@ -100,6 +98,18 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
 
   useEffect(() => { fetchApps(); }, [targetUserId, isOwnProfile]);
 
+  // Close tray when clicking outside
+  useEffect(() => {
+    if (!openTrayId) return;
+    const handler = (e: MouseEvent) => {
+      if (trayRef.current && !trayRef.current.contains(e.target as Node)) {
+        setOpenTrayId(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openTrayId]);
+
   const handleDelete = async () => {
     if (deleteConfirm !== "DELETE" || !deleteId) return;
     setIsActionLoading(true);
@@ -124,8 +134,17 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
     if (error) {
       toast({ title: "Operation failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Moved to Drafts", description: "Your app has been saved as a draft." });
-      setUnpublishId(null); setUnpublishReason(""); fetchApps();
+      toast({ title: "Moved to Drafts", description: "Your app has been unpublished and moved to your Drafts." });
+      setUnpublishId(null); setUnpublishReason(""); setOpenTrayId(null); fetchApps();
+    }
+  };
+
+  const handleCardClick = (appId: string, slug?: string) => {
+    if (isOwnProfile && user) {
+      // Toggle options tray instead of navigating
+      setOpenTrayId((prev) => (prev === appId ? null : appId));
+    } else {
+      navigate(`/app/${slug || appId}`);
     }
   };
 
@@ -158,59 +177,64 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {apps.map((app) => (
-          <div key={app.id} className="relative group/card">
-            <div onClick={() => navigate(`/app/${app.slug || app.id}`)}>
-              <AppCard post={app} />
+          <div key={app.id} className="relative">
+            <div
+              onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+              onTouchEnd={(e) => {
+                if (touchStartY.current !== null) {
+                  const delta = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+                  if (delta > 10) { touchStartY.current = null; return; } // was a scroll
+                }
+                touchStartY.current = null;
+                handleCardClick(app.id, app.slug);
+              }}
+              onClick={(e) => {
+                // Only handle on non-touch devices
+                if ('ontouchstart' in window) return;
+                e.preventDefault();
+                handleCardClick(app.id, app.slug);
+              }}
+            >
+              <AppCard post={app} onClick={(e) => e.preventDefault()} />
             </div>
 
-            {isOwnProfile && (
-              <div className="absolute top-3 right-3 z-20">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-sm border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-60 hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical size={14} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-border/40 shadow-2xl bg-card/95 backdrop-blur-xl">
-                    <DropdownMenuItem 
-                      onClick={() => navigate(`/app/${app.slug || app.id}`)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Eye size={14} className="text-sky-500" /> App Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => navigate(`/publish?edit=${app.id}`)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Edit3 size={14} className="text-amber-500" /> Update App
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="my-2 opacity-50" />
-                    <DropdownMenuItem 
-                      onClick={() => setUnpublishId(app.id)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-muted-foreground"
-                    >
-                      <PowerOff size={14} /> Unpublish App
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      variant="destructive"
-                      onClick={() => setDeleteId(app.id)}
-                      className="rounded-xl gap-3 py-2.5 px-3 cursor-pointer text-xs font-bold uppercase tracking-wider text-destructive focus:text-destructive"
-                    >
-                      <Trash2 size={14} /> Delete App
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-
-            {app.status === "unpublished" && (
-              <div className="absolute top-2 left-2 z-10">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/90 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg backdrop-blur-sm">
-                  <AlertCircle size={10} /> Unpublished
-                </div>
+            {/* Options tray */}
+            {isOwnProfile && openTrayId === app.id && (
+              <div
+                ref={trayRef}
+                className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border/40 rounded-2xl shadow-2xl p-2 animate-in fade-in slide-in-from-top-2 duration-200"
+              >
+                <button
+                  onClick={() => setOpenTrayId(null)}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <X size={12} />
+                </button>
+                <button
+                  onClick={() => { setOpenTrayId(null); navigate(`/app/${app.slug || app.id}`); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <Eye size={14} className="text-sky-500" /> App Details
+                </button>
+                <button
+                  onClick={() => { setOpenTrayId(null); navigate(`/publish?edit=${app.id}`); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <Edit3 size={14} className="text-amber-500" /> Update App
+                </button>
+                <div className="h-px bg-border/30 my-1" />
+                <button
+                  onClick={() => { setOpenTrayId(null); setUnpublishId(app.id); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <PowerOff size={14} /> Unpublish App
+                </button>
+                <button
+                  onClick={() => { setOpenTrayId(null); setDeleteId(app.id); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 size={14} /> Delete App
+                </button>
               </div>
             )}
           </div>
@@ -254,7 +278,7 @@ const ProfilePublishedApps = ({ profileUserId }: ProfilePublishedAppsProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black uppercase tracking-tight">Unpublish Application</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground font-medium pt-2">
-              Your app will be hidden from the Home and Trending feeds. You can republish it at any time.
+              Your app will be hidden from the Home and Trending feeds and moved to your Drafts. You can republish it at any time.
               <div className="mt-6 space-y-2">
                 <LabelEl className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Reason for unpublishing</LabelEl>
                 <Input 

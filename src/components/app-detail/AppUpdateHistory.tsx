@@ -51,10 +51,6 @@ const AppUpdateHistory = ({ appId }: AppUpdateHistoryProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-2">
-        <History size={16} className="text-primary" />
-        <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">Release Timeline</h3>
-      </div>
 
       <div className="space-y-4 relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-px before:bg-border/40">
         {updates.map((update, i) => (
