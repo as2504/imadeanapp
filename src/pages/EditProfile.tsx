@@ -17,13 +17,13 @@ const tabs = ["Profile", "Links", "Experience", "Development"] as const;
 type Tab = (typeof tabs)[number];
 
 const socialPlatformToColumn: Record<string, string> = {
-  GitHub: "github_url",
-  Twitter: "twitter_url",
-  LinkedIn: "linkedin_url",
-  Website: "website",
-  Portfolio: "portfolio_url",
-  Instagram: "instagram_url",
-  LeetCode: "leetcode_url",
+  github: "github_url",
+  twitter: "twitter_url",
+  linkedin: "linkedin_url",
+  website: "website",
+  portfolio: "portfolio_url",
+  instagram: "instagram_url",
+  leetcode: "leetcode_url",
 };
 
 const columnToPlatform: Record<string, string> = Object.fromEntries(
