@@ -9,6 +9,13 @@ import FeedLayout from "@/components/layout/FeedLayout";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 
+const timeFilterMap: Record<string, string> = {
+  "Today": "today",
+  "This Week": "week",
+  "This Month": "month",
+  "All Time": "all",
+};
+
 const Trending = () => {
   const [loading, setLoading] = useState(true);
   const [apps, setApps] = useState<(TrendingApp & { slug?: string })[]>([]);
@@ -36,23 +43,44 @@ const Trending = () => {
 
   const fetchTrending = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from("apps").select("*").eq("status", "published");
-    const now = new Date();
-    if (filters.time === "Today") query = query.gte("created_at", new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString());
-    else if (filters.time === "This Week") query = query.gte("created_at", new Date(now.getTime() - 7 * 86400000).toISOString());
-    else if (filters.time === "This Month") query = query.gte("created_at", new Date(now.getTime() - 30 * 86400000).toISOString());
-    if (filters.category) query = query.contains("tags", [filters.category.toLowerCase().replace(/\s+/g, "-")]);
-    query = query.order("views_count", { ascending: false }).limit(20);
+    const tf = timeFilterMap[filters.time] || "week";
 
+    // Call the trending RPC
+    const { data: trendingData, error } = await (supabase as any).rpc("get_trending_apps", {
+      time_filter: tf,
+      max_results: 20,
+    });
+
+    if (error || !trendingData || trendingData.length === 0) {
+      setApps([]);
+      setLoading(false);
+      return;
+    }
+
+    const appIds = trendingData.map((t: any) => t.app_id);
+    const trendingMap = new Map(trendingData.map((t: any) => [t.app_id, t]));
+
+    // Fetch full app data
+    let query = supabase.from("apps").select("*").in("id", appIds).eq("status", "published");
+    if (filters.category) query = query.contains("tags", [filters.category.toLowerCase().replace(/\s+/g, "-")]);
     const { data: rawApps } = await query;
+
     if (!rawApps || rawApps.length === 0) { setApps([]); setLoading(false); return; }
 
-    const userIds = [...new Set(rawApps.map((a) => a.user_id))];
+    // Sort by trending score
+    const sortedApps = rawApps.sort((a, b) => {
+      const scoreA = (trendingMap.get(a.id) as any)?.trending_score || 0;
+      const scoreB = (trendingMap.get(b.id) as any)?.trending_score || 0;
+      return scoreB - scoreA;
+    });
+
+    const userIds = [...new Set(sortedApps.map((a) => a.user_id))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds);
     const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-    setApps(rawApps.map((app, i) => {
+    setApps(sortedApps.map((app, i) => {
       const profile = profileMap.get(app.user_id);
+      const stats = trendingMap.get(app.id) as any;
       return {
         id: app.id, slug: (app as any).slug || undefined, rank: i + 1,
         appName: app.app_name, appIcon: app.app_icon_url || "📱",
@@ -63,6 +91,7 @@ const Trending = () => {
         techStack: app.tech_stack || [], likes: app.likes_count || 0, comments: app.comments_count || 0,
         views: app.views_count || 0, liked: false, saved: false,
         trendLabel: "", growthPercent: 0,
+        trendingScore: stats?.trending_score || 0,
       };
     }));
     setLoading(false);
@@ -100,6 +129,11 @@ const Trending = () => {
                         <TrendingCard app={app} />
                       </div>
                     ))}
+                    {apps.length === 0 && (
+                      <div className="text-center py-16">
+                        <p className="text-muted-foreground italic text-sm">No trending apps found for this time period.</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
