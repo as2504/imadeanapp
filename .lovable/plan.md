@@ -1,67 +1,56 @@
 
 
-# Plan: Fix Social Links Saving & Add Missing Profile Migration
+# Plan: Feedback Flow Fixes, Duplicate Prevention, UI Polish
 
-## Problem 1: Social Links Not Saving
+## 1. Prevent Duplicate Submissions & Fix Navigation
 
-**Root cause:** Case mismatch between `EditProfileLinks` platform IDs (`"github"`, `"twitter"`, `"linkedin"`, `"website"`) and `EditProfile.tsx`'s `socialPlatformToColumn` keys (`"GitHub"`, `"Twitter"`, `"LinkedIn"`, `"Website"`).
+**Problem:** Users can re-submit feedback by navigating back. After completion, back button goes to edit mode instead of app details.
 
-When loading from DB, `columnToPlatform` maps `github_url` → `"GitHub"`, so links get capitalized platform names. But `EditProfileLinks` creates new links with lowercase IDs like `"github"`. When saving, `socialPlatformToColumn["github"]` returns `undefined`, so the URL never gets written to any column.
+**Fix in `FeedbackFlow.tsx`:**
+- Add `alreadySubmitted` state check on load — if user already submitted for this config, show "already submitted" screen immediately
+- After completion, replace `navigate(-1)` with `navigate(`/app/${appId}`, { replace: true })` in the header back button when `completed` is true
+- Use `navigate(..., { replace: true })` when setting `completed` so browser back doesn't re-enter the flow
+- In ThankYouScreen, the "Return to Feedback Settings" button already navigates to `/settings`
 
-**Fix in `EditProfile.tsx`:** Change `socialPlatformToColumn` keys to lowercase to match `EditProfileLinks` platform IDs:
+**Fix in `ThankYouScreen.tsx`:**
+- Pass `appId` as prop, change back/close to navigate to `/app/${appId}`
 
-```
-github → github_url
-twitter → twitter_url
-linkedin → linkedin_url
-website → website
-portfolio → portfolio_url
-instagram → instagram_url
-leetcode → leetcode_url
-```
+## 2. "Already Submitted" UI in AppFeedback Component
 
-And update `columnToPlatform` accordingly.
+**Problem:** When `alreadySubmitted` is true, the component returns `null` — broken-looking empty space.
 
-## Problem 2: Missing Profile Columns Migration
+**Fix in `AppFeedback.tsx`:**
+- When `alreadySubmitted && !isOwner`, show a card with a checkmark icon and text: "Your feedback has been recorded. Thank you!"
 
-The `profiles` table was created with only: `username, display_name, avatar_url, bio, website, github_url, twitter_url`. Later, many columns were added directly to Lovable's test Supabase but **no migration file exists** for them. When you run `supabase db push` on prod, these columns are missing.
+## 3. "Already Submitted" Guard in FeedbackFlow
 
-**Missing columns (need a new migration):**
+**Fix in `FeedbackFlow.tsx`:**
+- Check for existing response during `fetchData`. If found, show a screen saying "You've already submitted feedback for this app" with a button to go to app details.
 
-- `linkedin_url text`
-- `portfolio_url text`
-- `instagram_url text`
-- `leetcode_url text`
-- `social_links jsonb DEFAULT '[]'`
-- `gender text`
-- `location text`
-- `date_of_birth date`
-- `professional_title text`
-- `education jsonb DEFAULT '[]'`
-- `work_experience_years integer`
-- `primary_skill text`
-- `secondary_tools text[] DEFAULT '{}'`
-- `preferred_platforms text[] DEFAULT '{}'`
-- `looking_for_work boolean DEFAULT false`
-- `open_to_collaboration boolean DEFAULT false`
-- `collaboration_looking_for text[] DEFAULT '{}'`
+## 4. QuestionCard UI — Radio vs Squircle Icons
 
-**Fix:** Create a single migration file that adds all missing columns using `ADD COLUMN IF NOT EXISTS`.
+**Problem:** No visual indicator type distinction between single and multi select.
 
-## Problem 3: Environment Variable Portability
+**Fix in `QuestionCard.tsx`:**
+- For `single` type: show a radio circle on the left (empty circle, filled when selected)
+- For `multi` type: show a rounded-square (squircle) checkbox on the left (empty, checked when selected)
+- Remove the right-side check icon, move indicator to left
+- Keep satisfaction icons as-is (they already have special icons)
 
-Currently `.env` is committed with Lovable's test Supabase keys. You mentioned the `.env` should be in `.gitignore` going forward.
+## 5. Submitting Animation Before Thank You
 
-**Fix:**
-- Verify `.env` is in `.gitignore` (it should be already based on your setup)
-- No code changes needed — the app already reads from `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` env vars, which you set in Vercel for prod
+**Problem:** Abrupt transition from last question to thank-you screen.
 
----
+**Fix in `FeedbackFlow.tsx`:**
+- Add a `submitting` state between answering and `completed`
+- After last question submission, set `submitting = true`, show a centered animation (pulsing dots / spinning ring with "Submitting your feedback..." text) for ~1.5s, then set `completed = true`
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `src/pages/EditProfile.tsx` | Fix `socialPlatformToColumn` keys to lowercase |
-| `supabase/migrations/2026XXXX_add_missing_profile_columns.sql` | **New** — adds all missing `profiles` columns |
+| `src/pages/FeedbackFlow.tsx` | Add duplicate check, submitting animation, fix navigation |
+| `src/components/feedback/QuestionCard.tsx` | Radio buttons for single, squircle checkboxes for multi |
+| `src/components/feedback/ThankYouScreen.tsx` | Accept `appId`, navigate to app details on back |
+| `src/components/app-detail/AppFeedback.tsx` | Show "feedback recorded" card instead of empty space |
 
