@@ -1,4 +1,4 @@
-import { Zap, ShieldCheck, BarChart3, Rocket, Check } from "lucide-react";
+import { Zap, ShieldCheck, BarChart3, Rocket, Check, MessageSquare, TrendingUp } from "lucide-react";
 
 const features = [
   {
@@ -19,15 +19,29 @@ const features = [
     icon: ShieldCheck,
     badge: "Identity",
     title: "Creator Profiles",
-    description: "Build trust with a professional portfolio showcasing your tech stack and shipped products.",
-    bullets: ["Verified builder badges", "Skills & experience", "Follow system"],
+    description: "Build trust with a professional portfolio showcasing your tech stack, experience, and shipped products.",
+    bullets: ["Google sign-in & email auth", "Skills & experience", "Follow system"],
   },
   {
     icon: BarChart3,
     badge: "Analytics",
     title: "Growth Insights",
     description: "Understand your impact with views, ratings, and engagement tracking across all your apps.",
-    bullets: ["Rating system", "View analytics", "Community feedback"],
+    bullets: ["Rating & review system", "View analytics", "Community feedback"],
+  },
+  {
+    icon: MessageSquare,
+    badge: "Feedback",
+    title: "Community Feedback",
+    description: "Get structured feedback from real users with custom Q&A and satisfaction surveys.",
+    bullets: ["Custom questionnaires", "Satisfaction tracking", "Publisher analytics dashboard"],
+  },
+  {
+    icon: TrendingUp,
+    badge: "Algorithm",
+    title: "Trending Algorithm",
+    description: "A gravity-based algorithm ranks apps by real engagement, not vanity metrics.",
+    bullets: ["Weighted engagement scoring", "Time-decay ranking", "Anti-gaming unique constraints"],
   },
 ];
 
@@ -44,7 +58,7 @@ const FeaturesSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <div
               key={i}

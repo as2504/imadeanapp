@@ -34,6 +34,63 @@ const HomeFeed = () => {
 
   const fetchApps = useCallback(async () => {
     setLoading(true);
+
+    // Use trending algorithm for default "for-you" with no specific sort
+    const useTrending = filters.feed === "for-you" && !filters.sort;
+
+    if (useTrending) {
+      const { data: trendingData } = await (supabase as any).rpc("get_trending_apps", {
+        time_filter: "all",
+        max_results: 50,
+      });
+
+      if (!trendingData || trendingData.length === 0) {
+        // Fallback to regular query
+        await fetchRegular();
+        return;
+      }
+
+      const appIds = trendingData.map((t: any) => t.app_id);
+      const trendingMap = new Map(trendingData.map((t: any) => [t.app_id, t]));
+
+      let query = supabase.from("apps").select("*").in("id", appIds).eq("status", "published");
+      if (filters.platform && filters.platform !== "all") query = query.contains("platforms", [filters.platform]);
+      if (filters.techStack) query = query.contains("tech_stack", [filters.techStack]);
+      if (filters.category) query = query.contains("tags", [filters.category.toLowerCase().replace(/\s+/g, "-")]);
+
+      const { data: apps } = await query;
+      if (!apps || apps.length === 0) { setPosts([]); setLoading(false); return; }
+
+      const sortedApps = apps.sort((a, b) => {
+        const scoreA = (trendingMap.get(a.id) as any)?.trending_score || 0;
+        const scoreB = (trendingMap.get(b.id) as any)?.trending_score || 0;
+        return scoreB - scoreA;
+      });
+
+      const userIds = [...new Set(sortedApps.map((a) => a.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds);
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+      setPosts(sortedApps.map((app) => {
+        const profile = profileMap.get(app.user_id);
+        return {
+          id: app.id, slug: (app as any).slug || undefined, appName: app.app_name,
+          appIcon: app.app_icon_url || "📱", publisherName: profile?.display_name || profile?.username || "Unknown",
+          publisherAvatar: (profile?.display_name || "U").charAt(0), verified: false,
+          timeAgo: getTimeAgo(app.created_at), caption: app.caption || app.tagline || "",
+          tags: app.tags || [], platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
+          techStack: app.tech_stack || [], likes: app.likes_count || 0, comments: app.comments_count || 0,
+          views: app.views_count || 0, liked: false, saved: false,
+        };
+      }));
+      setLoading(false);
+      return;
+    }
+
+    await fetchRegular();
+  }, [filters, user]);
+
+  const fetchRegular = useCallback(async () => {
     let followedIds: string[] = [];
     if (filters.feed === "following" && user) {
       const { data: follows } = await supabase.from("follows").select("following_id").eq("follower_id", user.id);

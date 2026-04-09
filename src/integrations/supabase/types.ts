@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_clicks: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_feedback_config: {
         Row: {
           app_id: string
@@ -475,6 +496,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_trending_apps: {
+        Args: { max_results?: number; time_filter?: string }
+        Returns: {
+          app_id: string
+          avg_rating: number
+          engagement_score: number
+          feedback_count: number
+          ratings_count: number
+          review_likes_count: number
+          reviews_count: number
+          saves_count: number
+          trending_score: number
+          tries_count: number
+        }[]
+      }
       increment_views: { Args: { app_id: string }; Returns: undefined }
     }
     Enums: {

@@ -99,9 +99,16 @@ const AppDetail = () => {
   }, [id, user]);
 
   const handleTryApp = async (url?: string) => {
-    if (user && appData && !userTried) {
-      await supabase.from("app_tries").insert({ app_id: appData.id, user_id: user.id });
-      setUserTried(true);
+    if (user && appData) {
+      if (!userTried) {
+        await supabase.from("app_tries").insert({ app_id: appData.id, user_id: user.id });
+        setUserTried(true);
+      }
+      // Track unique outbound click for trending algorithm
+      await supabase.from("app_clicks" as any).upsert(
+        { app_id: appData.id, user_id: user.id },
+        { onConflict: "app_id,user_id" }
+      );
     }
     if (!appData) return;
     const finalUrl = url || appData.websiteUrl || appData.appStoreUrl || appData.playStoreUrl;
