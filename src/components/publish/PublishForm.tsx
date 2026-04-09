@@ -350,12 +350,12 @@ const PublishForm = () => {
 
   if (isLive) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-in fade-in duration-700">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-in fade-in duration-700 text-center">
         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-bounce">
           <Check size={40} className="text-primary" />
         </div>
         <h2 className="text-3xl font-black mb-2">Your app is live!</h2>
-        <p className="text-muted-foreground mb-8">The community can now discover your creation.</p>
+        <p className="text-muted-foreground mb-8 text-center">The community can now discover your creation.</p>
         <Button onClick={() => navigate("/account")} className="rounded-xl px-8 font-bold">
           Back to Profile
         </Button>

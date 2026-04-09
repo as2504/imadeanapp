@@ -13,7 +13,7 @@ import {
   Sun, 
   MessageSquare, 
   Settings as SettingsIcon,
-  Star,
+  BarChart3,
   Loader2,
   Check,
   ChevronDown,
@@ -89,7 +89,6 @@ const Settings = () => {
     const configs = (data as any[]) || [];
     setFeedbackConfigs(configs);
 
-    // Fetch response counts
     const counts: Record<string, number> = {};
     for (const cfg of configs) {
       const { count } = await supabase
@@ -115,7 +114,7 @@ const Settings = () => {
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
-    { id: "reviews", label: "Reviews Analytics", icon: Star, badge: "Beta" },
+    { id: "reviews", label: "Reviews Analytics", icon: BarChart3, badge: "Beta" },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -193,6 +192,15 @@ const Settings = () => {
                           )}
                         </CommandItem>
                       ))}
+                      {/* Log out in mobile dropdown */}
+                      <CommandItem
+                        value="Log out"
+                        onSelect={() => signOut()}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer text-destructive"
+                      >
+                        <LogOut size={16} />
+                        <span className="text-sm font-bold uppercase tracking-tight">Log out</span>
+                      </CommandItem>
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -223,6 +231,17 @@ const Settings = () => {
                   )}
                 </button>
               ))}
+
+              {/* Log out always last */}
+              <div className="mt-4 pt-4 border-t border-border/40">
+                <button
+                  onClick={signOut}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive hover:bg-destructive/5 transition-all whitespace-nowrap w-full"
+                >
+                  <LogOut size={16} />
+                  Log out
+                </button>
+              </div>
             </div>
           </div>
 
@@ -304,24 +323,6 @@ const Settings = () => {
                           <Moon size={16} />
                         </button>
                       </div>
-                    </div>
-
-                    <div className="border-t border-border/40" />
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-bold text-foreground">Log Out</p>
-                        <p className="text-xs text-muted-foreground">Sign out of your account</p>
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={signOut}
-                        className="rounded-xl gap-2 font-bold text-xs"
-                      >
-                        <LogOut size={14} />
-                        Log Out
-                      </Button>
                     </div>
                   </div>
                 )}
@@ -434,7 +435,7 @@ const Settings = () => {
 
                 {activeSection === "reviews" && (
                   <div className="text-center py-12">
-                    <Star size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+                    <BarChart3 size={32} className="mx-auto text-muted-foreground/30 mb-3" />
                     <p className="text-sm font-medium text-muted-foreground italic">
                       This section is currently under development.
                     </p>
