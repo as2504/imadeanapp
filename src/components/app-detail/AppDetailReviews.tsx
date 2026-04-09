@@ -57,6 +57,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   const [totalRatings, setTotalRatings] = useState(0);
   const [totalReviewsCount, setTotalReviewsCount] = useState(0);
   const [existingRating, setExistingRating] = useState<number | null>(null);
+  const [existingReviewText, setExistingReviewText] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -76,6 +77,11 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   const isOverLimit = comment.length > MAX_CHARS;
   const isEditOverLimit = editComment.length > MAX_CHARS;
   const isEditUnchanged = editComment.trim() === originalEditComment.trim();
+
+  // Submit is enabled only when user made a change from the saved state
+  const hasRatingChange = rating > 0 && rating !== existingRating;
+  const hasCommentChange = comment.trim().length > 0;
+  const canSubmit = !isOverLimit && !isSubmitting && !!user && (hasRatingChange || hasCommentChange);
 
   const enrichReviews = useCallback(async (rawComments: any[]): Promise<ReviewItem[]> => {
     const userIds = [...new Set(rawComments.map((c) => c.user_id))];
