@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, User, Box } from "lucide-react";
+import { Search, X, User, Box, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,17 +13,45 @@ interface SearchResult {
   icon?: string;
 }
 
+const RECENT_SEARCHES_KEY = "imaa_recent_searches";
+const MAX_RECENT = 3;
+
+const getRecentSearches = (): string[] => {
+  try {
+    const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+};
+
+const addRecentSearch = (term: string) => {
+  const trimmed = term.trim();
+  if (!trimmed) return;
+  const recent = getRecentSearches().filter(s => s.toLowerCase() !== trimmed.toLowerCase());
+  recent.unshift(trimmed);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
+};
+
+const removeRecentSearch = (term: string) => {
+  const recent = getRecentSearches().filter(s => s !== term);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent));
+};
+
 const SearchBar = ({ className = "", mobile = false }: { className?: string; mobile?: boolean }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowRecent(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -31,6 +59,7 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
 
   useEffect(() => {
     if (query.trim().length < 2) { setResults([]); setOpen(false); return; }
+    setShowRecent(false);
     const timeout = setTimeout(async () => {
       setLoading(true);
       const searchTerm = `%${query.trim()}%`;
@@ -49,16 +78,41 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
   }, [query]);
 
   const handleSelect = (result: SearchResult) => {
+    addRecentSearch(result.name);
     setOpen(false);
+    setShowRecent(false);
     setQuery("");
     navigate(result.type === "app" ? `/app/${result.slug || result.id}` : `/profile/${result.id}`);
+  };
+
+  const handleFocus = () => {
+    if (query.trim().length >= 2) {
+      setOpen(true);
+    } else {
+      const recent = getRecentSearches();
+      setRecentSearches(recent);
+      if (recent.length > 0) setShowRecent(true);
+    }
+  };
+
+  const handleRecentClick = (term: string) => {
+    setQuery(term);
+    setShowRecent(false);
+  };
+
+  const handleRemoveRecent = (e: React.MouseEvent, term: string) => {
+    e.stopPropagation();
+    removeRecentSearch(term);
+    const updated = getRecentSearches();
+    setRecentSearches(updated);
+    if (updated.length === 0) setShowRecent(false);
   };
 
   return (
     <div ref={ref} className={`relative ${className}`}>
       <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
       {query && (
-        <button onClick={() => { setQuery(""); setOpen(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10">
+        <button onClick={() => { setQuery(""); setOpen(false); setShowRecent(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10">
           <X size={14} />
         </button>
       )}
@@ -66,11 +120,38 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
         placeholder="Search apps, creators..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => query.trim().length >= 2 && setOpen(true)}
+        onFocus={handleFocus}
         className="h-9 rounded-lg bg-secondary border-0 pl-9 pr-8 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 w-full"
         autoFocus={mobile}
       />
 
+      {/* Recent searches dropdown */}
+      {showRecent && !open && recentSearches.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border/40 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="px-3 py-2 flex items-center gap-1.5">
+            <Clock size={12} className="text-muted-foreground/50" />
+            <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">Recent</span>
+          </div>
+          {recentSearches.map((term) => (
+            <button
+              key={term}
+              onClick={() => handleRecentClick(term)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-secondary transition-colors text-left"
+            >
+              <Clock size={14} className="text-muted-foreground/40 shrink-0" />
+              <span className="text-sm text-foreground truncate flex-1">{term}</span>
+              <button
+                onClick={(e) => handleRemoveRecent(e, term)}
+                className="text-muted-foreground/30 hover:text-foreground p-0.5"
+              >
+                <X size={12} />
+              </button>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Search results dropdown */}
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border/40 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
           {loading && <div className="p-3 text-center text-sm text-muted-foreground">Searching...</div>}

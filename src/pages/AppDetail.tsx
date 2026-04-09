@@ -13,7 +13,7 @@ import AppUpdateHistory from "@/components/app-detail/AppUpdateHistory";
 import RelatedApps from "@/components/app-detail/RelatedApps";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronsUpDown, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -263,7 +263,35 @@ const AppDetail = () => {
             {activeTab === "Updates" && isAuthenticated && <AppUpdateHistory appId={appData.id} />}
             {activeTab === "Feedback" && isAuthenticated && (
               <div className="py-4">
-                <AppFeedback appId={appData.id} userTried={userTried} />
+                {appData.publisherUserId === user?.id ? (
+                  <section className="p-6 rounded-2xl bg-card border border-border/40 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto">
+                      <MessageSquare size={22} className="text-amber-500" />
+                    </div>
+                    <p className="text-sm font-bold text-foreground">You can't give feedback to your own app</p>
+                    <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+                      Check how others feel about your app in <span className="font-semibold text-foreground">Settings → App Feedback</span>.
+                    </p>
+                    <button
+                      onClick={() => navigate("/settings")}
+                      className="text-xs font-bold text-primary hover:underline"
+                    >
+                      Go to Settings
+                    </button>
+                  </section>
+                ) : !userTried ? (
+                  <section className="p-6 rounded-2xl bg-card border border-border/40 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
+                      <ChevronLeft size={22} className="text-primary rotate-180" />
+                    </div>
+                    <p className="text-sm font-bold text-foreground">Try the app first</p>
+                    <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+                      You need to try this app before you can share feedback.
+                    </p>
+                  </section>
+                ) : (
+                  <AppFeedback appId={appData.id} userTried={userTried} />
+                )}
               </div>
             )}
           </div>

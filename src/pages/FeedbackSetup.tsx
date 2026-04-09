@@ -140,7 +140,7 @@ const FeedbackSetup = () => {
   };
 
   const addOptionField = () => {
-    if (newOptions.length >= 6) return;
+    if (newOptions.length >= 5) return;
     setNewOptions([...newOptions, ""]);
   };
 
@@ -156,7 +156,7 @@ const FeedbackSetup = () => {
   };
 
   const addEditOptionField = () => {
-    if (editOptions.length >= 6) return;
+    if (editOptions.length >= 5) return;
     setEditOptions([...editOptions, ""]);
   };
 
@@ -212,7 +212,7 @@ const FeedbackSetup = () => {
 
     showConfetti();
     toast.success("Feedback form saved!");
-    setTimeout(() => navigate("/settings"), 1500);
+    setTimeout(() => navigate("/settings", { replace: true }), 1500);
   };
 
   const showConfetti = () => {
@@ -353,7 +353,7 @@ const FeedbackSetup = () => {
                                 )}
                               </div>
                             ))}
-                            {editOptions.length < 6 && (
+                            {editOptions.length < 5 && (
                               <button
                                 onClick={addEditOptionField}
                                 className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
@@ -455,7 +455,7 @@ const FeedbackSetup = () => {
                         )}
                       </div>
                     ))}
-                    {newOptions.length < 6 && (
+                    {newOptions.length < 5 && (
                       <button
                         onClick={addOptionField}
                         className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
