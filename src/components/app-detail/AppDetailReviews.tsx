@@ -187,7 +187,7 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSubmit = async () => {
-    if (!user || isOverLimit || (rating === 0 && !comment.trim())) return;
+    if (!user || isOverLimit || (!hasRatingChange && !hasCommentChange)) return;
     setIsSubmitting(true);
     
     try {
@@ -461,10 +461,10 @@ const AppDetailReviews = ({ appId, userTried }: AppDetailReviewsProps) => {
               />
               <button 
                 onClick={handleSubmit} 
-                disabled={(!comment.trim() && rating === 0) || !user || isOverLimit || isSubmitting} 
+                disabled={!canSubmit} 
                 className={cn(
                   "absolute bottom-2.5 right-2.5 p-1.5 transition-all duration-200",
-                  (!comment.trim() && rating === 0) || !user || isOverLimit || isSubmitting
+                  !canSubmit
                     ? "text-muted-foreground/20 cursor-not-allowed"
                     : "text-primary hover:scale-110 active:scale-90"
                 )}
