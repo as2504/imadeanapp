@@ -1,56 +1,125 @@
 
 
-# Plan: Feedback Flow Fixes, Duplicate Prevention, UI Polish
+# Plan: Trending Algorithm, Landing Page Update, README
 
-## 1. Prevent Duplicate Submissions & Fix Navigation
+## 1. Database Migration — `app_clicks` table + RPC function
 
-**Problem:** Users can re-submit feedback by navigating back. After completion, back button goes to edit mode instead of app details.
+**New table: `app_clicks`** — tracks unique outbound "Try App" clicks per user per app.
 
-**Fix in `FeedbackFlow.tsx`:**
-- Add `alreadySubmitted` state check on load — if user already submitted for this config, show "already submitted" screen immediately
-- After completion, replace `navigate(-1)` with `navigate(`/app/${appId}`, { replace: true })` in the header back button when `completed` is true
-- Use `navigate(..., { replace: true })` when setting `completed` so browser back doesn't re-enter the flow
-- In ThankYouScreen, the "Return to Feedback Settings" button already navigates to `/settings`
+```sql
+CREATE TABLE public.app_clicks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  app_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(app_id, user_id)
+);
+ALTER TABLE public.app_clicks ENABLE ROW LEVEL SECURITY;
+-- RLS: public read, authenticated insert own
+CREATE POLICY "Clicks viewable by everyone" ON public.app_clicks FOR SELECT TO public USING (true);
+CREATE POLICY "Users can insert own clicks" ON public.app_clicks FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+```
 
-**Fix in `ThankYouScreen.tsx`:**
-- Pass `appId` as prop, change back/close to navigate to `/app/${appId}`
+**New RPC function: `get_trending_apps`** — calculates trending score server-side:
 
-## 2. "Already Submitted" UI in AppFeedback Component
+```sql
+CREATE OR REPLACE FUNCTION public.get_trending_apps(time_filter text DEFAULT 'week', max_results int DEFAULT 30)
+RETURNS TABLE (
+  app_id uuid, trending_score float, engagement_score float,
+  avg_rating float, tries_count bigint, feedback_count bigint,
+  reviews_count bigint, saves_count bigint, review_likes_count bigint, ratings_count bigint
+) LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
+  WITH app_stats AS (
+    SELECT a.id AS aid,
+      a.created_at,
+      COALESCE((SELECT COUNT(DISTINCT user_id) FROM app_clicks WHERE app_id = a.id), 0) AS tries,
+      COALESCE((SELECT COUNT(DISTINCT user_id) FROM app_feedback_responses WHERE app_id = a.id), 0) AS feedback,
+      COALESCE((SELECT COUNT(*) FROM ratings WHERE app_id = a.id), 0) AS reviews,
+      COALESCE((SELECT COUNT(DISTINCT user_id) FROM saved_apps WHERE app_id = a.id), 0) AS saves,
+      COALESCE((SELECT SUM(COALESCE(c.likes_count, 0)) FROM comments c WHERE c.app_id = a.id), 0) AS rev_likes,
+      COALESCE((SELECT COUNT(*) FROM ratings WHERE app_id = a.id), 0) AS rating_ct,
+      COALESCE((SELECT AVG(rating)::float FROM ratings WHERE app_id = a.id), 0) AS avg_rat
+    FROM apps a
+    WHERE a.status = 'published'
+      AND (time_filter = 'all'
+        OR (time_filter = 'today' AND a.created_at >= CURRENT_DATE)
+        OR (time_filter = 'week' AND a.created_at >= NOW() - INTERVAL '7 days')
+        OR (time_filter = 'month' AND a.created_at >= NOW() - INTERVAL '30 days'))
+  )
+  SELECT aid, 
+    CASE WHEN avg_rat > 0 THEN
+      ((tries*15 + feedback*10 + reviews*5 + saves*4 + rev_likes*2 + rating_ct*1) * GREATEST(avg_rat, 1))
+        / POWER(EXTRACT(EPOCH FROM (NOW() - created_at))/3600.0 + 2, 1.5)
+    ELSE
+      (tries*15 + feedback*10 + reviews*5 + saves*4 + rev_likes*2 + rating_ct*1)::float
+        / POWER(EXTRACT(EPOCH FROM (NOW() - created_at))/3600.0 + 2, 1.5)
+    END,
+    (tries*15 + feedback*10 + reviews*5 + saves*4 + rev_likes*2 + rating_ct*1)::float,
+    avg_rat, tries, feedback, reviews, saves, rev_likes, rating_ct
+  FROM app_stats
+  ORDER BY 2 DESC
+  LIMIT max_results;
+$$;
+```
 
-**Problem:** When `alreadySubmitted` is true, the component returns `null` — broken-looking empty space.
+This reuses existing tables (`saved_apps`, `ratings`, `comments`, `app_feedback_responses`) and adds only `app_clicks`. The `app_tries` table already exists but is used for feedback gating — `app_clicks` is the dedicated outbound-click tracker with a unique constraint.
 
-**Fix in `AppFeedback.tsx`:**
-- When `alreadySubmitted && !isOwner`, show a card with a checkmark icon and text: "Your feedback has been recorded. Thank you!"
+## 2. Frontend — Trending Page Uses RPC
 
-## 3. "Already Submitted" Guard in FeedbackFlow
+**`src/pages/Trending.tsx`:** Replace the current `views_count` ORDER BY with calling `supabase.rpc('get_trending_apps', { time_filter, max_results: 20 })`, then fetch app details + profiles for the returned IDs. Pass `trending_score` to each card.
 
-**Fix in `FeedbackFlow.tsx`:**
-- Check for existing response during `fetchData`. If found, show a screen saying "You've already submitted feedback for this app" with a button to go to app details.
+**`src/components/trending/TrendingCard.tsx`:** Add optional `trendingScore` display (small badge showing score).
 
-## 4. QuestionCard UI — Radio vs Squircle Icons
+## 3. Frontend — HomeFeed Default Sort
 
-**Problem:** No visual indicator type distinction between single and multi select.
+**`src/pages/HomeFeed.tsx`:** When sort is empty and feed is "for-you", call the same `get_trending_apps` RPC to get app IDs in trending order, then fetch full app data in that order. Other filters (following, most recent, etc.) keep current behavior.
 
-**Fix in `QuestionCard.tsx`:**
-- For `single` type: show a radio circle on the left (empty circle, filled when selected)
-- For `multi` type: show a rounded-square (squircle) checkbox on the left (empty, checked when selected)
-- Remove the right-side check icon, move indicator to left
-- Keep satisfaction icons as-is (they already have special icons)
+## 4. Track Outbound Clicks
 
-## 5. Submitting Animation Before Thank You
+**`src/pages/AppDetail.tsx` — `handleTryApp`:** In addition to inserting into `app_tries`, also insert into `app_clicks` (with `ON CONFLICT DO NOTHING` semantics via `.upsert` or catching the unique violation). This ensures one click per user per app.
 
-**Problem:** Abrupt transition from last question to thank-you screen.
+```typescript
+// In handleTryApp:
+if (user && appData) {
+  await supabase.from("app_clicks").upsert(
+    { app_id: appData.id, user_id: user.id },
+    { onConflict: "app_id,user_id" }
+  );
+}
+```
 
-**Fix in `FeedbackFlow.tsx`:**
-- Add a `submitting` state between answering and `completed`
-- After last question submission, set `submitting = true`, show a centered animation (pulsing dots / spinning ring with "Submitting your feedback..." text) for ~1.5s, then set `completed = true`
+## 5. Landing Page Update
+
+**`src/components/landing/FeaturesSection.tsx`:** Add two missing feature cards:
+- **Community Feedback** (MessageSquare icon) — "Get structured feedback from real users with custom QnA and satisfaction surveys." Bullets: "Custom questionnaires", "Satisfaction tracking", "Publisher analytics dashboard"
+- **Trending Algorithm** (TrendingUp icon) — "A gravity-based algorithm ranks apps by real engagement, not vanity metrics." Bullets: "Weighted engagement scoring", "Time-decay ranking", "Anti-gaming unique constraints"
+
+Update existing cards' descriptions to reflect current features more accurately (e.g., mention Google sign-in, app feedback).
+
+**`src/pages/Index.tsx`:** Add a "How It Works" section between Features and CTA with 3 steps: Publish → Get Discovered → Grow.
+
+## 6. README.md
+
+Replace with a proper project README including: project name/description, features list, tech stack, local development setup, environment variables needed, database migration instructions, deployment notes.
+
+## 7. Existing Tables Used (No Changes Needed)
+
+- `saved_apps` — already has unique behavior (one save per user per app via RLS)
+- `ratings` — tracks ratings count and values
+- `comments.likes_count` — tracks review likes
+- `app_feedback_responses` — tracks unique feedback per user
+
+---
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `src/pages/FeedbackFlow.tsx` | Add duplicate check, submitting animation, fix navigation |
-| `src/components/feedback/QuestionCard.tsx` | Radio buttons for single, squircle checkboxes for multi |
-| `src/components/feedback/ThankYouScreen.tsx` | Accept `appId`, navigate to app details on back |
-| `src/components/app-detail/AppFeedback.tsx` | Show "feedback recorded" card instead of empty space |
+| **Migration SQL** | Create `app_clicks` table + `get_trending_apps` RPC function |
+| `src/pages/Trending.tsx` | Use `get_trending_apps` RPC instead of `views_count` sort |
+| `src/pages/HomeFeed.tsx` | Default "For You" uses trending RPC |
+| `src/pages/AppDetail.tsx` | Insert into `app_clicks` on "Try App" click |
+| `src/components/landing/FeaturesSection.tsx` | Add Feedback + Trending feature cards |
+| `src/pages/Index.tsx` | Add "How It Works" section |
+| `README.md` | Full project documentation |
 
