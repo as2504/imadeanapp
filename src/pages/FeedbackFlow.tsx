@@ -5,8 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import QuestionCard from "@/components/feedback/QuestionCard";
 import ThankYouScreen from "@/components/feedback/ThankYouScreen";
-import { ChevronLeft, Lock } from "lucide-react";
-import { toast } from "sonner";
+import { ChevronLeft, Lock, CheckCircle2 } from "lucide-react";
 
 interface Question {
   id: string;
@@ -27,10 +26,12 @@ const FeedbackFlow = () => {
   const [config, setConfig] = useState<any>(null);
   const [publisherInfo, setPublisherInfo] = useState<any>(null);
   const [hasTried, setHasTried] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [followUpText, setFollowUpText] = useState("");
   const [animState, setAnimState] = useState<"entering" | "active" | "exiting">("entering");
+  const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
@@ -44,11 +45,9 @@ const FeedbackFlow = () => {
     if (!app) { setLoading(false); return; }
     setAppName(app.app_name);
 
-    // Fetch publisher profile
     const { data: profile } = await supabase.from("profiles").select("display_name, username, avatar_url, user_id").eq("user_id", app.user_id).maybeSingle();
     setPublisherInfo(profile);
 
-    // Check if tried
     if (user && !isTestMode) {
       const { data: tried } = await supabase.from("app_tries").select("id").eq("app_id", appId).eq("user_id", user.id).maybeSingle();
       setHasTried(!!tried);
@@ -56,13 +55,24 @@ const FeedbackFlow = () => {
       setHasTried(true);
     }
 
-    // Fetch config
     const { data: cfg } = await supabase
       .from("app_feedback_config" as any)
       .select("*")
       .eq("app_id", appId)
       .maybeSingle();
     setConfig(cfg);
+
+    // Check if already submitted
+    if (user && cfg && !isTestMode) {
+      const { data: existing } = await supabase
+        .from("app_feedback_responses")
+        .select("id")
+        .eq("config_id", (cfg as any).id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setAlreadySubmitted(!!existing);
+    }
+
     setLoading(false);
   };
 
@@ -75,7 +85,6 @@ const FeedbackFlow = () => {
 
     if (q.type === "single") {
       setAnswers({ ...answers, [q.id]: option });
-      // For satisfaction "Bad", wait for follow-up; otherwise auto-advance
       const isSatisfactionBad = (config as any)?.feedback_type === "satisfaction" && option === "Bad";
       if (!isSatisfactionBad) {
         setTimeout(() => advanceToNext({ ...answers, [q.id]: option }), 400);
@@ -99,7 +108,9 @@ const FeedbackFlow = () => {
         setTimeout(() => setAnimState("active"), 500);
       }, 400);
     } else {
-      // Submit
+      // Show submitting animation
+      setSubmitting(true);
+
       if (!isTestMode && user && config) {
         const responseData: any = { answers: finalAnswers };
         if (followUpText.trim()) responseData.followUp = followUpText.trim();
@@ -112,7 +123,12 @@ const FeedbackFlow = () => {
           feedback_type: (config as any).feedback_type,
         } as any);
       }
-      setCompleted(true);
+
+      // Brief animation delay
+      setTimeout(() => {
+        setSubmitting(false);
+        setCompleted(true);
+      }, 1500);
     }
   };
 
@@ -145,7 +161,7 @@ const FeedbackFlow = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <p className="text-foreground font-bold">Feedback is not available for this app.</p>
-        <Button variant="ghost" onClick={() => navigate(-1)}>Go Back</Button>
+        <Button variant="ghost" onClick={() => navigate(`/app/${appId}`)}>Go Back</Button>
       </div>
     );
   }
@@ -165,10 +181,51 @@ const FeedbackFlow = () => {
     );
   }
 
+  // Already submitted guard
+  if (alreadySubmitted && !isTestMode) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4 text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <CheckCircle2 size={32} className="text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Feedback Already Submitted</h2>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            You've already shared your feedback for this app. Thank you!
+          </p>
+        </div>
+        <Button onClick={() => navigate(`/app/${appId}`, { replace: true })} className="rounded-2xl font-bold">
+          Back to App
+        </Button>
+      </div>
+    );
+  }
+
+  // Submitting animation
+  if (submitting) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        </div>
+        <div className="text-center animate-in fade-in duration-500">
+          <p className="text-lg font-bold text-foreground mb-1">Submitting your feedback</p>
+          <p className="text-sm text-muted-foreground">Just a moment...</p>
+        </div>
+        <div className="flex gap-1.5 mt-2">
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0s" }} />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.15s" }} />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.3s" }} />
+        </div>
+      </div>
+    );
+  }
+
   if (completed) {
     return (
       <div className="min-h-screen bg-background px-4 pt-20">
         <ThankYouScreen
+          appId={appId || ""}
           publisherId={publisherInfo?.user_id || ""}
           publisherName={publisherInfo?.display_name || publisherInfo?.username || "Developer"}
           publisherAvatar={publisherInfo?.avatar_url}
@@ -192,7 +249,7 @@ const FeedbackFlow = () => {
       <div className="sticky top-0 z-40 bg-navbar/95 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-2xl mx-auto flex items-center justify-between px-4 h-14">
           <button
-            onClick={() => (currentIndex > 0 ? goBack() : navigate(-1))}
+            onClick={() => (currentIndex > 0 ? goBack() : navigate(`/app/${appId}`, { replace: true }))}
             className="text-sm font-bold text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <ChevronLeft size={18} /> {currentIndex > 0 ? "Back" : "Close"}
@@ -200,7 +257,7 @@ const FeedbackFlow = () => {
           <h1 className="text-xs font-black uppercase tracking-widest text-muted-foreground truncate max-w-[50%]">
             {appName}
           </h1>
-          <div className="w-16" /> {/* spacer */}
+          <div className="w-16" />
         </div>
       </div>
 

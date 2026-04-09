@@ -7,13 +7,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Heart, ArrowRight } from "lucide-react";
 
 interface ThankYouScreenProps {
+  appId: string;
   publisherId: string;
   publisherName: string;
   publisherAvatar?: string;
   isTestMode?: boolean;
 }
 
-const ThankYouScreen = ({ publisherId, publisherName, publisherAvatar, isTestMode }: ThankYouScreenProps) => {
+const ThankYouScreen = ({ appId, publisherId, publisherName, publisherAvatar, isTestMode }: ThankYouScreenProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
@@ -38,12 +39,10 @@ const ThankYouScreen = ({ publisherId, publisherName, publisherAvatar, isTestMod
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in duration-700">
-      {/* Confetti-like decorations */}
       <div className="relative mb-8">
         <div className="absolute -top-4 -left-4 w-3 h-3 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "0s" }} />
         <div className="absolute -top-2 right-0 w-2 h-2 bg-accent/60 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
         <div className="absolute top-0 -right-6 w-4 h-4 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }} />
-        
         <div className="text-6xl mb-2">🎉</div>
       </div>
 
@@ -52,7 +51,6 @@ const ThankYouScreen = ({ publisherId, publisherName, publisherAvatar, isTestMod
         Your feedback has been delivered to the developer.
       </p>
 
-      {/* Publisher card */}
       <div className="bg-card border border-border/40 rounded-3xl p-6 w-full max-w-xs space-y-5 shadow-xl shadow-black/5">
         <div className="flex items-center gap-4">
           <Avatar className="w-14 h-14 border-2 border-border/40">
@@ -94,6 +92,14 @@ const ThankYouScreen = ({ publisherId, publisherName, publisherAvatar, isTestMod
           className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
         >
           Return to Feedback Settings <ArrowRight size={14} className="ml-2" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          onClick={() => navigate(`/app/${appId}`, { replace: true })}
+          className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
+        >
+          Back to App <ArrowRight size={14} className="ml-2" />
         </Button>
       </div>
 
