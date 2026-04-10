@@ -121,6 +121,7 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={handleFocus}
+        onClick={handleFocus}
         className="h-9 rounded-lg bg-secondary border-0 pl-9 pr-8 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 w-full"
         autoFocus={mobile}
       />
