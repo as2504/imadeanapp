@@ -131,6 +131,8 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/ctrl-qx-99" element={<AdminLogin />} />
+              <Route path="/ctrl-qx-99/panel" element={<AdminGuard><AdminPanel /></AdminGuard>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
