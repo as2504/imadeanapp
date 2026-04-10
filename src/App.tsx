@@ -18,6 +18,7 @@ import FeedbackFlow from "./pages/FeedbackFlow.tsx";
 import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import AdminGuard from "./components/admin/AdminGuard.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ScrollToTop from "./components/layout/ScrollToTop.tsx";
 
@@ -131,6 +132,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/ctrl-qx-99" element={<AdminLogin />} />
               <Route path="/ctrl-qx-99/panel" element={<AdminGuard><AdminPanel /></AdminGuard>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
