@@ -1,47 +1,97 @@
 
 
-# Plan: Search History Fix, Trending Docs, Creator Avatars, Notifications
+# Plan: Admin Panel with Key-Based Auth & Platform Intelligence
 
-## 1. Fix Recent Searches Not Showing
+## Overview
 
-**Problem:** The `handleFocus` in `SearchBar.tsx` only shows recent searches when `query.trim().length < 2`, but the `showRecent` state gets reset by the `useEffect` on line 61 which runs when `query` changes. When clicking into the search bar with an empty query, `handleFocus` sets `showRecent = true`, but the `useEffect` immediately runs (query is empty, length < 2), calling `setOpen(false)` — this doesn't directly reset `showRecent`, but the condition `showRecent && !open` should work. The real issue is likely that the `useEffect` on line 60-78 fires on mount and on every keystroke, and on initial focus it may race with `handleFocus`.
+Build a secure admin panel at an obfuscated route (`/ctrl-qx-99`) with master-key authentication via an edge function. The panel provides global metrics, app auditing, user drilldown, a conversion funnel, and audience insights — designed as an intervention tool, not just a dashboard.
 
-**Fix in `SearchBar.tsx`:**
-- In the `useEffect` for query (line 60), add a guard: only set `setShowRecent(false)` when `query.trim().length >= 2` (i.e., when an actual search starts), not when query is empty
-- Also ensure `handleFocus` is called via `onClick` as well (not just `onFocus`), since some browsers don't re-fire focus on an already-focused input
+## 1. Authentication — Edge Function + Secret
 
-## 2. Create `trending.md` Documentation
+**New edge function: `supabase/functions/admin-auth/index.ts`**
+- Accepts POST with `{ key: "..." }`
+- Validates against `ADMIN_SECRET_KEY` secret (stored via `add_secret` tool)
+- Returns a signed JWT (using `jsonwebtoken` or simple HMAC) with 24h expiry
+- Frontend stores JWT in `sessionStorage` (never `localStorage`)
 
-**New file: `trending.md`** — document:
-- Algorithm overview (gravity-based time-decay formula)
-- Engagement weights table (Tries: 15, Feedback: 10, Reviews: 5, Saves: 4, Review Likes: 2, Ratings: 1)
-- Formula: `TrendingScore = (EngagementScore * AvgRating) / POWER((AgeInHours + 2), 1.5)`
-- Tables used: `app_clicks`, `app_feedback_responses`, `ratings`, `saved_apps`, `comments`, `apps`
-- Anti-bias measures: unique constraints, `SECURITY DEFINER` RPC, time-decay gravity
-- Time filter options (today, week, month, all)
+**New secret needed: `ADMIN_SECRET_KEY`** — will prompt you to set this.
 
-## 3. Creator Avatars in "Top Creators This Week"
+## 2. Database — No Schema Changes
 
-**Fix in `FeedSidebar.tsx`:**
-- Fetch `avatar_url` alongside `display_name, username` from `profiles`
-- Add `avatar?: string` to the `topCreators` state type
-- Replace the letter-initial `div` with an `img` when `avatar_url` exists, fallback to the initial letter
+All admin queries use existing tables (`apps`, `profiles`, `ratings`, `app_clicks`, `saved_apps`, `comments`, `app_feedback_responses`, `follows`). Read-only access via the edge function using the service role key.
 
-## 4. Notification Button — "No New Notifications" Popover
+## 3. Edge Function: `admin-data`
 
-**Fix in `FeedNavbar.tsx`:**
-- Wrap the Bell button in a `Popover` (from existing UI components)
-- On click, show a small dropdown with a `BellOff` icon and "No new notifications" text
-- Keep the existing styling
+A single edge function that accepts authenticated admin requests and returns data based on `action` parameter:
 
----
+- `global_metrics` — total apps, total feedback, signups (last 24h), engagement velocity
+- `trending_queue` — apps sorted by trending score with full telemetry
+- `app_search` — search apps by name with engagement stats (clicks, saves, conversion)
+- `user_search` — search users with app count, feedback sentiment, last activity
+- `user_drilldown` — full user detail: bio, apps, feedback score, activity
+- `dormant_quality` — high-rated apps (avg >= 4.0) with low visibility (< 10 clicks) — the key "boost" insight
+- `conversion_funnel` — aggregate Impressions → Clicks → Opens → Feedback pipeline
+- `audience_insights` — new vs returning users, activity heatmap, feedback behavior
+
+## 4. Frontend — Admin Pages
+
+**New files:**
+
+| File | Purpose |
+|---|---|
+| `src/pages/AdminLogin.tsx` | Minimal dark login with single "Master Key" input |
+| `src/pages/AdminPanel.tsx` | Main dashboard with tabs for all sections |
+| `src/components/admin/KPIRibbon.tsx` | 4 metric cards (total apps, feedbacks, signups, engagement) |
+| `src/components/admin/AppAuditTable.tsx` | Searchable table with visibility score, tech stack, report count |
+| `src/components/admin/TrendingQueue.tsx` | Apps gaining traction with manual boost/demote controls |
+| `src/components/admin/UserDrilldown.tsx` | Modal with user bio, apps, sentiment, activity |
+| `src/components/admin/ConversionFunnel.tsx` | Visual funnel: Impressions → Clicks → Feedback |
+| `src/components/admin/AudienceInsights.tsx` | New vs returning, activity patterns |
+| `src/components/admin/DormantApps.tsx` | High-quality low-visibility apps for manual boost |
+| `src/components/admin/AdminGuard.tsx` | Route wrapper checking sessionStorage JWT |
+
+**Route in `App.tsx`:**
+```
+<Route path="/ctrl-qx-99" element={<AdminLogin />} />
+<Route path="/ctrl-qx-99/panel" element={<AdminGuard><AdminPanel /></AdminGuard>} />
+```
+
+## 5. Admin Login UI
+
+- Full-screen dark background, centered card
+- Single password input field labeled "Enter Master Key"
+- Calls `admin-auth` edge function
+- On success, stores JWT in `sessionStorage`, redirects to `/ctrl-qx-99/panel`
+- No links to this page from anywhere in the app
+
+## 6. Admin Panel Layout
+
+**Tab-based navigation:**
+- **Overview** — KPI ribbon + conversion funnel + audience insights
+- **Apps** — App audit table + dormant quality apps
+- **Trending** — Trending queue with boost controls
+- **Users** — User search + drilldown modal
+
+## 7. Premium Feature Ideas (for monetization)
+
+These are suggestions to include in the panel's data but also as future product features:
+
+- **Creator Analytics Pro** — detailed per-app conversion funnels, audience demographics (paid tier)
+- **Verified Badge System** — admin can verify creators, boosting trust and visibility
+- **Featured Placement** — admin can pin apps to "Featured" section on homepage
+- **Engagement Alerts** — notify creators when their app hits milestones (100 tries, first review)
+- **Export Data** — CSV export of app metrics for creators (paid feature)
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `src/components/feed/SearchBar.tsx` | Fix recent search display on focus/click |
-| `trending.md` | New documentation file |
-| `src/components/feed/FeedSidebar.tsx` | Fetch and display creator avatar images |
-| `src/components/feed/FeedNavbar.tsx` | Add notification popover with empty state |
+| `supabase/functions/admin-auth/index.ts` | New — master key validation, JWT issuance |
+| `supabase/functions/admin-data/index.ts` | New — all admin data queries via service role |
+| `src/pages/AdminLogin.tsx` | New — master key login UI |
+| `src/pages/AdminPanel.tsx` | New — tabbed admin dashboard |
+| `src/components/admin/*.tsx` | New — 8 component files for dashboard sections |
+| `src/App.tsx` | Add obfuscated admin routes |
+
+**Pre-requisite:** Will need to set `ADMIN_SECRET_KEY` secret before the auth function works.
 
