@@ -5,20 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
     try {
       if (isSignUp) {
@@ -29,7 +36,28 @@ const Auth = () => {
       }
       navigate("/home");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Something went wrong", variant: "destructive" });
+      const msg = err.message || "Something went wrong";
+      setError(msg);
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) { setError("Please enter your email address"); return; }
+    setError("");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setForgotSent(true);
+    } catch (err: any) {
+      const msg = err.message || "Failed to send reset email";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -43,6 +71,59 @@ const Auth = () => {
     }
   };
 
+  if (isForgotPassword) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="w-full max-w-sm">
+          <div className="bg-card border border-border/40 rounded-xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
+            <div className="text-center mb-8">
+              <h1 className="text-xl font-bold text-foreground">
+                <span className="text-primary">I</span>MAA
+              </h1>
+              <p className="text-sm text-muted-foreground mt-2">Reset your password</p>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {forgotSent ? (
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xl">📧</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We've sent a password reset link to <strong className="text-foreground">{email}</strong>. Check your inbox.
+                </p>
+                <Button variant="outline" className="w-full h-10 text-sm" onClick={() => { setIsForgotPassword(false); setForgotSent(false); setError(""); }}>
+                  Back to Sign In
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reset-email" className="text-xs text-muted-foreground">Email</Label>
+                  <Input id="reset-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="h-10" />
+                </div>
+                <Button type="submit" disabled={loading} className="w-full h-10 text-sm font-medium">
+                  {loading ? "Sending..." : "Send Reset Link"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  <button type="button" onClick={() => { setIsForgotPassword(false); setError(""); }} className="text-primary font-medium hover:underline">
+                    Back to Sign In
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
@@ -55,6 +136,13 @@ const Auth = () => {
               {isSignUp ? "Create your account" : "Welcome back"}
             </p>
           </div>
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Google Sign-In */}
           <Button
@@ -100,7 +188,23 @@ const Auth = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-xs text-muted-foreground">Password</Label>
-              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10" />
+              <div className="relative">
+                <Input id="password" type={showPassword ? "text" : "password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10 pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {!isSignUp && (
+                <div className="text-right">
+                  <button type="button" onClick={() => { setIsForgotPassword(true); setError(""); }} className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
             <Button type="submit" disabled={loading} className="w-full h-10 text-sm font-medium mt-2">
               {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
@@ -109,7 +213,7 @@ const Auth = () => {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button onClick={() => setIsSignUp(!isSignUp)} className="text-primary font-medium hover:underline">
+            <button onClick={() => { setIsSignUp(!isSignUp); setError(""); }} className="text-primary font-medium hover:underline">
               {isSignUp ? "Sign in" : "Sign up"}
             </button>
           </p>

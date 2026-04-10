@@ -27,19 +27,15 @@ const Footer = () => {
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">Legal</h4>
               <ul className="space-y-2">
-                <li><button className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Privacy</button></li>
-                <li><button className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Terms</button></li>
+                <li><span className="text-sm font-semibold text-muted-foreground/40 cursor-default">Privacy — Coming soon</span></li>
+                <li><span className="text-sm font-semibold text-muted-foreground/40 cursor-default">Terms — Coming soon</span></li>
               </ul>
             </div>
           </div>
         </div>
 
-        <div className="mt-20 pt-8 border-t border-border/40 flex justify-between items-center">
+        <div className="mt-20 pt-8 border-t border-border/40">
           <p className="text-xs font-bold text-muted-foreground/40 tracking-wider uppercase">© {year} imadeanapp. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <button className="text-xs font-bold text-muted-foreground/40 hover:text-foreground transition-colors uppercase tracking-widest">Twitter</button>
-            <button className="text-xs font-bold text-muted-foreground/40 hover:text-foreground transition-colors uppercase tracking-widest">GitHub</button>
-          </div>
         </div>
       </div>
     </footer>
