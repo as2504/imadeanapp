@@ -224,5 +224,3 @@ const ProfileDraftApps = () => {
 };
 
 export default ProfileDraftApps;
-
-export default ProfileDraftApps;

@@ -312,5 +312,3 @@ const LabelEl = ({ children, className }: any) => (
 );
 
 export default ProfilePublishedApps;
-
-export default ProfilePublishedApps;
