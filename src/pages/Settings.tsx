@@ -45,6 +45,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -60,6 +70,7 @@ const Settings = () => {
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [addPopoverOpen, setAddPopoverOpen] = useState(false);
   const [dashboardApp, setDashboardApp] = useState<{ id: string; name: string } | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -195,7 +206,7 @@ const Settings = () => {
                       {/* Log out in mobile dropdown */}
                       <CommandItem
                         value="Log out"
-                        onSelect={() => signOut()}
+                        onSelect={() => setShowLogoutDialog(true)}
                         className="flex items-center gap-3 px-4 py-3 cursor-pointer text-destructive"
                       >
                         <LogOut size={16} />
@@ -235,7 +246,7 @@ const Settings = () => {
               {/* Log out always last */}
               <div className="mt-4 pt-4 border-t border-border/40">
                 <button
-                  onClick={signOut}
+                  onClick={() => setShowLogoutDialog(true)}
                   className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive hover:bg-destructive/5 transition-all whitespace-nowrap w-full"
                 >
                   <LogOut size={16} />
@@ -446,6 +457,24 @@ const Settings = () => {
           </div>
         </div>
       </main>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent className="rounded-2xl border-border/40">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-bold">Log out</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground">
+              Are you sure you want to log out of your account?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => signOut()} className="rounded-full bg-destructive hover:bg-destructive/90">
+              Log out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
