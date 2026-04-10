@@ -8,7 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Home, TrendingUp, Bell, User, Plus, Settings } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, Home, TrendingUp, Bell, BellOff, User, Plus, Settings } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -59,9 +60,20 @@ const FeedNavbar = () => {
               ))}
             </div>
 
-            <button className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors">
-              <Bell size={18} />
-            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors">
+                  <Bell size={18} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-0 rounded-xl shadow-xl border-border/40 bg-card">
+                <div className="flex flex-col items-center justify-center py-8 px-4 gap-2">
+                  <BellOff size={24} className="text-muted-foreground/40" />
+                  <p className="text-sm font-medium text-foreground">No new notifications</p>
+                  <p className="text-xs text-muted-foreground">You're all caught up!</p>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
 

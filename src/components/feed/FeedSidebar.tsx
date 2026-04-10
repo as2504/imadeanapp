@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const FeedSidebar = () => {
   const navigate = useNavigate();
-  const [topCreators, setTopCreators] = useState<{ name: string; handle: string; apps: number; userId: string }[]>([]);
+  const [topCreators, setTopCreators] = useState<{ name: string; handle: string; apps: number; userId: string; avatar?: string }[]>([]);
   const [mostRated, setMostRated] = useState<{ name: string; rating: string; count: string }[]>([]);
   const [mostReviewed, setMostReviewed] = useState<{ name: string; comments: string }[]>([]);
 
@@ -18,11 +18,11 @@ const FeedSidebar = () => {
         apps.forEach(a => counts.set(a.user_id, (counts.get(a.user_id) || 0) + 1));
         const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
         const userIds = sorted.map(s => s[0]);
-        const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds);
+        const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username, avatar_url").in("user_id", userIds);
         const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
         setTopCreators(sorted.map(([uid, count]) => {
           const p = profileMap.get(uid);
-          return { name: p?.display_name || p?.username || "Unknown", handle: `@${p?.username || "user"}`, apps: count, userId: uid };
+          return { name: p?.display_name || p?.username || "Unknown", handle: `@${p?.username || "user"}`, apps: count, userId: uid, avatar: p?.avatar_url || undefined };
         }));
       }
 
@@ -81,8 +81,12 @@ const FeedSidebar = () => {
                 <span className="text-xs font-bold text-muted-foreground/40 tabular-nums w-4">
                   {i + 1}
                 </span>
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
-                  {creator.name.charAt(0)}
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-semibold text-foreground shrink-0 overflow-hidden">
+                  {creator.avatar ? (
+                    <img src={creator.avatar} alt={creator.name} className="w-full h-full object-cover" />
+                  ) : (
+                    creator.name.charAt(0)
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
