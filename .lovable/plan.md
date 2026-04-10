@@ -1,97 +1,94 @@
+# Plan: UX Fixes & Improvements (User-Approved Items)
 
+## 1. Password Visibility Toggle on Auth Page
 
-# Plan: Admin Panel with Key-Based Auth & Platform Intelligence
+**File:** `src/pages/Auth.tsx`
 
-## Overview
+- Add an eye/eye-off icon button inside the password input field
+- Toggle between `type="password"` and `type="text"`
 
-Build a secure admin panel at an obfuscated route (`/ctrl-qx-99`) with master-key authentication via an edge function. The panel provides global metrics, app auditing, user drilldown, a conversion funnel, and audience insights — designed as an intervention tool, not just a dashboard.
+## 2. Forgot Password Flow
 
-## 1. Authentication — Edge Function + Secret
+**Files:** `src/pages/Auth.tsx`, `src/pages/ResetPassword.tsx` (new), `src/contexts/AuthContext.tsx`, `src/App.tsx`
 
-**New edge function: `supabase/functions/admin-auth/index.ts`**
-- Accepts POST with `{ key: "..." }`
-- Validates against `ADMIN_SECRET_KEY` secret (stored via `add_secret` tool)
-- Returns a signed JWT (using `jsonwebtoken` or simple HMAC) with 24h expiry
-- Frontend stores JWT in `sessionStorage` (never `localStorage`)
+- Add "Forgot password?" link below the password field on the sign-in form
+- Show an inline email input to request a reset link via `supabase.auth.resetPasswordForEmail(email, { redirectTo: origin + '/reset-password' })`
+- Create `/reset-password` page that detects `type=recovery` in the URL hash, shows a "Set new password" form, and calls `supabase.auth.updateUser({ password })`
+- Add `resetPassword` and `updatePassword` methods to `AuthContext`
+- Register `/reset-password` as a public route in `App.tsx`
+- This uses standard Supabase auth — in prod you just enable "password recovery" in your Supabase project settings
 
-**New secret needed: `ADMIN_SECRET_KEY`** — will prompt you to set this.
+## 3. EmptyFeed Buttons — Wire Them Up
 
-## 2. Database — No Schema Changes
+**File:** `src/components/feed/EmptyFeed.tsx`
 
-All admin queries use existing tables (`apps`, `profiles`, `ratings`, `app_clicks`, `saved_apps`, `comments`, `app_feedback_responses`, `follows`). Read-only access via the edge function using the service role key.
+- Confirmed: buttons have no `onClick`. Add `useNavigate()` — "Publish an App" navigates to `/publish`, "Explore Tags" scrolls to or opens the filter/tag section
 
-## 3. Edge Function: `admin-data`
+## 4. Footer Links — Make Real or Remove
 
-A single edge function that accepts authenticated admin requests and returns data based on `action` parameter:
+**File:** `src/components/landing/Footer.tsx`
 
-- `global_metrics` — total apps, total feedback, signups (last 24h), engagement velocity
-- `trending_queue` — apps sorted by trending score with full telemetry
-- `app_search` — search apps by name with engagement stats (clicks, saves, conversion)
-- `user_search` — search users with app count, feedback sentiment, last activity
-- `user_drilldown` — full user detail: bio, apps, feedback score, activity
-- `dormant_quality` — high-rated apps (avg >= 4.0) with low visibility (< 10 clicks) — the key "boost" insight
-- `conversion_funnel` — aggregate Impressions → Clicks → Opens → Feedback pipeline
-- `audience_insights` — new vs returning users, activity heatmap, feedback behavior
+- "Privacy" and "Terms" — create placeholder pages (`/privacy`, `/terms`) or show a toast saying "Coming soon"
+- "Twitter" and "GitHub" — remove 
 
-## 4. Frontend — Admin Pages
+## 5. Inline Error States on Auth
 
-**New files:**
+**File:** `src/pages/Auth.tsx`
 
-| File | Purpose |
-|---|---|
-| `src/pages/AdminLogin.tsx` | Minimal dark login with single "Master Key" input |
-| `src/pages/AdminPanel.tsx` | Main dashboard with tabs for all sections |
-| `src/components/admin/KPIRibbon.tsx` | 4 metric cards (total apps, feedbacks, signups, engagement) |
-| `src/components/admin/AppAuditTable.tsx` | Searchable table with visibility score, tech stack, report count |
-| `src/components/admin/TrendingQueue.tsx` | Apps gaining traction with manual boost/demote controls |
-| `src/components/admin/UserDrilldown.tsx` | Modal with user bio, apps, sentiment, activity |
-| `src/components/admin/ConversionFunnel.tsx` | Visual funnel: Impressions → Clicks → Feedback |
-| `src/components/admin/AudienceInsights.tsx` | New vs returning, activity patterns |
-| `src/components/admin/DormantApps.tsx` | High-quality low-visibility apps for manual boost |
-| `src/components/admin/AdminGuard.tsx` | Route wrapper checking sessionStorage JWT |
+- Add an `error` state string displayed as a red banner below the form header (in addition to the existing toast)
+- Clear on new submission attempt
 
-**Route in `App.tsx`:**
-```
-<Route path="/ctrl-qx-99" element={<AdminLogin />} />
-<Route path="/ctrl-qx-99/panel" element={<AdminGuard><AdminPanel /></AdminGuard>} />
-```
+## 6. Logout Confirmation Dialog
 
-## 5. Admin Login UI
+**File:** `src/pages/Settings.tsx`
 
-- Full-screen dark background, centered card
-- Single password input field labeled "Enter Master Key"
-- Calls `admin-auth` edge function
-- On success, stores JWT in `sessionStorage`, redirects to `/ctrl-qx-99/panel`
-- No links to this page from anywhere in the app
+- Wrap the logout action in an `AlertDialog` asking "Are you sure you want to log out?"
 
-## 6. Admin Panel Layout
+## 7. Trending Page — Better Empty State
 
-**Tab-based navigation:**
-- **Overview** — KPI ribbon + conversion funnel + audience insights
-- **Apps** — App audit table + dormant quality apps
-- **Trending** — Trending queue with boost controls
-- **Users** — User search + drilldown modal
+**File:** `src/pages/Trending.tsx`
 
-## 7. Premium Feature Ideas (for monetization)
+- Replace the plain text with an illustration (icon), a friendlier message, and a "Publish an App" CTA button
 
-These are suggestions to include in the panel's data but also as future product features:
+## 8. Extract `getTimeAgo` to Shared Utility
 
-- **Creator Analytics Pro** — detailed per-app conversion funnels, audience demographics (paid tier)
-- **Verified Badge System** — admin can verify creators, boosting trust and visibility
-- **Featured Placement** — admin can pin apps to "Featured" section on homepage
-- **Engagement Alerts** — notify creators when their app hits milestones (100 tries, first review)
-- **Export Data** — CSV export of app metrics for creators (paid feature)
+**Files:** `src/lib/utils.ts`, then update imports in `HomeFeed.tsx`, `Trending.tsx`, `ProfilePublishedApps.tsx`, `ProfileDraftApps.tsx`, `AppDetailReviews.tsx`
+
+- Move the function to `src/lib/utils.ts` and remove all local copies
+
+## 9. Infinite Scroll / Load More on Feeds
+
+**Files:** `src/pages/HomeFeed.tsx`, `src/pages/Trending.tsx`
+
+- Add a "Load More" button at the bottom of the feed
+- Track `page` state, fetch next batch (e.g. 20 per page) using `.range(from, to)` on the Supabase query
+- Append results to existing list
+
+## 10. Email Verification Banner
+
+**File:** `src/components/feed/FeedNavbar.tsx` (or a new `EmailVerificationBanner.tsx` used in `HomeFeed.tsx`)
+
+- Check `user.email_confirmed_at` — if null/undefined, show a dismissible yellow banner: "Please verify your email address. Check your inbox for a confirmation link."
+- Add a "Resend" button that calls `supabase.auth.resend({ type: 'signup', email })`
+
+---
 
 ## Files Summary
 
-| File | Change |
-|---|---|
-| `supabase/functions/admin-auth/index.ts` | New — master key validation, JWT issuance |
-| `supabase/functions/admin-data/index.ts` | New — all admin data queries via service role |
-| `src/pages/AdminLogin.tsx` | New — master key login UI |
-| `src/pages/AdminPanel.tsx` | New — tabbed admin dashboard |
-| `src/components/admin/*.tsx` | New — 8 component files for dashboard sections |
-| `src/App.tsx` | Add obfuscated admin routes |
 
-**Pre-requisite:** Will need to set `ADMIN_SECRET_KEY` secret before the auth function works.
-
+| File                                              | Change                                               |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| `src/pages/Auth.tsx`                              | Password toggle, forgot password link, inline errors |
+| `src/pages/ResetPassword.tsx`                     | New — password reset form                            |
+| `src/contexts/AuthContext.tsx`                    | Add `resetPassword`, `updatePassword` methods        |
+| `src/App.tsx`                                     | Add `/reset-password` route                          |
+| `src/components/feed/EmptyFeed.tsx`               | Wire up buttons                                      |
+| `src/components/landing/Footer.tsx`               | Fix dead links                                       |
+| `src/pages/Settings.tsx`                          | Logout confirmation dialog                           |
+| `src/pages/Trending.tsx`                          | Better empty state                                   |
+| `src/lib/utils.ts`                                | Add shared `getTimeAgo`                              |
+| `src/pages/HomeFeed.tsx`                          | Use shared `getTimeAgo`, add load more               |
+| `src/components/profile/ProfilePublishedApps.tsx` | Use shared `getTimeAgo`                              |
+| `src/components/profile/ProfileDraftApps.tsx`     | Use shared `getTimeAgo`                              |
+| `src/components/app-detail/AppDetailReviews.tsx`  | Use shared `getTimeAgo`                              |
+| `src/components/feed/EmailVerificationBanner.tsx` | New — verification banner                            |
