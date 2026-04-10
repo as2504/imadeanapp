@@ -8,13 +8,22 @@ import FeedLayout from "@/components/layout/FeedLayout";
 import AppCard from "@/components/feed/AppCard";
 import type { AppPost } from "@/components/feed/AppCard";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
+import EmailVerificationBanner from "@/components/feed/EmailVerificationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getTimeAgo } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+
+const PAGE_SIZE = 20;
 
 const HomeFeed = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [posts, setPosts] = useState<AppPost[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<FeedFilterState>({ feed: "for-you", sort: "", platform: "all", techStack: "", category: "" });
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showFilters, setShowFilters] = useState(true);
@@ -32,21 +41,35 @@ const HomeFeed = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const fetchApps = useCallback(async () => {
-    setLoading(true);
+  const mapApps = (apps: any[], profileMap: Map<string, any>): AppPost[] => {
+    return apps.map((app) => {
+      const profile = profileMap.get(app.user_id);
+      return {
+        id: app.id, slug: (app as any).slug || undefined, appName: app.app_name,
+        appIcon: app.app_icon_url || "📱", publisherName: profile?.display_name || profile?.username || "Unknown",
+        publisherAvatar: (profile?.display_name || "U").charAt(0), verified: false,
+        timeAgo: getTimeAgo(app.created_at), caption: app.caption || app.tagline || "",
+        tags: app.tags || [], platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
+        techStack: app.tech_stack || [], likes: app.likes_count || 0, comments: app.comments_count || 0,
+        views: app.views_count || 0, liked: false, saved: false,
+      };
+    });
+  };
 
-    // Use trending algorithm for default "for-you" with no specific sort
+  const fetchApps = useCallback(async (pageNum = 0, append = false) => {
+    if (pageNum === 0) setLoading(true);
+    else setLoadingMore(true);
+
     const useTrending = filters.feed === "for-you" && !filters.sort;
 
     if (useTrending) {
       const { data: trendingData } = await (supabase as any).rpc("get_trending_apps", {
         time_filter: "all",
-        max_results: 50,
+        max_results: 200,
       });
 
       if (!trendingData || trendingData.length === 0) {
-        // Fallback to regular query
-        await fetchRegular();
+        await fetchRegular(pageNum, append);
         return;
       }
 
@@ -59,7 +82,7 @@ const HomeFeed = () => {
       if (filters.category) query = query.contains("tags", [filters.category.toLowerCase().replace(/\s+/g, "-")]);
 
       const { data: apps } = await query;
-      if (!apps || apps.length === 0) { setPosts([]); setLoading(false); return; }
+      if (!apps || apps.length === 0) { setPosts([]); setLoading(false); setLoadingMore(false); setHasMore(false); return; }
 
       const sortedApps = apps.sort((a, b) => {
         const scoreA = (trendingMap.get(a.id) as any)?.trending_score || 0;
@@ -67,35 +90,29 @@ const HomeFeed = () => {
         return scoreB - scoreA;
       });
 
-      const userIds = [...new Set(sortedApps.map((a) => a.user_id))];
+      // Paginate locally
+      const sliced = sortedApps.slice(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE);
+      const userIds = [...new Set(sliced.map((a) => a.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds);
       const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-      setPosts(sortedApps.map((app) => {
-        const profile = profileMap.get(app.user_id);
-        return {
-          id: app.id, slug: (app as any).slug || undefined, appName: app.app_name,
-          appIcon: app.app_icon_url || "📱", publisherName: profile?.display_name || profile?.username || "Unknown",
-          publisherAvatar: (profile?.display_name || "U").charAt(0), verified: false,
-          timeAgo: getTimeAgo(app.created_at), caption: app.caption || app.tagline || "",
-          tags: app.tags || [], platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
-          techStack: app.tech_stack || [], likes: app.likes_count || 0, comments: app.comments_count || 0,
-          views: app.views_count || 0, liked: false, saved: false,
-        };
-      }));
+      const mapped = mapApps(sliced, profileMap);
+      setPosts(prev => append ? [...prev, ...mapped] : mapped);
+      setHasMore(sliced.length === PAGE_SIZE && (pageNum + 1) * PAGE_SIZE < sortedApps.length);
       setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
-    await fetchRegular();
+    await fetchRegular(pageNum, append);
   }, [filters, user]);
 
-  const fetchRegular = useCallback(async () => {
+  const fetchRegular = useCallback(async (pageNum = 0, append = false) => {
     let followedIds: string[] = [];
     if (filters.feed === "following" && user) {
       const { data: follows } = await supabase.from("follows").select("following_id").eq("follower_id", user.id);
       followedIds = (follows || []).map((f) => f.following_id);
-      if (followedIds.length === 0) { setPosts([]); setLoading(false); return; }
+      if (followedIds.length === 0) { setPosts([]); setLoading(false); setLoadingMore(false); setHasMore(false); return; }
     }
 
     let query = supabase.from("apps").select("*").eq("status", "published");
@@ -110,29 +127,38 @@ const HomeFeed = () => {
     else if (filters.feed === "trending") query = query.order("views_count", { ascending: false });
     else query = query.order("created_at", { ascending: false });
 
-    const { data: apps } = await query.limit(50);
-    if (!apps || apps.length === 0) { setPosts([]); setLoading(false); return; }
+    const from = pageNum * PAGE_SIZE;
+    const { data: apps } = await query.range(from, from + PAGE_SIZE - 1);
+    if (!apps || apps.length === 0) {
+      if (!append) setPosts([]);
+      setHasMore(false);
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
 
     const userIds = [...new Set(apps.map((a) => a.user_id))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds);
     const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-    setPosts(apps.map((app) => {
-      const profile = profileMap.get(app.user_id);
-      return {
-        id: app.id, slug: (app as any).slug || undefined, appName: app.app_name,
-        appIcon: app.app_icon_url || "📱", publisherName: profile?.display_name || profile?.username || "Unknown",
-        publisherAvatar: (profile?.display_name || "U").charAt(0), verified: false,
-        timeAgo: getTimeAgo(app.created_at), caption: app.caption || app.tagline || "",
-        tags: app.tags || [], platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
-        techStack: app.tech_stack || [], likes: app.likes_count || 0, comments: app.comments_count || 0,
-        views: app.views_count || 0, liked: false, saved: false,
-      };
-    }));
+    const mapped = mapApps(apps, profileMap);
+    setPosts(prev => append ? [...prev, ...mapped] : mapped);
+    setHasMore(apps.length === PAGE_SIZE);
     setLoading(false);
+    setLoadingMore(false);
   }, [filters, user]);
 
-  useEffect(() => { fetchApps(); }, [fetchApps]);
+  useEffect(() => {
+    setPage(0);
+    setHasMore(true);
+    fetchApps(0, false);
+  }, [fetchApps]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchApps(nextPage, true);
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -146,6 +172,7 @@ const HomeFeed = () => {
   return (
     <div className="min-h-screen bg-background">
       <FeedNavbar />
+      <EmailVerificationBanner />
       <UsernamePrompt />
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<FeedSidebar />}>
@@ -169,6 +196,13 @@ const HomeFeed = () => {
                     <p className="text-muted-foreground italic text-sm">No apps found matching your criteria.</p>
                   </div>
                 )}
+                {!loading && hasMore && posts.length > 0 && (
+                  <div className="flex justify-center py-8">
+                    <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={handleLoadMore} disabled={loadingMore}>
+                      {loadingMore ? <><Loader2 size={14} className="animate-spin" /> Loading...</> : "Load More"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -177,18 +211,5 @@ const HomeFeed = () => {
     </div>
   );
 };
-
-function getTimeAgo(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  const diffDay = Math.floor(diffHr / 24);
-  if (diffDay < 7) return `${diffDay}d ago`;
-  if (diffDay < 30) return `${Math.floor(diffDay / 7)}w ago`;
-  return `${Math.floor(diffDay / 30)}mo ago`;
-}
 
 export default HomeFeed;
