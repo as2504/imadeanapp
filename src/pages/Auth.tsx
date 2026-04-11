@@ -218,7 +218,27 @@ const Auth = () => {
                 </div>
               )}
             </div>
-            <Button type="submit" disabled={loading} className="w-full h-10 text-sm font-medium mt-2">
+            {isSignUp && (
+              <div className="flex items-start gap-2 mt-1">
+                <Checkbox
+                  id="terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                  I agree to the{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                    Terms & Conditions
+                  </a>{" "}
+                  and{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                    Privacy Policy
+                  </a>
+                </label>
+              </div>
+            )}
+            <Button type="submit" disabled={loading || (isSignUp && !agreedToTerms)} className="w-full h-10 text-sm font-medium mt-2">
               {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
             </Button>
           </form>
