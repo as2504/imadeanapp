@@ -1,94 +1,75 @@
-# Plan: UX Fixes & Improvements (User-Approved Items)
+# Plan: Terms & Conditions, Privacy Policy, and Signup Consent
 
-## 1. Password Visibility Toggle on Auth Page
+## Overview
 
-**File:** `src/pages/Auth.tsx`
+Create two legal pages, add a mandatory consent checkbox at signup, add a "Legal" section in Settings, and update the footer links.
 
-- Add an eye/eye-off icon button inside the password input field
-- Toggle between `type="password"` and `type="text"`
+## 1. Database Migration — `user_consents` table
 
-## 2. Forgot Password Flow
+Store consent records with timestamp and policy version.
 
-**Files:** `src/pages/Auth.tsx`, `src/pages/ResetPassword.tsx` (new), `src/contexts/AuthContext.tsx`, `src/App.tsx`
+```sql
+CREATE TABLE public.user_consents (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  terms_version text NOT NULL DEFAULT '1.0',
+  privacy_version text NOT NULL DEFAULT '1.0',
+  consented_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.user_consents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert own consent" ON public.user_consents FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own consent" ON public.user_consents FOR SELECT TO authenticated USING (auth.uid() = user_id);
+```
 
-- Add "Forgot password?" link below the password field on the sign-in form
-- Show an inline email input to request a reset link via `supabase.auth.resetPasswordForEmail(email, { redirectTo: origin + '/reset-password' })`
-- Create `/reset-password` page that detects `type=recovery` in the URL hash, shows a "Set new password" form, and calls `supabase.auth.updateUser({ password })`
-- Add `resetPassword` and `updatePassword` methods to `AuthContext`
-- Register `/reset-password` as a public route in `App.tsx`
-- This uses standard Supabase auth — in prod you just enable "password recovery" in your Supabase project settings
+## 2. New Pages
 
-## 3. EmptyFeed Buttons — Wire Them Up
+### `src/pages/PrivacyPolicy.tsx`
 
-**File:** `src/components/feed/EmptyFeed.tsx`
+Full privacy policy page with all 11 sections from the requirements. Clean, modern layout with heading hierarchy. Contact email: `imadeanapp.contact@gmail.com`. Effective date: April 2026. Version 1.2.
 
-- Confirmed: buttons have no `onClick`. Add `useNavigate()` — "Publish an App" navigates to `/publish`, "Explore Tags" scrolls to or opens the filter/tag section
+### `src/pages/TermsAndConditions.tsx`
 
-## 4. Footer Links — Make Real or Remove
+Full terms page with all 14 sections. Same styling. Same contact email and version.
 
-**File:** `src/components/landing/Footer.tsx`
+Both pages: responsive, scrollable, accessible from both authenticated and unauthenticated contexts. Use the app's existing card/background styling.
 
-- "Privacy" and "Terms" — create placeholder pages (`/privacy`, `/terms`) or show a toast saying "Coming soon"
-- "Twitter" and "GitHub" — remove 
+## 3. Signup Consent Checkbox — `src/pages/Auth.tsx`
 
-## 5. Inline Error States on Auth
+- Add `agreedToTerms` boolean state (default `false`)
+- Show checkbox only in signup mode, below the password field
+- Text: `I agree to the Terms & Conditions and Privacy Policy` with links opening `/terms` and `/privacy` in new tabs
+- Disable "Create Account" button unless checkbox is checked
+- After successful signup, insert a row into `user_consents` with user_id, version strings, and timestamp
 
-**File:** `src/pages/Auth.tsx`
+## 4. Settings — Legal Section — `src/pages/Settings.tsx`
 
-- Add an `error` state string displayed as a red banner below the form header (in addition to the existing toast)
-- Clear on new submission attempt
+- Add a new section `{ id: "legal", label: "Legal", icon: FileText }` to the sidebar
+- Content: two clickable rows linking to `/terms` and `/privacy` (open in same tab or new tab)
 
-## 6. Logout Confirmation Dialog
+## 5. Footer Links — `src/components/landing/Footer.tsx`
 
-**File:** `src/pages/Settings.tsx`
+- Replace "Coming soon" placeholders with working links to `/privacy` and `/terms`
 
-- Wrap the logout action in an `AlertDialog` asking "Are you sure you want to log out?"
+## 6. Routing — `src/App.tsx`
 
-## 7. Trending Page — Better Empty State
-
-**File:** `src/pages/Trending.tsx`
-
-- Replace the plain text with an illustration (icon), a friendlier message, and a "Publish an App" CTA button
-
-## 8. Extract `getTimeAgo` to Shared Utility
-
-**Files:** `src/lib/utils.ts`, then update imports in `HomeFeed.tsx`, `Trending.tsx`, `ProfilePublishedApps.tsx`, `ProfileDraftApps.tsx`, `AppDetailReviews.tsx`
-
-- Move the function to `src/lib/utils.ts` and remove all local copies
-
-## 9. Infinite Scroll / Load More on Feeds
-
-**Files:** `src/pages/HomeFeed.tsx`, `src/pages/Trending.tsx`
-
-- Add a "Load More" button at the bottom of the feed
-- Track `page` state, fetch next batch (e.g. 20 per page) using `.range(from, to)` on the Supabase query
-- Append results to existing list
-
-## 10. Email Verification Banner
-
-**File:** `src/components/feed/FeedNavbar.tsx` (or a new `EmailVerificationBanner.tsx` used in `HomeFeed.tsx`)
-
-- Check `user.email_confirmed_at` — if null/undefined, show a dismissible yellow banner: "Please verify your email address. Check your inbox for a confirmation link."
-- Add a "Resend" button that calls `supabase.auth.resend({ type: 'signup', email })`
-
----
+- Add `/privacy` and `/terms` as public routes (no auth required)
 
 ## Files Summary
 
 
-| File                                              | Change                                               |
-| ------------------------------------------------- | ---------------------------------------------------- |
-| `src/pages/Auth.tsx`                              | Password toggle, forgot password link, inline errors |
-| `src/pages/ResetPassword.tsx`                     | New — password reset form                            |
-| `src/contexts/AuthContext.tsx`                    | Add `resetPassword`, `updatePassword` methods        |
-| `src/App.tsx`                                     | Add `/reset-password` route                          |
-| `src/components/feed/EmptyFeed.tsx`               | Wire up buttons                                      |
-| `src/components/landing/Footer.tsx`               | Fix dead links                                       |
-| `src/pages/Settings.tsx`                          | Logout confirmation dialog                           |
-| `src/pages/Trending.tsx`                          | Better empty state                                   |
-| `src/lib/utils.ts`                                | Add shared `getTimeAgo`                              |
-| `src/pages/HomeFeed.tsx`                          | Use shared `getTimeAgo`, add load more               |
-| `src/components/profile/ProfilePublishedApps.tsx` | Use shared `getTimeAgo`                              |
-| `src/components/profile/ProfileDraftApps.tsx`     | Use shared `getTimeAgo`                              |
-| `src/components/app-detail/AppDetailReviews.tsx`  | Use shared `getTimeAgo`                              |
-| `src/components/feed/EmailVerificationBanner.tsx` | New — verification banner                            |
+| File                                | Change                                                 |
+| ----------------------------------- | ------------------------------------------------------ |
+| Database migration                  | New `user_consents` table with RLS                     |
+| `src/pages/PrivacyPolicy.tsx`       | New — full privacy policy content                      |
+| `src/pages/TermsAndConditions.tsx`  | New — full terms content                               |
+| `src/pages/Auth.tsx`                | Add consent checkbox + insert consent record on signup |
+| `src/pages/Settings.tsx`            | Add "Legal" section with links                         |
+| `src/components/landing/Footer.tsx` | Wire up privacy/terms links                            |
+| `src/App.tsx`                       | Register `/privacy` and `/terms` routes                |
+
+
+## Suggestions on the provided requirements
+
+- **Add "Last Updated" date** at the top of both documents — included as April 11, 2026
+- **Version numbering** (1.2) — stored in consent records so you can track which version users agreed to
+- **No changes recommended to remove** — your requirements are thorough and well-structured
