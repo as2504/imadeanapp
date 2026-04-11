@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
@@ -19,6 +20,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,7 +32,17 @@ const Auth = () => {
     try {
       if (isSignUp) {
         if (!username) throw new Error("Username is required");
+        if (!agreedToTerms) throw new Error("You must agree to the Terms & Conditions and Privacy Policy");
         await signUp(email, password, displayName || email.split("@")[0], username.toLowerCase());
+        // Record consent
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await supabase.from("user_consents").insert({
+            user_id: newUser.id,
+            terms_version: "1.2",
+            privacy_version: "1.2",
+          });
+        }
       } else {
         await signIn(email, password);
       }
