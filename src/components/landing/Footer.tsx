@@ -27,8 +27,8 @@ const Footer = () => {
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">Legal</h4>
               <ul className="space-y-2">
-                <li><span className="text-sm font-semibold text-muted-foreground/40 cursor-default">Privacy — Coming soon</span></li>
-                <li><span className="text-sm font-semibold text-muted-foreground/40 cursor-default">Terms — Coming soon</span></li>
+                <li><button onClick={() => navigate("/privacy")} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Privacy Policy</button></li>
+                <li><button onClick={() => navigate("/terms")} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</button></li>
               </ul>
             </div>
           </div>

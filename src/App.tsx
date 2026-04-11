@@ -19,6 +19,8 @@ import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import AdminGuard from "./components/admin/AdminGuard.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import TermsAndConditions from "./pages/TermsAndConditions.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ScrollToTop from "./components/layout/ScrollToTop.tsx";
 
@@ -133,6 +135,8 @@ const App = () => (
                 }
               />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
               <Route path="/ctrl-qx-99" element={<AdminLogin />} />
               <Route path="/ctrl-qx-99/panel" element={<AdminGuard><AdminPanel /></AdminGuard>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
