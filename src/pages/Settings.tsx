@@ -22,7 +22,8 @@ import {
   MoreVertical,
   Edit3,
   Trash2,
-  
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -126,6 +127,7 @@ const Settings = () => {
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
     { id: "reviews", label: "Reviews Analytics", icon: BarChart3, badge: "Beta" },
+    { id: "legal", label: "Legal", icon: FileText, badge: null },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -307,6 +309,31 @@ const Settings = () => {
               </div>
 
               <div className="p-6">
+                {activeSection === "legal" && (
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => navigate("/terms")}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors group"
+                    >
+                      <div className="space-y-0.5 text-left">
+                        <p className="text-sm font-bold text-foreground">Terms & Conditions</p>
+                        <p className="text-xs text-muted-foreground">Read our terms of service</p>
+                      </div>
+                      <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </button>
+                    <button
+                      onClick={() => navigate("/privacy")}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors group"
+                    >
+                      <div className="space-y-0.5 text-left">
+                        <p className="text-sm font-bold text-foreground">Privacy Policy</p>
+                        <p className="text-xs text-muted-foreground">Read our privacy policy</p>
+                      </div>
+                      <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </button>
+                  </div>
+                )}
+
                 {activeSection === "general" && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">

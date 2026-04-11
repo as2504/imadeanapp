@@ -491,6 +491,30 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          consented_at: string
+          id: string
+          privacy_version: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          consented_at?: string
+          id?: string
+          privacy_version?: string
+          terms_version?: string
+          user_id: string
+        }
+        Update: {
+          consented_at?: string
+          id?: string
+          privacy_version?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
