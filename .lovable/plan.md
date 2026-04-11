@@ -1,75 +1,182 @@
-# Plan: Terms & Conditions, Privacy Policy, and Signup Consent
 
-## Overview
+## Plan: Legal UX, Post-Signup Identity Flow, and Settings Icon Fix
 
-Create two legal pages, add a mandatory consent checkbox at signup, add a "Legal" section in Settings, and update the footer links.
+### What I reviewed
+I checked the current legal pages, signup flow, username prompt, settings legal section, and the desktop settings sidebar. A few important things are already true:
+- Terms and Privacy pages already exist.
+- Settings already has a Legal section.
+- A post-login username modal already exists.
+- `profiles.username` is already defined as `UNIQUE` in the database schema.
+- The current signup flow still asks for both display name and username too early, which conflicts with your intended onboarding.
 
-## 1. Database Migration — `user_consents` table
+### Main issues found
+1. **Legal pages are long-form walls of text**
+   - They currently render all sections expanded.
+   - Text is not justified.
+   - The back button is static and always visible at the top only.
 
-Store consent records with timestamp and policy version.
+2. **Settings → Legal is missing the support note**
+   - The section shows links only, without the email guidance you requested.
 
-```sql
-CREATE TABLE public.user_consents (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  terms_version text NOT NULL DEFAULT '1.0',
-  privacy_version text NOT NULL DEFAULT '1.0',
-  consented_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE public.user_consents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can insert own consent" ON public.user_consents FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can view own consent" ON public.user_consents FOR SELECT TO authenticated USING (auth.uid() = user_id);
-```
+3. **Signup flow is still wrong**
+   - `Auth.tsx` still asks for **Display name** and **Username** during signup.
+   - That conflicts with your desired flow: sign up first, then ask **Name**, then **unique permanent ID**.
+   - `AuthContext.signUp()` still expects `displayName` and `username`, so that flow needs to be simplified.
 
-## 2. New Pages
+4. **Username prompt is too weak for your intended UX**
+   - It only asks for username, not name first.
+   - It checks uniqueness only on submit, not live while typing.
+   - The confirm button is enabled too early.
+   - It doesn’t clearly explain that the ID is permanent.
 
-### `src/pages/PrivacyPolicy.tsx`
+5. **Desktop “Reviews Analytics” icon bug**
+   - The icon is present in code, so this is not a missing import.
+   - The likely cause is the desktop sidebar row layout: fixed narrow width, long label, and right-aligned Beta badge. The longer “Reviews Analytics” row has more pressure than the others, so the left icon is likely being visually squeezed/compromised by spacing behavior.
+   - This needs a layout fix, not just an icon swap.
 
-Full privacy policy page with all 11 sections from the requirements. Clean, modern layout with heading hierarchy. Contact email: `imadeanapp.contact@gmail.com`. Effective date: April 2026. Version 1.2.
+---
 
-### `src/pages/TermsAndConditions.tsx`
+## Implementation plan
 
-Full terms page with all 14 sections. Same styling. Same contact email and version.
+### 1. Rebuild both legal pages into collapsible reading views
+**Files:** `src/pages/PrivacyPolicy.tsx`, `src/pages/TermsAndConditions.tsx`
 
-Both pages: responsive, scrollable, accessible from both authenticated and unauthenticated contexts. Use the app's existing card/background styling.
+- Convert both pages from one long prose block into:
+  - short top intro
+  - section list using the existing `Accordion` component
+- Keep all sections **collapsed by default**
+- Each section title becomes the accordion trigger
+- Section content opens only when the user expands it
+- Apply **justified text** to paragraph and list content
+- Keep the current premium card styling, but reduce visual overload
 
-## 3. Signup Consent Checkbox — `src/pages/Auth.tsx`
+#### UX behavior
+- Users see a clean overview first
+- They can open only the specific legal topic they care about
+- Mobile reading becomes much easier
 
-- Add `agreedToTerms` boolean state (default `false`)
-- Show checkbox only in signup mode, below the password field
-- Text: `I agree to the Terms & Conditions and Privacy Policy` with links opening `/terms` and `/privacy` in new tabs
-- Disable "Create Account" button unless checkbox is checked
-- After successful signup, insert a row into `user_consents` with user_id, version strings, and timestamp
+---
 
-## 4. Settings — Legal Section — `src/pages/Settings.tsx`
+### 2. Add animated floating Back button behavior on legal pages
+**Files:** `src/pages/PrivacyPolicy.tsx`, `src/pages/TermsAndConditions.tsx`
 
-- Add a new section `{ id: "legal", label: "Legal", icon: FileText }` to the sidebar
-- Content: two clickable rows linking to `/terms` and `/privacy` (open in same tab or new tab)
+- Replace the current static top-only back button with a scroll-aware version
+- Behavior:
+  - hidden while scrolling down
+  - appears when the user scrolls upward a bit
+  - smoothly animates in/out
+- Keep it accessible and easy to tap on mobile
+- Likely implement as a sticky/fixed floating button near the top-left/top area
 
-## 5. Footer Links — `src/components/landing/Footer.tsx`
+---
 
-- Replace "Coming soon" placeholders with working links to `/privacy` and `/terms`
+### 3. Add support note in Settings → Legal
+**File:** `src/pages/Settings.tsx`
 
-## 6. Routing — `src/App.tsx`
+Under the legal links, add a muted note like:
+- “For any queries related to imadeanapp.com, please reach out to imadeanapp.contact@gmail.com”
 
-- Add `/privacy` and `/terms` as public routes (no auth required)
+Keep the email consistent and visually secondary, but clearly visible.
 
-## Files Summary
+---
 
+### 4. Move signup to a cleaner first step
+**Files:** `src/pages/Auth.tsx`, `src/contexts/AuthContext.tsx`
 
-| File                                | Change                                                 |
-| ----------------------------------- | ------------------------------------------------------ |
-| Database migration                  | New `user_consents` table with RLS                     |
-| `src/pages/PrivacyPolicy.tsx`       | New — full privacy policy content                      |
-| `src/pages/TermsAndConditions.tsx`  | New — full terms content                               |
-| `src/pages/Auth.tsx`                | Add consent checkbox + insert consent record on signup |
-| `src/pages/Settings.tsx`            | Add "Legal" section with links                         |
-| `src/components/landing/Footer.tsx` | Wire up privacy/terms links                            |
-| `src/App.tsx`                       | Register `/privacy` and `/terms` routes                |
+- Remove **Display name** and **Username** fields from the signup form
+- Signup should ask only for:
+  - email
+  - password
+  - legal consent checkbox
+- Update `AuthContext.signUp()` so it no longer requires `displayName` and `username`
+- Keep the consent record insertion as-is
+- Preserve Google sign-in behavior unless it conflicts with the post-signup identity prompt
 
+#### Important note
+The profile trigger already creates a profile row, so after signup we can safely collect name and unique ID in a second step.
 
-## Suggestions on the provided requirements
+---
 
-- **Add "Last Updated" date** at the top of both documents — included as April 11, 2026
-- **Version numbering** (1.2) — stored in consent records so you can track which version users agreed to
-- **No changes recommended to remove** — your requirements are thorough and well-structured
+### 5. Upgrade the post-signup prompt into a 2-step identity onboarding
+**File:** `src/components/UsernamePrompt.tsx`
+
+Refactor the current modal into a guided flow:
+
+#### Step 1: Name
+- Ask for **Name** instead of “Display name”
+- Save into `profiles.display_name`
+- Keep copy simple and friendly
+
+#### Step 2: Permanent unique ID
+- Ask for the permanent username/handle
+- Explicitly state that:
+  - this will be their permanent ID
+  - it must be unique
+- Sanitize input as today (`a-z`, `0-9`, `_`)
+
+#### Validation behavior
+- Check uniqueness while typing, with debounce or lightweight live validation
+- Show inline status below the input:
+  - available
+  - taken
+  - too short
+- Disable confirm button unless:
+  - valid format
+  - minimum length met
+  - uniqueness confirmed
+- Keep duplicate protection at database level too, since `profiles.username` is already unique
+- Handle race condition gracefully:
+  - if another user grabs it just before submit, show inline error and keep modal open
+
+#### Modal behavior
+- Non-dismissible until required onboarding is completed
+- Better explanatory copy than the current “Choose a username”
+
+---
+
+### 6. Ensure the prompt opens only when identity is incomplete
+**Files:** `src/components/UsernamePrompt.tsx`, possibly `src/pages/HomeFeed.tsx`
+
+Update the open condition so the prompt appears when either:
+- `display_name` is missing
+- `username` is missing
+
+This supports your new 2-step post-signup flow properly.
+
+---
+
+### 7. Fix the desktop Reviews Analytics icon issue at the layout level
+**File:** `src/pages/Settings.tsx`
+
+Adjust the desktop sidebar button layout so all section rows behave consistently:
+- prevent icon shrink/collapse
+- allow label text to truncate cleanly if needed
+- keep badge aligned without pushing the icon/label out
+- use a more stable structure like:
+  - icon (fixed)
+  - label (flex-1, truncate)
+  - badge (shrink-0)
+
+This should fix the “Reviews Analytics” icon visibility issue instead of masking it.
+
+---
+
+## Technical notes
+- No new backend tables should be needed for these requests.
+- `profiles.username` is already `UNIQUE`, which is good and should be relied on as the final authority.
+- The legal pages can reuse existing UI primitives:
+  - `Accordion`
+  - possibly `Collapsible` if you prefer a custom pattern
+- The signup refactor requires updating both `Auth.tsx` and `AuthContext.tsx` together so types and calls stay aligned.
+- I do not recommend removing the database uniqueness enforcement even if we add live availability checks.
+
+## Suggested implementation order
+1. Fix `AuthContext` + simplify signup form
+2. Refactor `UsernamePrompt` into the 2-step identity flow
+3. Add settings legal note
+4. Rebuild legal pages with accordions + justified content
+5. Add animated floating back button behavior
+6. Fix desktop settings sidebar row layout for Reviews Analytics icon
+
+## One recommendation
+For the “permanent ID” wording: I recommend describing it as **your permanent username / public ID**, but still allow future admin-side overrides if you ever need support-based corrections. That gives you flexibility later without confusing users now.
