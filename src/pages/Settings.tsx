@@ -235,10 +235,10 @@ const Settings = () => {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <s.icon size={16} className={activeSection === s.id ? "text-primary" : "text-muted-foreground"} />
-                  {s.label}
+                  <s.icon size={16} className={cn("shrink-0", activeSection === s.id ? "text-primary" : "text-muted-foreground")} />
+                  <span className="flex-1 truncate text-left">{s.label}</span>
                   {s.badge && (
-                    <Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest ml-auto">
+                    <Badge variant="secondary" className="shrink-0 text-[7px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest">
                       {s.badge}
                     </Badge>
                   )}
@@ -310,27 +310,37 @@ const Settings = () => {
 
               <div className="p-6">
                 {activeSection === "legal" && (
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => navigate("/terms")}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors group"
-                    >
-                      <div className="space-y-0.5 text-left">
-                        <p className="text-sm font-bold text-foreground">Terms & Conditions</p>
-                        <p className="text-xs text-muted-foreground">Read our terms of service</p>
-                      </div>
-                      <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                    </button>
-                    <button
-                      onClick={() => navigate("/privacy")}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors group"
-                    >
-                      <div className="space-y-0.5 text-left">
-                        <p className="text-sm font-bold text-foreground">Privacy Policy</p>
-                        <p className="text-xs text-muted-foreground">Read our privacy policy</p>
-                      </div>
-                      <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                    </button>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => navigate("/terms")}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors group"
+                      >
+                        <div className="space-y-0.5 text-left">
+                          <p className="text-sm font-bold text-foreground">Terms & Conditions</p>
+                          <p className="text-xs text-muted-foreground">Read our terms of service</p>
+                        </div>
+                        <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                      </button>
+                      <button
+                        onClick={() => navigate("/privacy")}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors group"
+                      >
+                        <div className="space-y-0.5 text-left">
+                          <p className="text-sm font-bold text-foreground">Privacy Policy</p>
+                          <p className="text-xs text-muted-foreground">Read our privacy policy</p>
+                        </div>
+                        <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                      </button>
+                    </div>
+                    <div className="px-4 pt-3 border-t border-border/30">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        For any queries related to imadeanapp.com, please reach out to{" "}
+                        <a href="mailto:imadeanapp.contact@gmail.com" className="text-primary hover:underline">
+                          imadeanapp.contact@gmail.com
+                        </a>
+                      </p>
+                    </div>
                   </div>
                 )}
 
