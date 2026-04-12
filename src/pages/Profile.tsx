@@ -30,6 +30,15 @@ const Profile = () => {
   const isOwnProfile = !userId || userId === user?.id;
   const targetUserId = userId || user?.id;
 
+  // Track profile view (unique per viewer)
+  useEffect(() => {
+    if (!targetUserId || !user?.id || user.id === targetUserId) return;
+    supabase
+      .from("profile_views")
+      .upsert({ user_id: targetUserId, viewer_id: user.id }, { onConflict: "user_id,viewer_id" })
+      .then(() => {});
+  }, [targetUserId, user?.id]);
+
   // For unauthenticated users, only show published apps
   const filteredTabs = isAuthenticated
     ? allTabs.filter(tab => {
