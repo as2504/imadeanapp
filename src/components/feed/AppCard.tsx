@@ -1,7 +1,5 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Star, ChevronRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface AppPost {
   id: string;
@@ -23,6 +21,7 @@ export interface AppPost {
   saved: boolean;
   topComment?: string;
   status?: string;
+  avgRating?: number | null;
 }
 
 const platformConfig: Record<string, { label: string; icon: string }> = {
@@ -41,18 +40,7 @@ interface AppCardProps {
 
 const AppCard = ({ post, actions, onClick }: AppCardProps) => {
   const navigate = useNavigate();
-  const [avgRating, setAvgRating] = useState<number | null>(null);
-
-  useEffect(() => {
-    const fetchRating = async () => {
-      const { data } = await supabase.from("ratings").select("rating").eq("app_id", post.id);
-      if (data && data.length > 0) {
-        const avg = data.reduce((s, r) => s + r.rating, 0) / data.length;
-        setAvgRating(Math.round(avg * 10) / 10);
-      }
-    };
-    fetchRating();
-  }, [post.id]);
+  const avgRating = post.avgRating ?? null;
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (onClick) {
