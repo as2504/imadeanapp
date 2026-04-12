@@ -308,111 +308,119 @@ const FeedbackSetup = () => {
 
         {/* Existing questions */}
         <div className="space-y-6">
-          {questions.length > 0 && (
-            <div className="space-y-3">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Questions ({questions.length}/5)
               </Label>
-              {questions.map((q, idx) => (
-                <div key={q.id} className="bg-card border border-border/40 rounded-2xl p-4 group/q">
-                  {editingId === q.id ? (
-                    /* Inline edit mode */
-                    <div className="space-y-3">
+              {questions.length < 5 && !showAddForm && !editingId && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              )}
+            </div>
+            {questions.map((q, idx) => (
+              <div key={q.id} className="bg-card border border-border/40 rounded-2xl p-4 group/q">
+                {editingId === q.id ? (
+                  /* Inline edit mode */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Q{idx + 1}</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase">Editing</span>
+                    </div>
+                    <Input
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="rounded-xl bg-background/50 border-border/40"
+                      placeholder="Question text..."
+                    />
+                    {feedbackType === "qna" && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
+                          <Switch
+                            checked={editType === "multi"}
+                            onCheckedChange={(c) => setEditType(c ? "multi" : "single")}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
+                          {editOptions.map((opt, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <Input
+                                value={opt}
+                                onChange={(e) => updateEditOption(i, e.target.value)}
+                                placeholder={`Option ${i + 1}`}
+                                className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
+                              />
+                              {editOptions.length > 2 && (
+                                <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {editOptions.length < 5 && (
+                            <button
+                              onClick={addEditOptionField}
+                              className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
+                            >
+                              <Plus size={12} /> Add Option
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" onClick={saveEditing} className="rounded-xl h-8 text-xs font-bold gap-1">
+                        <Check size={12} /> Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEditing} className="rounded-xl h-8 text-xs font-bold">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* View mode */
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Q{idx + 1}</span>
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase">Editing</span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase">
+                          {q.type === "single" ? "Single" : "Multi"}
+                        </span>
                       </div>
-                      <Input
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        className="rounded-xl bg-background/50 border-border/40"
-                        placeholder="Question text..."
-                      />
-                      {feedbackType === "qna" && (
-                        <>
-                          <div className="flex items-center gap-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
-                            <Switch
-                              checked={editType === "multi"}
-                              onCheckedChange={(c) => setEditType(c ? "multi" : "single")}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                            {editOptions.map((opt, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <Input
-                                  value={opt}
-                                  onChange={(e) => updateEditOption(i, e.target.value)}
-                                  placeholder={`Option ${i + 1}`}
-                                  className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
-                                />
-                                {editOptions.length > 2 && (
-                                  <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                                    <X size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                            {editOptions.length < 5 && (
-                              <button
-                                onClick={addEditOptionField}
-                                className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
-                              >
-                                <Plus size={12} /> Add Option
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      )}
-                      <div className="flex gap-2 pt-1">
-                        <Button size="sm" onClick={saveEditing} className="rounded-xl h-8 text-xs font-bold gap-1">
-                          <Check size={12} /> Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEditing} className="rounded-xl h-8 text-xs font-bold">
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* View mode */
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Q{idx + 1}</span>
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase">
-                            {q.type === "single" ? "Single" : "Multi"}
+                      <p className="text-sm font-medium text-foreground">{q.text}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {q.options.map((o) => (
+                          <span key={o} className={`px-2.5 py-1 rounded-lg bg-background text-[11px] font-medium border border-border/30 ${feedbackType === "satisfaction" ? satisfactionColors[o] || "text-muted-foreground" : "text-muted-foreground"}`}>
+                            {feedbackType === "satisfaction" && satisfactionIcons[o] ? `${satisfactionIcons[o]} ` : ""}{o}
                           </span>
-                        </div>
-                        <p className="text-sm font-medium text-foreground">{q.text}</p>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {q.options.map((o) => (
-                            <span key={o} className={`px-2.5 py-1 rounded-lg bg-background text-[11px] font-medium border border-border/30 ${feedbackType === "satisfaction" ? satisfactionColors[o] || "text-muted-foreground" : "text-muted-foreground"}`}>
-                              {feedbackType === "satisfaction" && satisfactionIcons[o] ? `${satisfactionIcons[o]} ` : ""}{o}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => startEditing(q)}
-                          className="text-muted-foreground/40 hover:text-primary transition-colors p-1 opacity-0 group-hover/q:opacity-100"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => removeQuestion(q.id)}
-                          className="text-muted-foreground/40 hover:text-destructive transition-colors p-1 opacity-0 group-hover/q:opacity-100"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => startEditing(q)}
+                        className="text-muted-foreground/40 hover:text-primary transition-colors p-1 opacity-0 group-hover/q:opacity-100"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => removeQuestion(q.id)}
+                        className="text-muted-foreground/40 hover:text-destructive transition-colors p-1 opacity-0 group-hover/q:opacity-100"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
           {/* Add new question form */}
           {questions.length < 5 && (
