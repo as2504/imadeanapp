@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import PublicNavbar from "@/components/layout/PublicNavbar";
@@ -28,6 +29,15 @@ const Profile = () => {
   const isAuthenticated = !!user;
   const isOwnProfile = !userId || userId === user?.id;
   const targetUserId = userId || user?.id;
+
+  // Track profile view (unique per viewer)
+  useEffect(() => {
+    if (!targetUserId || !user?.id || user.id === targetUserId) return;
+    supabase
+      .from("profile_views")
+      .upsert({ user_id: targetUserId, viewer_id: user.id }, { onConflict: "user_id,viewer_id" })
+      .then(() => {});
+  }, [targetUserId, user?.id]);
 
   // For unauthenticated users, only show published apps
   const filteredTabs = isAuthenticated
