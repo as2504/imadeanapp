@@ -81,7 +81,7 @@ const ThankYouScreen = ({ appId, publisherId, publisherName, publisherAvatar, is
 
         <Button
           variant="ghost"
-          onClick={() => navigate(`/profile/${publisherId}`)}
+          onClick={() => navigate(`/profile/${publisherId}`, { replace: true })}
           className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
         >
           Go to Profile <ArrowRight size={14} className="ml-2" />
@@ -91,7 +91,7 @@ const ThankYouScreen = ({ appId, publisherId, publisherName, publisherAvatar, is
         {isOwner && (
           <Button
             variant="ghost"
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/settings", { replace: true })}
             className="w-full rounded-2xl h-11 font-bold text-sm text-muted-foreground hover:text-foreground"
           >
             Return to Feedback Settings <ArrowRight size={14} className="ml-2" />
