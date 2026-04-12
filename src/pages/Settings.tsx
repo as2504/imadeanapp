@@ -126,7 +126,7 @@ const Settings = () => {
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
-    { id: "reviews", label: "Reviews Analytics", icon: BarChart3, badge: "Beta" },
+    { id: "reviews", label: "App Analytics", icon: BarChart3, badge: "Beta" },
     { id: "legal", label: "Legal", icon: FileText, badge: null },
   ];
 
@@ -484,9 +484,11 @@ const Settings = () => {
                 {activeSection === "reviews" && (
                   <div className="text-center py-12">
                     <BarChart3 size={32} className="mx-auto text-muted-foreground/30 mb-3" />
-                    <p className="text-sm font-medium text-muted-foreground italic">
-                      This section is currently under development.
+                    <p className="text-sm font-bold text-foreground mb-1">App Analytics</p>
+                    <p className="text-sm text-muted-foreground">
+                      Here you will be able to see analytics for your published applications.
                     </p>
+                    <Badge variant="secondary" className="mt-3 text-[10px] font-bold uppercase tracking-wider">Coming Soon</Badge>
                   </div>
                 )}
               </div>

@@ -214,7 +214,7 @@ const PrivacyPolicy = () => {
             Welcome to <strong className="text-foreground">imadeanapp.com</strong> ("we", "our", "us", or the "Platform"). We are committed to protecting your privacy and being transparent about how we handle your information. This Privacy Policy explains what data we collect, how we use it, and your rights as a user. By using imadeanapp.com, you agree to the practices described in this Privacy Policy.
           </p>
 
-          <Accordion type="multiple" className="space-y-2">
+          <Accordion type="single" collapsible className="space-y-2">
             {sections.map((s) => (
               <AccordionItem key={s.id} value={s.id} className="border border-border/30 rounded-xl px-4 overflow-hidden">
                 <AccordionTrigger className="text-sm font-bold text-foreground hover:no-underline py-3">

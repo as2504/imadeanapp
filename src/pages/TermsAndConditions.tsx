@@ -206,7 +206,7 @@ const TermsAndConditions = () => {
             Welcome to <strong className="text-foreground">imadeanapp.com</strong> (the "Platform"). By accessing or using the Platform, you agree to be bound by these Terms & Conditions ("Terms"). If you do not agree, please do not use the Platform.
           </p>
 
-          <Accordion type="multiple" className="space-y-2">
+          <Accordion type="single" collapsible className="space-y-2">
             {sections.map((s) => (
               <AccordionItem key={s.id} value={s.id} className="border border-border/30 rounded-xl px-4 overflow-hidden">
                 <AccordionTrigger className="text-sm font-bold text-foreground hover:no-underline py-3">
