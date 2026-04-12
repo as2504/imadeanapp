@@ -99,7 +99,7 @@ const EditProfile = () => {
         professional_title: profile.title, 
         location: profile.location, 
         bio: profile.bio, 
-        avatar_url: profile.avatarUrl,
+        avatar_url: profile.avatarUrl || null,
         primary_skill: development.primarySkill, 
         secondary_tools: development.secondaryTools, 
         preferred_platforms: development.preferredPlatforms, 
