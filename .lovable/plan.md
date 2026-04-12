@@ -1,36 +1,89 @@
 
-# Plan: Font Consistency Confirmation + Feedback UX Fixes
 
-## Font Family — No Changes Needed
+# Plan: Migration Fix, Navbar Avatar, Image Cropper, Remove Avatar, and Username Flash Fix
 
-Inter is already the sole font across the app. Both `body` and `h1–h6` use `'Inter', system-ui, sans-serif` with proper feature settings (`cv11`, `ss01`, `ss03`) and tight heading tracking (`-0.03em`). No other font-family declarations exist anywhere. It's production-ready.
+## 1. Create missing `ratings` table migration
 
-## Fix 1: Feedback Setup — Replace "Add Question" button with a compact + icon
+**File:** `supabase/migrations/20260409215959_create_ratings_table.sql`
 
-**File:** `src/pages/FeedbackSetup.tsx`
+The `ratings` table is referenced by the `get_trending_apps` function in migration `20260409220036`, but no prior migration creates it. A new migration with an earlier timestamp will create the table with:
+- `id`, `app_id` (FK to apps), `user_id`, `rating` (1-5 CHECK), `review_text`, `created_at`
+- Unique constraint on `(app_id, user_id)`
+- RLS policies for public SELECT, authenticated INSERT/UPDATE/DELETE (owner only)
+- Indexes on `app_id` and `user_id`
 
-Currently there's a full-width dashed card with a large "Add Question" button at the bottom. Replace this with:
+This fixes the production deployment failure.
 
-- A small `+` icon button in the top-right corner of the "Questions (X/5)" header area
-- Clicking it expands an inline form (same fields: question text, type toggle, options) below the existing questions
-- Hide the `+` button when the form is open or when 5 questions are reached
-- Keep the form minimal — collapse it after adding a question
+---
 
-This removes the always-visible bulky form and makes the page cleaner.
+## 2. Show profile avatar in navbar
 
-## Fix 2: Feedback Flow — Fix back-navigation after "Go to Profile"
+**File:** `src/components/feed/FeedNavbar.tsx`
 
-**File:** `src/components/feedback/ThankYouScreen.tsx`
+Currently the navbar shows a generic `<User>` icon. Changes:
+- Fetch the current user's profile (avatar_url, display_name) from Supabase on mount using `useQuery` with a long staleTime
+- Replace the static `<User>` icon with the user's avatar image (or their initial letter as fallback)
+- The avatar will appear as a small rounded image in the existing 32×32 container
 
-The bug: After completing feedback (or test mode), clicking "Go to Profile" pushes `/profile/:id` onto the history stack. Pressing the browser back button returns to `/feedback/:appId`, which re-renders the entire feedback flow and lets the user submit again.
+---
 
-Fix: Change `navigate(`/profile/${publisherId}`)` to `navigate(`/profile/${publisherId}`, { replace: true })`. This replaces the feedback route in history so back goes to the app detail page instead.
+## 3. Add "Remove avatar" option
 
-Also apply `{ replace: true }` to the "Return to Feedback Settings" navigation for the same reason.
+**File:** `src/components/edit-profile/EditProfileAvatar.tsx`
+
+- When an avatar is set, show a small `X` / trash icon badge (opposite corner from the camera badge)
+- Clicking it calls `onImageChange("")` (or `null`) to clear the avatar
+- Add a confirmation tooltip or small dialog: "Remove profile photo?"
+
+**File:** `src/pages/EditProfile.tsx`
+- Ensure `handleSave` sends `avatar_url: profile.avatarUrl || null` so empty string becomes null in DB
+
+---
+
+## 4. Image crop/position selector for avatar upload
+
+**File:** `src/components/edit-profile/EditProfileAvatar.tsx`
+
+When a user selects an image, instead of uploading immediately:
+1. Read the file as a data URL and open a crop dialog
+2. Show the image in a square crop area with drag-to-reposition and pinch/scroll-to-zoom
+3. User confirms → the visible area is drawn onto a canvas (e.g. 400×400) → exported as a Blob → uploaded to storage
+4. This uses a lightweight custom canvas-based cropper (no external library needed):
+   - Display image in a fixed square container
+   - Track mouse/touch drag to pan the image
+   - Track wheel/pinch to zoom
+   - On confirm, use `canvas.drawImage()` with the computed offset/scale to produce the cropped result
+
+This ensures all avatars are consistently square regardless of the source image dimensions.
+
+---
+
+## 5. Fix username flash showing email prefix
+
+**Problem:** On page refresh, `ProfileHeader` line 44 falls back to `user?.email?.split("@")[0]` while the profile is still loading from Supabase. This briefly exposes the user's email prefix.
+
+**Fix across multiple files:**
+
+**`src/components/profile/ProfileHeader.tsx`:**
+- Add a `loading` state that starts `true` until the profile fetch completes
+- While loading, show a skeleton/placeholder instead of the email-derived fallback
+- Change fallback chain: `profile?.username || (loading ? "..." : "user")`
+- Same for `displayName`: show skeleton while loading
+
+**`src/components/feed/FeedNavbar.tsx`:**
+- Similar: don't show any user-derived text until profile data is fetched
+
+This completely prevents email leakage during the loading window.
+
+---
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `src/pages/FeedbackSetup.tsx` | Replace bottom add-question card with top-right + icon and collapsible inline form |
-| `src/components/feedback/ThankYouScreen.tsx` | Add `replace: true` to profile and settings navigation |
+| `supabase/migrations/20260409215959_...` | New: create `ratings` table before trending function |
+| `src/components/feed/FeedNavbar.tsx` | Show user avatar, fetch profile with useQuery |
+| `src/components/edit-profile/EditProfileAvatar.tsx` | Add remove option + image crop dialog |
+| `src/components/profile/ProfileHeader.tsx` | Add loading state, prevent email flash |
+| `src/pages/EditProfile.tsx` | Handle null avatar on save |
+
