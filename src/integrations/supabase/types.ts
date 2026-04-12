@@ -331,6 +331,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_views: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          viewer_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
