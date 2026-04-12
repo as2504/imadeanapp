@@ -38,6 +38,7 @@ const FeedbackSetup = () => {
   const [existingConfigId, setExistingConfigId] = useState<string | null>(null);
 
   // New question form
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionType, setNewQuestionType] = useState<"single" | "multi">("single");
   const [newOptions, setNewOptions] = useState<string[]>(["", ""]);
