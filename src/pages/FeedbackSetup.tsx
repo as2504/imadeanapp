@@ -422,12 +422,17 @@ const FeedbackSetup = () => {
             ))}
           </div>
 
-          {/* Add new question form */}
-          {questions.length < 5 && (
-            <div className="bg-card border border-border/40 border-dashed rounded-2xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} className="text-primary" />
-                <p className="text-xs font-bold text-foreground uppercase tracking-wider">Add Question</p>
+          {/* Add new question form — collapsible */}
+          {showAddForm && questions.length < 5 && (
+            <div className="bg-card border border-border/40 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-primary" />
+                  <p className="text-xs font-bold text-foreground uppercase tracking-wider">New Question</p>
+                </div>
+                <button onClick={() => { setShowAddForm(false); setNewQuestionText(""); setNewOptions(["", ""]); }} className="text-muted-foreground/60 hover:text-foreground">
+                  <X size={16} />
+                </button>
               </div>
 
               <Input
@@ -435,6 +440,7 @@ const FeedbackSetup = () => {
                 onChange={(e) => setNewQuestionText(e.target.value)}
                 placeholder="Enter your question..."
                 className="rounded-xl bg-background/50 border-border/40"
+                autoFocus
               />
 
               {feedbackType === "qna" && (
