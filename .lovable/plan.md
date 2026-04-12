@@ -1,61 +1,36 @@
 
+# Plan: Font Consistency Confirmation + Feedback UX Fixes
 
-# Plan: Performance Optimization for HomeFeed & Trending
+## Font Family — No Changes Needed
 
-## Priority Order (by impact)
+Inter is already the sole font across the app. Both `body` and `h1–h6` use `'Inter', system-ui, sans-serif` with proper feature settings (`cv11`, `ss01`, `ss03`) and tight heading tracking (`-0.03em`). No other font-family declarations exist anywhere. It's production-ready.
 
-### 1. Eliminate N+1 rating queries in cards (CRITICAL)
-**Files:** `src/components/feed/AppCard.tsx`, `src/components/trending/TrendingCard.tsx`, `src/pages/HomeFeed.tsx`, `src/pages/Trending.tsx`
+## Fix 1: Feedback Setup — Replace "Add Question" button with a compact + icon
 
-- Remove the per-card `useEffect` that queries `ratings` table individually
-- Instead, batch-fetch all ratings for the current page's app IDs in the parent page component
-- Pass `avgRating` as a prop to each card
-- This eliminates 20 network requests per page load
+**File:** `src/pages/FeedbackSetup.tsx`
 
-### 2. Add react-query caching (HIGH)
-**Files:** `src/pages/HomeFeed.tsx`, `src/pages/Trending.tsx`
+Currently there's a full-width dashed card with a large "Add Question" button at the bottom. Replace this with:
 
-- Replace `useState` + `useEffect` fetching with `useQuery` / `useInfiniteQuery`
-- Set `staleTime: 5 * 60 * 1000` (5 minutes) so back-navigation shows cached data instantly
-- Use query keys based on filters so filter changes trigger fresh fetches
-- Keep the existing "Load More" UX but powered by `useInfiniteQuery`
+- A small `+` icon button in the top-right corner of the "Questions (X/5)" header area
+- Clicking it expands an inline form (same fields: question text, type toggle, options) below the existing questions
+- Hide the `+` button when the form is open or when 5 questions are reached
+- Keep the form minimal — collapse it after adding a question
 
-### 3. Select only needed columns (HIGH)
-**Files:** `src/pages/HomeFeed.tsx`, `src/pages/Trending.tsx`
+This removes the always-visible bulky form and makes the page cleaner.
 
-- Replace `.select("*")` with `.select("id, slug, app_name, app_icon_url, caption, tagline, tags, platforms, tech_stack, likes_count, comments_count, views_count, user_id, created_at")`
-- Reduces payload size significantly (drops `full_description`, `screenshots`, `short_description`, all URL fields)
+## Fix 2: Feedback Flow — Fix back-navigation after "Go to Profile"
 
-### 4. Reduce trending over-fetch (MEDIUM)
-**Files:** `src/pages/HomeFeed.tsx`, `src/pages/Trending.tsx`
+**File:** `src/components/feedback/ThankYouScreen.tsx`
 
-- Change `max_results: 200` → `max_results: 50` for initial load
-- The RPC already returns results sorted by `trending_score`, so we can trust its ordering
-- For "Load More", call the RPC again with an offset or fetch the next batch
+The bug: After completing feedback (or test mode), clicking "Go to Profile" pushes `/profile/:id` onto the history stack. Pressing the browser back button returns to `/feedback/:appId`, which re-renders the entire feedback flow and lets the user submit again.
 
-### 5. Optimize sidebar queries (MEDIUM)
-**Files:** `src/components/feed/FeedSidebar.tsx`, `src/components/trending/TrendingSidebar.tsx`
+Fix: Change `navigate(`/profile/${publisherId}`)` to `navigate(`/profile/${publisherId}`, { replace: true })`. This replaces the feedback route in history so back goes to the app detail page instead.
 
-- Wrap sidebar data fetching in `useQuery` with a longer `staleTime` (10+ minutes) since this data changes slowly
-- This prevents re-fetching on every navigation
-
-### 6. RPC optimization (LOW — future)
-- Refactor correlated subqueries to JOINs when app count grows beyond ~5K
-- Not urgent now but noted for future
+Also apply `{ replace: true }` to the "Return to Feedback Settings" navigation for the same reason.
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `src/components/feed/AppCard.tsx` | Remove per-card rating fetch, accept `avgRating` prop |
-| `src/components/trending/TrendingCard.tsx` | Remove per-card rating fetch, accept `avgRating` prop |
-| `src/pages/HomeFeed.tsx` | Add react-query, select specific columns, batch-fetch ratings |
-| `src/pages/Trending.tsx` | Add react-query, select specific columns, batch-fetch ratings, reduce max_results |
-| `src/components/feed/FeedSidebar.tsx` | Wrap in useQuery with staleTime |
-| `src/components/trending/TrendingSidebar.tsx` | Wrap in useQuery with staleTime |
-
-## Expected Impact
-- **Perceived load time**: ~60-70% faster (caching eliminates reload on back-nav)
-- **Network requests per page**: from ~25+ down to ~3-4
-- **Payload size**: ~50% smaller per feed load
-
+| `src/pages/FeedbackSetup.tsx` | Replace bottom add-question card with top-right + icon and collapsible inline form |
+| `src/components/feedback/ThankYouScreen.tsx` | Add `replace: true` to profile and settings navigation |
