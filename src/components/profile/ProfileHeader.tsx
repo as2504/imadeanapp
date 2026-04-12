@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Settings, CheckCircle2, UserCircle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import FollowListDialog from "./FollowListDialog";
 import {
   DropdownMenu,
@@ -18,6 +19,7 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -27,7 +29,8 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
 
   useEffect(() => {
     if (!targetUserId) return;
-    const fetchProfile = async () => { const { data } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).maybeSingle(); setProfile(data); };
+    setLoading(true);
+    const fetchProfile = async () => { const { data } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).maybeSingle(); setProfile(data); setLoading(false); };
     const fetchFollowers = async () => { const { count } = await supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", targetUserId); setFollowerCount(count || 0); };
     const fetchFollowing = async () => { const { count } = await supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", targetUserId); setFollowingCount(count || 0); };
     const checkFollowing = async () => { if (!user || isOwnProfile) return; const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", targetUserId).maybeSingle(); setIsFollowing(!!data); };
@@ -40,8 +43,9 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
     else { await supabase.from("follows").insert({ follower_id: user.id, following_id: targetUserId }); setIsFollowing(true); setFollowerCount((c) => c + 1); }
   };
 
-  const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
-  const username = profile?.username || user?.email?.split("@")[0] || "user";
+  // NEVER fall back to email — show skeleton or generic placeholder
+  const displayName = profile?.display_name || (loading ? "" : "User");
+  const username = profile?.username || (loading ? "" : "user");
 
   const [isExtraSmall, setIsExtraSmall] = useState(false);
 
@@ -56,20 +60,36 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
     <>
       <div className="flex items-start gap-5">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-secondary flex items-center justify-center text-2xl font-bold text-primary overflow-hidden shrink-0">
-          {profile?.avatar_url ? <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" /> : displayName.charAt(0).toUpperCase()}
+          {loading ? (
+            <Skeleton className="w-full h-full" />
+          ) : profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+          ) : (
+            displayName.charAt(0).toUpperCase()
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-foreground">{displayName}</h1>
-            <span className="text-xs text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Verified</span>
+            {loading ? (
+              <Skeleton className="h-6 w-32" />
+            ) : (
+              <>
+                <h1 className="text-xl font-semibold text-foreground">{displayName}</h1>
+                <span className="text-xs text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Verified</span>
+              </>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
-            @{username}
-            <span className="mx-1">·</span>
-            <button onClick={() => setDialogType("followers")} className="hover:text-foreground transition-colors hover:underline">{followerCount} followers</button>
-            <span className="mx-1">·</span>
-            <button onClick={() => setDialogType("following")} className="hover:text-foreground transition-colors hover:underline">{followingCount} following</button>
-          </p>
+          {loading ? (
+            <Skeleton className="h-4 w-48 mt-1" />
+          ) : (
+            <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
+              @{username}
+              <span className="mx-1">·</span>
+              <button onClick={() => setDialogType("followers")} className="hover:text-foreground transition-colors hover:underline">{followerCount} followers</button>
+              <span className="mx-1">·</span>
+              <button onClick={() => setDialogType("following")} className="hover:text-foreground transition-colors hover:underline">{followingCount} following</button>
+            </p>
+          )}
           {profile?.bio && <p className="text-sm text-muted-foreground/80 mt-2 max-w-lg">{profile.bio}</p>}
           <div className="flex items-center gap-2 mt-3">
             {isOwnProfile ? (

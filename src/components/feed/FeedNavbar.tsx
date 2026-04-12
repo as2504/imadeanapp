@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Search, Home, TrendingUp, Bell, BellOff, User, Plus, Settings } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
 import { useTheme } from "@/components/ThemeProvider";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/home" },
@@ -20,10 +23,27 @@ const navItems = [
 
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { data: profile } = useQuery({
+    queryKey: ["navbar-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url, display_name, username")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const initial = profile?.display_name?.charAt(0)?.toUpperCase() || profile?.username?.charAt(0)?.toUpperCase() || "";
 
   return (
     <>
@@ -80,9 +100,14 @@ const FeedNavbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="p-1 rounded-lg hover:bg-secondary transition-colors outline-none">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-border/40">
-                    <User size={16} className="text-muted-foreground" />
-                  </div>
+                  <Avatar className="w-8 h-8 rounded-lg border border-border/40">
+                    {profile?.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} alt="Profile" className="object-cover" />
+                    ) : null}
+                    <AvatarFallback className="rounded-lg bg-secondary text-muted-foreground text-xs font-medium">
+                      {initial || <User size={16} />}
+                    </AvatarFallback>
+                  </Avatar>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 p-1 rounded-lg shadow-xl border-border/40 bg-card">
