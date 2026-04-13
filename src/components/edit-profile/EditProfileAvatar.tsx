@@ -47,6 +47,10 @@ const EditProfileAvatar = ({ initial, avatarUrl, onImageChange }: EditProfileAva
       toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
       return;
     }
+    if (file.size > 500 * 1024) {
+      toast({ title: "File too large", description: "Profile picture must be under 500KB.", variant: "destructive" });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       setImageSrc(e.target?.result as string);

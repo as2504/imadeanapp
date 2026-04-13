@@ -336,8 +336,8 @@ const Settings = () => {
                     <div className="px-4 pt-3 border-t border-border/30">
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         For any queries related to imadeanapp.com, please reach out to{" "}
-                        <a href="mailto:imadeanapp.contact@gmail.com" className="text-primary hover:underline">
-                          imadeanapp.contact@gmail.com
+                        <a href="mailto:contact@imadeanapp.com" className="text-primary hover:underline">
+                          contact@imadeanapp.com
                         </a>
                       </p>
                     </div>
