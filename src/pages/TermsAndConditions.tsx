@@ -116,7 +116,7 @@ const sections = [
     title: "10. Account Deletion",
     content: (
       <>
-        <p>You may request deletion of your account and associated data by emailing{" "}<a href="mailto:imadeanapp.contact@gmail.com">imadeanapp.contact@gmail.com</a>.</p>
+        <p>You may request deletion of your account and associated data by emailing{" "}<a href="mailto:contact@imadeanapp.com">contact@imadeanapp.com</a>.</p>
         <ul>
           <li>Deletion requests will be processed within <strong>4 weeks</strong>.</li>
           <li>You may cancel your deletion request during this period by contacting us.</li>
@@ -152,7 +152,7 @@ const sections = [
     content: (
       <>
         <p>For any questions or concerns about these Terms, please contact us at:</p>
-        <p><strong>Email:</strong>{" "}<a href="mailto:imadeanapp.contact@gmail.com">imadeanapp.contact@gmail.com</a></p>
+        <p><strong>Email:</strong>{" "}<a href="mailto:contact@imadeanapp.com">contact@imadeanapp.com</a></p>
       </>
     ),
   },

@@ -40,10 +40,15 @@ const AppDetail = () => {
   const [userTried, setUserTried] = useState(false);
   const [userReviewed, setUserReviewed] = useState(false);
   const [activeTab, setActiveTab] = useState<"Overview" | "Reviews" | "Updates" | "Feedback">("Overview");
+  const [hasFeedbackConfig, setHasFeedbackConfig] = useState(false);
 
   const isAuthenticated = !!user;
+  const isOwner = user && appData?.publisherUserId === user.id;
+  const baseTabs = ["Overview", "Reviews", "Updates"] as const;
   const visibleTabs = isAuthenticated
-    ? (["Overview", "Reviews", "Updates", "Feedback"] as const)
+    ? (hasFeedbackConfig || isOwner
+        ? ([...baseTabs, "Feedback"] as const)
+        : baseTabs)
     : (["Overview"] as const);
 
   useEffect(() => {
@@ -66,6 +71,15 @@ const AppDetail = () => {
       const avg = ratingsArr.length > 0 ? ratingsArr.reduce((sum, r) => sum + r.rating, 0) / ratingsArr.length : 0;
       setAvgRating(Math.round(avg * 10) / 10);
       setTotalRatings(ratingsArr.length);
+
+      // Check feedback config existence
+      const { data: fbConfig } = await supabase
+        .from("app_feedback_config")
+        .select("id")
+        .eq("app_id", app.id)
+        .eq("is_enabled", true)
+        .maybeSingle();
+      setHasFeedbackConfig(!!fbConfig);
 
       if (user) {
         const { data: tries } = await supabase.from("app_tries").select("id").eq("app_id", app.id).eq("user_id", user.id).maybeSingle();

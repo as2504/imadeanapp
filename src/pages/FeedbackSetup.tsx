@@ -100,8 +100,8 @@ const FeedbackSetup = () => {
   };
 
   const handleAddQuestion = () => {
-    if (questions.length >= 5) {
-      toast.error("Maximum 5 questions allowed");
+    if (questions.length >= 10) {
+      toast.error("Maximum 10 questions allowed");
       return;
     }
     if (!newQuestionText.trim()) {
@@ -311,9 +311,9 @@ const FeedbackSetup = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                Questions ({questions.length}/5)
+                Questions ({questions.length}/10)
               </Label>
-              {questions.length < 5 && !showAddForm && !editingId && (
+              {questions.length < 10 && !showAddForm && !editingId && (
                 <button
                   onClick={() => setShowAddForm(true)}
                   className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
@@ -423,7 +423,7 @@ const FeedbackSetup = () => {
           </div>
 
           {/* Add new question form — collapsible */}
-          {showAddForm && questions.length < 5 && (
+          {showAddForm && questions.length < 10 && (
             <div className="bg-card border border-border/40 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -495,7 +495,7 @@ const FeedbackSetup = () => {
           )}
 
           <p className="text-[10px] text-muted-foreground text-center italic">
-            Maximum 5 questions allowed.
+            Maximum 10 questions allowed.
           </p>
         </div>
 
