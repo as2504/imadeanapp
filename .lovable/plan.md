@@ -1,89 +1,86 @@
 
 
-# Plan: Migration Fix, Navbar Avatar, Image Cropper, Remove Avatar, and Username Flash Fix
+# Plan: Feedback Visibility, Profile Picture Limits, PWA Icon, OG Image, Email Update
 
-## 1. Create missing `ratings` table migration
+## 1. Feedback tab only visible when publisher has created feedback config
 
-**File:** `supabase/migrations/20260409215959_create_ratings_table.sql`
+**File:** `src/pages/AppDetail.tsx`
 
-The `ratings` table is referenced by the `get_trending_apps` function in migration `20260409220036`, but no prior migration creates it. A new migration with an earlier timestamp will create the table with:
-- `id`, `app_id` (FK to apps), `user_id`, `rating` (1-5 CHECK), `review_text`, `created_at`
-- Unique constraint on `(app_id, user_id)`
-- RLS policies for public SELECT, authenticated INSERT/UPDATE/DELETE (owner only)
-- Indexes on `app_id` and `user_id`
+Currently the "Feedback" tab is shown for all authenticated users on every app. Fix:
+- After fetching the app, also check if `app_feedback_config` exists and is enabled for this app
+- Add state `hasFeedbackConfig` (default `false`)
+- Query `app_feedback_config` where `app_id = app.id` and `is_enabled = true` during the fetch
+- Filter `visibleTabs`: only include "Feedback" when `hasFeedbackConfig` is `true` OR when the user is the app owner (so owners still see the setup CTA)
+- The Overview tab's `<AppFeedback>` component already handles its own visibility correctly — no change needed there
 
-This fixes the production deployment failure.
+## 2. Increase max questions limit from 5 to 10
 
----
+**File:** `src/pages/FeedbackSetup.tsx`
 
-## 2. Show profile avatar in navbar
+- Change all occurrences of `5` to `10` for the question limit (lines ~103, 104, 314, 316, 426)
+- Update the label `Questions (X/5)` → `Questions (X/10)`
+- Update the toast message to "Maximum 10 questions allowed"
 
-**File:** `src/components/feed/FeedNavbar.tsx`
-
-Currently the navbar shows a generic `<User>` icon. Changes:
-- Fetch the current user's profile (avatar_url, display_name) from Supabase on mount using `useQuery` with a long staleTime
-- Replace the static `<User>` icon with the user's avatar image (or their initial letter as fallback)
-- The avatar will appear as a small rounded image in the existing 32×32 container
-
----
-
-## 3. Add "Remove avatar" option
+## 3. Profile picture 500KB size limit
 
 **File:** `src/components/edit-profile/EditProfileAvatar.tsx`
 
-- When an avatar is set, show a small `X` / trash icon badge (opposite corner from the camera badge)
-- Clicking it calls `onImageChange("")` (or `null`) to clear the avatar
-- Add a confirmation tooltip or small dialog: "Remove profile photo?"
+- In the `openFileSelector` function, add a file size check before reading:
+  ```typescript
+  if (file.size > 500 * 1024) {
+    toast({ title: "File too large", description: "Profile picture must be under 500KB.", variant: "destructive" });
+    return;
+  }
+  ```
+- This won't affect Google auth avatars since those are URLs fetched externally, not uploaded through this component
 
-**File:** `src/pages/EditProfile.tsx`
-- Ensure `handleSave` sends `avatar_url: profile.avatarUrl || null` so empty string becomes null in DB
+## 4. PWA icon — use IMAA logo for installed app icon
 
----
+**File:** `public/manifest.json`
 
-## 4. Image crop/position selector for avatar upload
+Update icons array to use the actual IMAA logos:
+```json
+{
+  "icons": [
+    { "src": "/logos/IMAAx192x192b.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/logos/IMAAx512x512b.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
+```
 
-**File:** `src/components/edit-profile/EditProfileAvatar.tsx`
+## 5. Open Graph image for imadeanapp.com homepage
 
-When a user selects an image, instead of uploading immediately:
-1. Read the file as a data URL and open a crop dialog
-2. Show the image in a square crop area with drag-to-reposition and pinch/scroll-to-zoom
-3. User confirms → the visible area is drawn onto a canvas (e.g. 400×400) → exported as a Blob → uploaded to storage
-4. This uses a lightweight custom canvas-based cropper (no external library needed):
-   - Display image in a fixed square container
-   - Track mouse/touch drag to pan the image
-   - Track wheel/pinch to zoom
-   - On confirm, use `canvas.drawImage()` with the computed offset/scale to produce the cropped result
+**File:** `index.html`
 
-This ensures all avatars are consistently square regardless of the source image dimensions.
+- Add `og:image` meta tag pointing to the IMAA logo: `/logos/IMAAx512x512b.png`
+- Use absolute URL: `https://imadeanapp.com/logos/IMAAx512x512b.png`
+- Add `og:url` meta tag: `https://imadeanapp.com`
+- Update `twitter:image` similarly
 
----
+**File:** `supabase/functions/og-meta/index.ts`
 
-## 5. Fix username flash showing email prefix
+- Update the hardcoded URL from `https://showcase-umber-one.vercel.app` to `https://imadeanapp.com`
+- When `image` is empty (no app icon), fall back to `https://imadeanapp.com/logos/IMAAx512x512b.png`
 
-**Problem:** On page refresh, `ProfileHeader` line 44 falls back to `user?.email?.split("@")[0]` while the profile is still loading from Supabase. This briefly exposes the user's email prefix.
+## 6. Update email from gmail to contact@imadeanapp.com
 
-**Fix across multiple files:**
+**Files:** `src/pages/TermsAndConditions.tsx`, `src/pages/PrivacyPolicy.tsx`, `src/pages/Settings.tsx`
 
-**`src/components/profile/ProfileHeader.tsx`:**
-- Add a `loading` state that starts `true` until the profile fetch completes
-- While loading, show a skeleton/placeholder instead of the email-derived fallback
-- Change fallback chain: `profile?.username || (loading ? "..." : "user")`
-- Same for `displayName`: show skeleton while loading
-
-**`src/components/feed/FeedNavbar.tsx`:**
-- Similar: don't show any user-derived text until profile data is fetched
-
-This completely prevents email leakage during the loading window.
-
----
+- Replace all `imadeanapp.contact@gmail.com` with `contact@imadeanapp.com` (both href and display text)
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `supabase/migrations/20260409215959_...` | New: create `ratings` table before trending function |
-| `src/components/feed/FeedNavbar.tsx` | Show user avatar, fetch profile with useQuery |
-| `src/components/edit-profile/EditProfileAvatar.tsx` | Add remove option + image crop dialog |
-| `src/components/profile/ProfileHeader.tsx` | Add loading state, prevent email flash |
-| `src/pages/EditProfile.tsx` | Handle null avatar on save |
+| `src/pages/AppDetail.tsx` | Conditionally show Feedback tab based on config existence |
+| `src/pages/FeedbackSetup.tsx` | Change max questions from 5 → 10 |
+| `src/components/edit-profile/EditProfileAvatar.tsx` | Add 500KB file size limit |
+| `public/manifest.json` | Use IMAA logo PNGs for PWA icons |
+| `index.html` | Add og:image and twitter:image with IMAA logo |
+| `supabase/functions/og-meta/index.ts` | Fix domain URL, add fallback OG image |
+| `src/pages/TermsAndConditions.tsx` | Update email |
+| `src/pages/PrivacyPolicy.tsx` | Update email |
+| `src/pages/Settings.tsx` | Update email |
+
+No migration changes needed — all changes are frontend/edge function only.
 
