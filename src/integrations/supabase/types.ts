@@ -538,7 +538,96 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          collaboration_looking_for: string[] | null
+          created_at: string | null
+          display_name: string | null
+          education: Json | null
+          github_url: string | null
+          id: string | null
+          instagram_url: string | null
+          leetcode_url: string | null
+          linkedin_url: string | null
+          location: string | null
+          looking_for_work: boolean | null
+          open_to_collaboration: boolean | null
+          portfolio_url: string | null
+          preferred_platforms: string[] | null
+          primary_skill: string | null
+          professional_title: string | null
+          secondary_tools: string[] | null
+          social_links: Json | null
+          twitter_url: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+          website: string | null
+          work_experience: Json | null
+          work_experience_years: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          collaboration_looking_for?: string[] | null
+          created_at?: string | null
+          display_name?: string | null
+          education?: Json | null
+          github_url?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for_work?: boolean | null
+          open_to_collaboration?: boolean | null
+          portfolio_url?: string | null
+          preferred_platforms?: string[] | null
+          primary_skill?: string | null
+          professional_title?: string | null
+          secondary_tools?: string[] | null
+          social_links?: Json | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+          website?: string | null
+          work_experience?: Json | null
+          work_experience_years?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          collaboration_looking_for?: string[] | null
+          created_at?: string | null
+          display_name?: string | null
+          education?: Json | null
+          github_url?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for_work?: boolean | null
+          open_to_collaboration?: boolean | null
+          portfolio_url?: string | null
+          preferred_platforms?: string[] | null
+          primary_skill?: string | null
+          professional_title?: string | null
+          secondary_tools?: string[] | null
+          social_links?: Json | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+          website?: string | null
+          work_experience?: Json | null
+          work_experience_years?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_trending_apps: {

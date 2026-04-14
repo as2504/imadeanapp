@@ -24,6 +24,7 @@ import {
   Trash2,
   FileText,
   ExternalLink,
+  Mail,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -128,6 +129,7 @@ const Settings = () => {
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
     { id: "reviews", label: "App Analytics", icon: BarChart3, badge: "Beta" },
     { id: "legal", label: "Legal", icon: FileText, badge: null },
+    { id: "support", label: "Support", icon: Mail, badge: null },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -205,6 +207,15 @@ const Settings = () => {
                           )}
                         </CommandItem>
                       ))}
+                      {/* Support in mobile dropdown */}
+                      <CommandItem
+                        value="Support"
+                        onSelect={() => window.location.href = "mailto:contact@imadeanapp.com"}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                      >
+                        <Mail size={16} className="text-muted-foreground" />
+                        <span className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Support</span>
+                      </CommandItem>
                       {/* Log out in mobile dropdown */}
                       <CommandItem
                         value="Log out"
@@ -245,8 +256,19 @@ const Settings = () => {
                 </button>
               ))}
 
-              {/* Log out always last */}
+              {/* Support */}
               <div className="mt-4 pt-4 border-t border-border/40">
+                <a
+                  href="mailto:contact@imadeanapp.com"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all whitespace-nowrap w-full"
+                >
+                  <Mail size={16} />
+                  Support
+                </a>
+              </div>
+
+              {/* Log out always last */}
+              <div className="mt-2 pt-2 border-t border-border/40">
                 <button
                   onClick={() => setShowLogoutDialog(true)}
                   className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive hover:bg-destructive/5 transition-all whitespace-nowrap w-full"
@@ -489,6 +511,24 @@ const Settings = () => {
                       Here you will be able to see analytics for your published applications.
                     </p>
                     <Badge variant="secondary" className="mt-3 text-[10px] font-bold uppercase tracking-wider">Coming Soon</Badge>
+                  </div>
+                )}
+
+                {activeSection === "support" && (
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-foreground">Need help?</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Drop us an email and we'll get back to you as soon as possible.
+                      </p>
+                    </div>
+                    <a
+                      href="mailto:contact@imadeanapp.com"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-colors"
+                    >
+                      <Mail size={16} />
+                      contact@imadeanapp.com
+                    </a>
                   </div>
                 )}
               </div>
