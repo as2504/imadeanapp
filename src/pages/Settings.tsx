@@ -512,6 +512,24 @@ const Settings = () => {
                     <Badge variant="secondary" className="mt-3 text-[10px] font-bold uppercase tracking-wider">Coming Soon</Badge>
                   </div>
                 )}
+
+                {activeSection === "support" && (
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-foreground">Need help?</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Drop us an email and we'll get back to you as soon as possible.
+                      </p>
+                    </div>
+                    <a
+                      href="mailto:contact@imadeanapp.com"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-colors"
+                    >
+                      <Mail size={16} />
+                      contact@imadeanapp.com
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
