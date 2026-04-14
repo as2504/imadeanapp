@@ -255,8 +255,19 @@ const Settings = () => {
                 </button>
               ))}
 
-              {/* Log out always last */}
+              {/* Support */}
               <div className="mt-4 pt-4 border-t border-border/40">
+                <a
+                  href="mailto:contact@imadeanapp.com"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all whitespace-nowrap w-full"
+                >
+                  <Mail size={16} />
+                  Support
+                </a>
+              </div>
+
+              {/* Log out always last */}
+              <div className="mt-2 pt-2 border-t border-border/40">
                 <button
                   onClick={() => setShowLogoutDialog(true)}
                   className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive hover:bg-destructive/5 transition-all whitespace-nowrap w-full"
