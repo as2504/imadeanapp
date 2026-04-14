@@ -129,6 +129,7 @@ const Settings = () => {
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
     { id: "reviews", label: "App Analytics", icon: BarChart3, badge: "Beta" },
     { id: "legal", label: "Legal", icon: FileText, badge: null },
+    { id: "support", label: "Support", icon: Mail, badge: null },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
