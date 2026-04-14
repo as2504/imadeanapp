@@ -129,7 +129,6 @@ const Settings = () => {
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
     { id: "reviews", label: "App Analytics", icon: BarChart3, badge: "Beta" },
     { id: "legal", label: "Legal", icon: FileText, badge: null },
-    { id: "support", label: "Support", icon: Mail, badge: null },
   ];
 
   const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
@@ -514,23 +513,6 @@ const Settings = () => {
                   </div>
                 )}
 
-                {activeSection === "support" && (
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-bold text-foreground">Need help?</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Drop us an email and we'll get back to you as soon as possible.
-                      </p>
-                    </div>
-                    <a
-                      href="mailto:contact@imadeanapp.com"
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-colors"
-                    >
-                      <Mail size={16} />
-                      contact@imadeanapp.com
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
           </div>
