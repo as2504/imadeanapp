@@ -24,6 +24,7 @@ import {
   Trash2,
   FileText,
   ExternalLink,
+  Mail,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -123,6 +124,8 @@ const Settings = () => {
     navigate(`/feedback-setup/${appId}`);
   };
 
+  const supportSection = { id: "support", label: "Support", icon: Mail, badge: null };
+
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
@@ -130,7 +133,9 @@ const Settings = () => {
     { id: "legal", label: "Legal", icon: FileText, badge: null },
   ];
 
-  const activeSectionData = sections.find(s => s.id === activeSection) || sections[0];
+  const activeSectionData =
+    sections.find((s) => s.id === activeSection) ||
+    (activeSection === supportSection.id ? supportSection : sections[0]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -205,6 +210,26 @@ const Settings = () => {
                           )}
                         </CommandItem>
                       ))}
+                      {/* Support in mobile dropdown */}
+                      <CommandItem
+                        value="Support"
+                        onSelect={() => {
+                          setActiveSection(supportSection.id);
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                      >
+                        <Mail size={16} className={cn(activeSection === supportSection.id ? "text-primary" : "text-muted-foreground")} />
+                        <span className={cn(
+                          "text-sm font-bold uppercase tracking-tight",
+                          activeSection === supportSection.id ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          Support
+                        </span>
+                        {activeSection === supportSection.id && (
+                          <Check className="ml-auto h-4 w-4 text-primary" />
+                        )}
+                      </CommandItem>
                       {/* Log out in mobile dropdown */}
                       <CommandItem
                         value="Log out"
@@ -245,8 +270,24 @@ const Settings = () => {
                 </button>
               ))}
 
-              {/* Log out always last */}
+              {/* Support */}
               <div className="mt-4 pt-4 border-t border-border/40">
+                <button
+                  onClick={() => setActiveSection(supportSection.id)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap w-full",
+                    activeSection === supportSection.id
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  <Mail size={16} className={cn(activeSection === supportSection.id ? "text-primary" : "text-muted-foreground")} />
+                  Support
+                </button>
+              </div>
+
+              {/* Log out always last */}
+              <div className="mt-2 pt-2 border-t border-border/40">
                 <button
                   onClick={() => setShowLogoutDialog(true)}
                   className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive/80 hover:text-destructive hover:bg-destructive/5 transition-all whitespace-nowrap w-full"
@@ -336,8 +377,8 @@ const Settings = () => {
                     <div className="px-4 pt-3 border-t border-border/30">
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         For any queries related to imadeanapp.com, please reach out to{" "}
-                        <a href="mailto:imadeanapp.contact@gmail.com" className="text-primary hover:underline">
-                          imadeanapp.contact@gmail.com
+                        <a href="mailto:contact@imadeanapp.com" className="text-primary hover:underline">
+                          contact@imadeanapp.com
                         </a>
                       </p>
                     </div>
@@ -370,6 +411,23 @@ const Settings = () => {
                         >
                           <Moon size={16} />
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeSection === supportSection.id && (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-border/40 bg-muted/20 p-5">
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-foreground">Need help?</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          If you have any queries or need support, please contact us at{" "}
+                          <a href="mailto:contact@imadeanapp.com" className="text-primary hover:underline">
+                            contact@imadeanapp.com
+                          </a>
+                          .
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -491,6 +549,7 @@ const Settings = () => {
                     <Badge variant="secondary" className="mt-3 text-[10px] font-bold uppercase tracking-wider">Coming Soon</Badge>
                   </div>
                 )}
+
               </div>
             </div>
           </div>
