@@ -24,6 +24,7 @@ import {
   Trash2,
   FileText,
   ExternalLink,
+  Mail,
 } from "lucide-react";
 import {
   DropdownMenu,
