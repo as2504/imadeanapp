@@ -206,6 +206,15 @@ const Settings = () => {
                           )}
                         </CommandItem>
                       ))}
+                      {/* Support in mobile dropdown */}
+                      <CommandItem
+                        value="Support"
+                        onSelect={() => window.location.href = "mailto:contact@imadeanapp.com"}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                      >
+                        <Mail size={16} className="text-muted-foreground" />
+                        <span className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Support</span>
+                      </CommandItem>
                       {/* Log out in mobile dropdown */}
                       <CommandItem
                         value="Log out"
