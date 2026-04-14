@@ -45,7 +45,15 @@ Deno.serve(async (req) => {
     const { key } = await req.json();
     const adminKey = Deno.env.get("ADMIN_SECRET_KEY");
 
-    if (!adminKey || key !== adminKey) {
+    if (!adminKey) {
+      console.error("DEBUG: ADMIN_SECRET_KEY is NOT set in the environment.");
+      return new Response(JSON.stringify({ error: "Configuration Error: Secret missing" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    if (key !== adminKey) {
+      console.warn("DEBUG: Key mismatch. Provided key does not match ADMIN_SECRET_KEY.");
       return new Response(JSON.stringify({ error: "Invalid key" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
