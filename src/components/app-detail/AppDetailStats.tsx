@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Tag, ShieldCheck, Zap, ChevronDown } from "lucide-react";
+import { Tag, ShieldCheck, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -49,7 +49,6 @@ const AppDetailStats = ({ tags, platforms, pricing }: AppDetailStatsProps) => {
 
         {/* Platforms Group */}
         <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-surface border border-border/40 text-muted-foreground/60 text-[10px] font-black uppercase tracking-[0.15em] shadow-sm">
-          <Zap size={14} className="text-primary shrink-0" />
           <div className="flex items-center gap-3">
             {platforms.map(p => {
               const config = platformConfig[p];

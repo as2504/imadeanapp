@@ -452,7 +452,7 @@ const PublishForm = () => {
                         placeholder="Short, punchy tagline..."
                         value={formData.caption}
                         onChange={e => {
-                          setFormData({ ...formData, caption: e.target.value.slice(0, 80) });
+                          setFormData({ ...formData, caption: e.target.value.slice(0, 150) });
                           if (errors.caption) setErrors(prev => ({ ...prev, caption: "" }));
                         }}
                         className={cn(
@@ -460,7 +460,7 @@ const PublishForm = () => {
                           errors.caption && "border-destructive focus:ring-destructive/20"
                         )}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground/40">{formData.caption.length}/80</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground/40">{formData.caption.length}/150</span>
                     </div>
                     {errors.caption && <p className="text-[9px] text-destructive font-bold ml-1">{errors.caption}</p>}
                   </div>
@@ -523,6 +523,7 @@ const PublishForm = () => {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-0.5">Gallery</label>
+                    <p className="text-[9px] text-muted-foreground/60 ml-0.5">These images will be shown in the gallery section of app details after publishing.</p>
                     <div className="flex flex-wrap gap-2.5">
                       {screenshotPreviews.map((src, i) => (
                         <div key={i} className="relative w-40 aspect-video rounded-lg overflow-hidden border border-border/20 shadow-sm group">
