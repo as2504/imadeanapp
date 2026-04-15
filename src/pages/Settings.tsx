@@ -212,6 +212,26 @@ const Settings = () => {
                           )}
                         </CommandItem>
                       ))}
+                      {/* Legal in mobile dropdown */}
+                      <CommandItem
+                        value="Legal"
+                        onSelect={() => {
+                          setActiveSection(legalSection.id);
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                      >
+                        <FileText size={16} className={cn(activeSection === legalSection.id ? "text-primary" : "text-muted-foreground")} />
+                        <span className={cn(
+                          "text-sm font-bold uppercase tracking-tight",
+                          activeSection === legalSection.id ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          Legal
+                        </span>
+                        {activeSection === legalSection.id && (
+                          <Check className="ml-auto h-4 w-4 text-primary" />
+                        )}
+                      </CommandItem>
                       {/* Support in mobile dropdown */}
                       <CommandItem
                         value="Support"
@@ -272,8 +292,20 @@ const Settings = () => {
                 </button>
               ))}
 
-              {/* Support */}
-              <div className="mt-4 pt-4 border-t border-border/40">
+              {/* Legal & Support */}
+              <div className="mt-4 pt-4 border-t border-border/40 space-y-1">
+                <button
+                  onClick={() => setActiveSection(legalSection.id)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap w-full",
+                    activeSection === legalSection.id
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  <FileText size={16} className={cn(activeSection === legalSection.id ? "text-primary" : "text-muted-foreground")} />
+                  Legal
+                </button>
                 <button
                   onClick={() => setActiveSection(supportSection.id)}
                   className={cn(
