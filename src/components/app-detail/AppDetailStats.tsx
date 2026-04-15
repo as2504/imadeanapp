@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Tag, Globe, Smartphone, Monitor, ShieldCheck, Zap } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Tag, ShieldCheck, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -22,6 +22,16 @@ const platformConfig: Record<string, { label: string; icon: string }> = {
 
 const AppDetailStats = ({ tags, platforms, pricing }: AppDetailStatsProps) => {
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
+  const [showAllTags, setShowAllTags] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const tagsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = tagsRef.current;
+    if (el) {
+      setIsOverflowing(el.scrollHeight > el.clientHeight + 2);
+    }
+  }, [tags]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -39,7 +49,6 @@ const AppDetailStats = ({ tags, platforms, pricing }: AppDetailStatsProps) => {
 
         {/* Platforms Group */}
         <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-surface border border-border/40 text-muted-foreground/60 text-[10px] font-black uppercase tracking-[0.15em] shadow-sm">
-          <Zap size={14} className="text-primary shrink-0" />
           <div className="flex items-center gap-3">
             {platforms.map(p => {
               const config = platformConfig[p];
@@ -66,17 +75,36 @@ const AppDetailStats = ({ tags, platforms, pricing }: AppDetailStatsProps) => {
             })}
           </div>
         </div>
-
-        {/* Tags Group */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {tags.map(tag => (
-            <div key={tag} className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-surface border border-border/40 text-muted-foreground/60 text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap hover:border-primary/20 hover:text-primary transition-all shadow-sm">
-              <Tag size={12} className="shrink-0" />
-              {tag}
-            </div>
-          ))}
-        </div>
       </div>
+
+      {/* Tags Group */}
+      {tags.length > 0 && (
+        <div className="mt-3">
+          <div
+            ref={tagsRef}
+            className={cn(
+              "flex flex-wrap items-center gap-2 transition-all",
+              !showAllTags && "max-h-[36px] overflow-hidden"
+            )}
+          >
+            {tags.map(tag => (
+              <div key={tag} className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-surface border border-border/40 text-muted-foreground/60 text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap hover:border-primary/20 hover:text-primary transition-all shadow-sm">
+                <Tag size={12} className="shrink-0" />
+                {tag}
+              </div>
+            ))}
+          </div>
+          {(isOverflowing || showAllTags) && (
+            <button
+              onClick={() => setShowAllTags(!showAllTags)}
+              className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              {showAllTags ? "See less" : "See more"}
+              <ChevronDown size={12} className={cn("transition-transform", showAllTags && "rotate-180")} />
+            </button>
+          )}
+        </div>
+      )}
     </TooltipProvider>
   );
 };

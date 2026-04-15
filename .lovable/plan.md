@@ -1,60 +1,59 @@
 
 
-# Plan: Security Hardening, Support Option, Scraping Prevention
+# Plan: Caption Length, Platform Icon Cleanup, Gallery Note, Settings Reorder
 
-## 1. Database migration — Tighten RLS policies
+## 1. Caption character limit → 150
 
-**New migration file** to:
+**File:** `src/components/publish/PublishForm.tsx`
+- Line 455: Change `.slice(0, 80)` to `.slice(0, 150)`
+- Line 463: Change `{formData.caption.length}/80` to `{formData.caption.length}/150`
 
-- **profiles**: Create a `public_profiles` view excluding `date_of_birth` and `gender`. Drop the existing "Profiles are viewable by everyone" SELECT policy. Add two new policies: one for public SELECT on the view (via a security definer function), and one allowing authenticated users to SELECT their own full row (`auth.uid() = user_id`).
-- **app_clicks**: Drop the public SELECT policy, replace with authenticated-only SELECT.
-- **app_tries**: Drop the public SELECT policy, replace with authenticated-only SELECT.
-- **profile_views**: Drop the public SELECT policy, replace with owner-only SELECT (`user_id = auth.uid()`).
+## 2. Remove Zap icon from platform chips
 
-## 2. Update `robots.txt`
+**File:** `src/components/app-detail/AppDetailStats.tsx`
+- Line 52: Remove the `<Zap size={14} className="text-primary shrink-0" />` element from the platforms group. The platform icons (web/android/iOS) are self-explanatory.
+- Remove `Zap` from the lucide imports (line 3).
 
-Block non-search-engine bots from API/rest paths:
+## 3. Add gallery note in publish form
 
-```text
-User-agent: Googlebot
-Allow: /
+**File:** `src/components/publish/PublishForm.tsx`
+- Below the "Gallery" label (line 525), add a helper text: `<p className="text-[9px] text-muted-foreground/60 ml-0.5">These images will be shown in the gallery section of app details after publishing.</p>`
 
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
-User-agent: *
-Disallow: /rest/
-Disallow: /auth/
-Disallow: /storage/
-Allow: /
-```
-
-## 3. Add Support option in Settings
+## 4. Reorder Settings sidebar: Legal above Support
 
 **File:** `src/pages/Settings.tsx`
 
-- Add `Mail` to lucide imports.
-- Add a "Support" section entry: `{ id: "support", label: "Support", icon: Mail, badge: null }`.
-- In the desktop sidebar, place a "Support" button between the sections list and the `border-t` logout divider (line ~247).
-- In the mobile dropdown, add a "Support" `CommandItem` before the "Log out" item.
-- Add a "Support" content section that renders: "Need help? Drop us an email at contact@imadeanapp.com" with a `mailto:` link.
+Current desktop sidebar order:
+```
+[sections: General, App Feedback, App Analytics, Legal]
+--- border ---
+Support
+--- border ---
+Log out
+```
 
-## 4. Enable leaked password protection
+Target order:
+```
+[sections: General, App Feedback, App Analytics]
+--- border ---
+Legal
+Support
+--- border ---
+Log out
+```
 
-Use the `configure_auth` tool with `password_hibp_enabled: true`.
+Changes:
+- Remove `legal` from the `sections` array (line 133)
+- In the desktop sidebar (line ~273), add a Legal button in the same `border-t` group as Support — Legal first, then Support
+- In the mobile dropdown, add Legal as a standalone item before Support (similar pattern)
+- Define `legalSection` similar to `supportSection`
+- Update `activeSectionData` to also check for `legalSection`
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `supabase/migrations/new` | Tighten RLS on profiles, app_clicks, app_tries, profile_views |
-| `public/robots.txt` | Block scraper bots from API paths |
-| `src/pages/Settings.tsx` | Add Support section with mailto link |
-| Auth config | Enable HIBP password check |
+| `src/components/publish/PublishForm.tsx` | Caption limit 80→150, add gallery helper note |
+| `src/components/app-detail/AppDetailStats.tsx` | Remove Zap icon from platforms |
+| `src/pages/Settings.tsx` | Move Legal into same group as Support, above it |
 
