@@ -126,16 +126,18 @@ const Settings = () => {
 
   const supportSection = { id: "support", label: "Support", icon: Mail, badge: null };
 
+  const legalSection = { id: "legal", label: "Legal", icon: FileText, badge: null };
+
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
     { id: "reviews", label: "App Analytics", icon: BarChart3, badge: "Beta" },
-    { id: "legal", label: "Legal", icon: FileText, badge: null },
   ];
 
   const activeSectionData =
     sections.find((s) => s.id === activeSection) ||
-    (activeSection === supportSection.id ? supportSection : sections[0]);
+    (activeSection === supportSection.id ? supportSection : 
+     activeSection === legalSection.id ? legalSection : sections[0]);
 
   return (
     <div className="min-h-screen bg-background">
