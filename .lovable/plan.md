@@ -1,40 +1,59 @@
 
 
-# Plan: Fix Screenshot Duplication & Tags Overflow
+# Plan: Caption Length, Platform Icon Cleanup, Gallery Note, Settings Reorder
 
-## 1. Fix screenshot duplication bug (CRITICAL)
+## 1. Caption character limit → 150
 
 **File:** `src/components/publish/PublishForm.tsx`
+- Line 455: Change `.slice(0, 80)` to `.slice(0, 150)`
+- Line 463: Change `{formData.caption.length}/80` to `{formData.caption.length}/150`
 
-**Root cause:** When removing a screenshot preview (line 523), only `screenshotPreviews` is updated — `screenshotFiles` is left unchanged. This causes removed screenshots to still get uploaded on submit, and the merge logic on line 296-297 can produce duplicates.
-
-**Fix:**
-- On screenshot removal (line 523), also remove the corresponding entry from `screenshotFiles`. Need to track which previews are blob URLs (new files) vs existing URLs. When removing a blob preview at index `i`, compute the file index and remove from `screenshotFiles` too.
-- Simplify the submit logic: instead of merging `existingUrls` + `screenshotUrls`, build `finalScreenshots` directly from `screenshotPreviews` — replace each blob URL with its uploaded counterpart, keep existing URLs as-is.
-- Reset the file input after each selection to prevent stale `onChange` events.
-
-**Concrete changes:**
-- Line 523: Update remove handler to also call `setScreenshotFiles(prev => prev.filter((_, idx) => idx !== fileIndex))` where `fileIndex` is calculated based on how many blob URLs precede index `i`.
-- Lines 284-297: Rewrite upload logic — iterate `screenshotPreviews`, upload only blob entries from matching `screenshotFiles`, keep non-blob URLs as-is. Result is exactly the screenshots the user sees.
-- Line 248: After setting files, reset the input: `e.target.value = ''`.
-
-## 2. Tags overflow with "See more/less" toggle
+## 2. Remove Zap icon from platform chips
 
 **File:** `src/components/app-detail/AppDetailStats.tsx`
+- Line 52: Remove the `<Zap size={14} className="text-primary shrink-0" />` element from the platforms group. The platform icons (web/android/iOS) are self-explanatory.
+- Remove `Zap` from the lucide imports (line 3).
 
-**Problem:** All tags render in a single row with `overflow-x-auto`, which on desktop pushes the Related Apps sidebar off-screen when there are many tags.
+## 3. Add gallery note in publish form
 
-**Fix:**
-- Wrap tags in a container with `max-h` and `overflow-hidden` when collapsed (show ~1 row).
-- Add a `showAllTags` state toggle.
-- When collapsed, only tags that fit in one line are visible (use `flex-wrap` + fixed height ~36px for one row).
-- Show a "See more" button below tags when there are more than fit in one row. When expanded, show all tags wrapped. Button changes to "See less".
-- Use a ref + `useEffect` to detect if tags overflow (scrollHeight > clientHeight) to conditionally show the toggle.
+**File:** `src/components/publish/PublishForm.tsx`
+- Below the "Gallery" label (line 525), add a helper text: `<p className="text-[9px] text-muted-foreground/60 ml-0.5">These images will be shown in the gallery section of app details after publishing.</p>`
+
+## 4. Reorder Settings sidebar: Legal above Support
+
+**File:** `src/pages/Settings.tsx`
+
+Current desktop sidebar order:
+```
+[sections: General, App Feedback, App Analytics, Legal]
+--- border ---
+Support
+--- border ---
+Log out
+```
+
+Target order:
+```
+[sections: General, App Feedback, App Analytics]
+--- border ---
+Legal
+Support
+--- border ---
+Log out
+```
+
+Changes:
+- Remove `legal` from the `sections` array (line 133)
+- In the desktop sidebar (line ~273), add a Legal button in the same `border-t` group as Support — Legal first, then Support
+- In the mobile dropdown, add Legal as a standalone item before Support (similar pattern)
+- Define `legalSection` similar to `supportSection`
+- Update `activeSectionData` to also check for `legalSection`
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `src/components/publish/PublishForm.tsx` | Fix screenshot removal sync, rewrite upload merge logic, reset input |
-| `src/components/app-detail/AppDetailStats.tsx` | Add collapsible tags with "See more/less" toggle |
+| `src/components/publish/PublishForm.tsx` | Caption limit 80→150, add gallery helper note |
+| `src/components/app-detail/AppDetailStats.tsx` | Remove Zap icon from platforms |
+| `src/pages/Settings.tsx` | Move Legal into same group as Support, above it |
 
