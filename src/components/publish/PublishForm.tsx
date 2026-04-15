@@ -452,7 +452,7 @@ const PublishForm = () => {
                         placeholder="Short, punchy tagline..."
                         value={formData.caption}
                         onChange={e => {
-                          setFormData({ ...formData, caption: e.target.value.slice(0, 80) });
+                          setFormData({ ...formData, caption: e.target.value.slice(0, 150) });
                           if (errors.caption) setErrors(prev => ({ ...prev, caption: "" }));
                         }}
                         className={cn(
