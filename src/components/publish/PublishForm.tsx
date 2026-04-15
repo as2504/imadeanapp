@@ -246,6 +246,7 @@ const PublishForm = () => {
     const toAdd = files.slice(0, remaining);
     setScreenshotFiles(prev => [...prev, ...toAdd]);
     setScreenshotPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
+    e.target.value = '';
   };
 
   const togglePlatform = (p: string) => {
@@ -281,20 +282,27 @@ const PublishForm = () => {
         iconUrl = publicUrl;
       }
 
-      // Upload screenshots
-      const screenshotUrls: string[] = [];
-      for (let i = 0; i < screenshotFiles.length; i++) {
-        const file = screenshotFiles[i];
-        const ext = file.name.split('.').pop();
-        const path = `screenshots/${user.id}/${Date.now()}_${i}.${ext}`;
-        const { error: ssErr } = await supabase.storage.from('app-assets').upload(path, file, { upsert: true });
-        if (ssErr) throw ssErr;
-        const { data: { publicUrl } } = supabase.storage.from('app-assets').getPublicUrl(path);
-        screenshotUrls.push(publicUrl);
+      // Upload screenshots — iterate previews to maintain exact order and count
+      let fileIdx = 0;
+      const finalScreenshots: string[] = [];
+      for (let i = 0; i < screenshotPreviews.length; i++) {
+        const preview = screenshotPreviews[i];
+        if (preview.startsWith('blob:')) {
+          // Upload the corresponding file
+          const file = screenshotFiles[fileIdx];
+          fileIdx++;
+          if (!file) continue;
+          const ext = file.name.split('.').pop();
+          const path = `screenshots/${user.id}/${Date.now()}_${i}.${ext}`;
+          const { error: ssErr } = await supabase.storage.from('app-assets').upload(path, file, { upsert: true });
+          if (ssErr) throw ssErr;
+          const { data: { publicUrl } } = supabase.storage.from('app-assets').getPublicUrl(path);
+          finalScreenshots.push(publicUrl);
+        } else {
+          // Keep existing URL as-is
+          finalScreenshots.push(preview);
+        }
       }
-      // Keep any existing URLs (from edit mode) that aren't blob URLs
-      const existingUrls = screenshotPreviews.filter(u => !u.startsWith('blob:'));
-      const finalScreenshots = [...existingUrls, ...screenshotUrls];
 
       const appData = {
         app_name: formData.appName,
@@ -520,7 +528,14 @@ const PublishForm = () => {
                         <div key={i} className="relative w-40 aspect-video rounded-lg overflow-hidden border border-border/20 shadow-sm group">
                           <img src={src} className="w-full h-full object-cover" />
                           <button 
-                            onClick={() => setScreenshotPreviews(prev => prev.filter((_, idx) => idx !== i))}
+                            onClick={() => {
+                              // If removing a blob URL, also remove the corresponding file
+                              if (screenshotPreviews[i]?.startsWith('blob:')) {
+                                const fileIndex = screenshotPreviews.slice(0, i).filter(p => p.startsWith('blob:')).length;
+                                setScreenshotFiles(prev => prev.filter((_, idx) => idx !== fileIndex));
+                              }
+                              setScreenshotPreviews(prev => prev.filter((_, idx) => idx !== i));
+                            }}
                             className="absolute top-1 right-1 p-0.5 bg-background/80 backdrop-blur-md text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-all"
                           >
                             <X size={10} />
