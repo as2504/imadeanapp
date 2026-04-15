@@ -1,60 +1,40 @@
 
 
-# Plan: Security Hardening, Support Option, Scraping Prevention
+# Plan: Fix Screenshot Duplication & Tags Overflow
 
-## 1. Database migration — Tighten RLS policies
+## 1. Fix screenshot duplication bug (CRITICAL)
 
-**New migration file** to:
+**File:** `src/components/publish/PublishForm.tsx`
 
-- **profiles**: Create a `public_profiles` view excluding `date_of_birth` and `gender`. Drop the existing "Profiles are viewable by everyone" SELECT policy. Add two new policies: one for public SELECT on the view (via a security definer function), and one allowing authenticated users to SELECT their own full row (`auth.uid() = user_id`).
-- **app_clicks**: Drop the public SELECT policy, replace with authenticated-only SELECT.
-- **app_tries**: Drop the public SELECT policy, replace with authenticated-only SELECT.
-- **profile_views**: Drop the public SELECT policy, replace with owner-only SELECT (`user_id = auth.uid()`).
+**Root cause:** When removing a screenshot preview (line 523), only `screenshotPreviews` is updated — `screenshotFiles` is left unchanged. This causes removed screenshots to still get uploaded on submit, and the merge logic on line 296-297 can produce duplicates.
 
-## 2. Update `robots.txt`
+**Fix:**
+- On screenshot removal (line 523), also remove the corresponding entry from `screenshotFiles`. Need to track which previews are blob URLs (new files) vs existing URLs. When removing a blob preview at index `i`, compute the file index and remove from `screenshotFiles` too.
+- Simplify the submit logic: instead of merging `existingUrls` + `screenshotUrls`, build `finalScreenshots` directly from `screenshotPreviews` — replace each blob URL with its uploaded counterpart, keep existing URLs as-is.
+- Reset the file input after each selection to prevent stale `onChange` events.
 
-Block non-search-engine bots from API/rest paths:
+**Concrete changes:**
+- Line 523: Update remove handler to also call `setScreenshotFiles(prev => prev.filter((_, idx) => idx !== fileIndex))` where `fileIndex` is calculated based on how many blob URLs precede index `i`.
+- Lines 284-297: Rewrite upload logic — iterate `screenshotPreviews`, upload only blob entries from matching `screenshotFiles`, keep non-blob URLs as-is. Result is exactly the screenshots the user sees.
+- Line 248: After setting files, reset the input: `e.target.value = ''`.
 
-```text
-User-agent: Googlebot
-Allow: /
+## 2. Tags overflow with "See more/less" toggle
 
-User-agent: Bingbot
-Allow: /
+**File:** `src/components/app-detail/AppDetailStats.tsx`
 
-User-agent: Twitterbot
-Allow: /
+**Problem:** All tags render in a single row with `overflow-x-auto`, which on desktop pushes the Related Apps sidebar off-screen when there are many tags.
 
-User-agent: facebookexternalhit
-Allow: /
-
-User-agent: *
-Disallow: /rest/
-Disallow: /auth/
-Disallow: /storage/
-Allow: /
-```
-
-## 3. Add Support option in Settings
-
-**File:** `src/pages/Settings.tsx`
-
-- Add `Mail` to lucide imports.
-- Add a "Support" section entry: `{ id: "support", label: "Support", icon: Mail, badge: null }`.
-- In the desktop sidebar, place a "Support" button between the sections list and the `border-t` logout divider (line ~247).
-- In the mobile dropdown, add a "Support" `CommandItem` before the "Log out" item.
-- Add a "Support" content section that renders: "Need help? Drop us an email at contact@imadeanapp.com" with a `mailto:` link.
-
-## 4. Enable leaked password protection
-
-Use the `configure_auth` tool with `password_hibp_enabled: true`.
+**Fix:**
+- Wrap tags in a container with `max-h` and `overflow-hidden` when collapsed (show ~1 row).
+- Add a `showAllTags` state toggle.
+- When collapsed, only tags that fit in one line are visible (use `flex-wrap` + fixed height ~36px for one row).
+- Show a "See more" button below tags when there are more than fit in one row. When expanded, show all tags wrapped. Button changes to "See less".
+- Use a ref + `useEffect` to detect if tags overflow (scrollHeight > clientHeight) to conditionally show the toggle.
 
 ## Files Summary
 
 | File | Change |
 |---|---|
-| `supabase/migrations/new` | Tighten RLS on profiles, app_clicks, app_tries, profile_views |
-| `public/robots.txt` | Block scraper bots from API paths |
-| `src/pages/Settings.tsx` | Add Support section with mailto link |
-| Auth config | Enable HIBP password check |
+| `src/components/publish/PublishForm.tsx` | Fix screenshot removal sync, rewrite upload merge logic, reset input |
+| `src/components/app-detail/AppDetailStats.tsx` | Add collapsible tags with "See more/less" toggle |
 
