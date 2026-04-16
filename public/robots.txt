@@ -11,7 +11,11 @@ User-agent: facebookexternalhit
 Allow: /
 
 User-agent: *
-Disallow: /rest/
-Disallow: /auth/
-Disallow: /storage/
 Allow: /
+Disallow: /rest/
+Disallow: /storage/
+Disallow: /auth/callback
+
+Sitemap: https://imadeanapp.com/sitemap.xml
+Sitemap: https://imadeanapp.com/sitemap-static.xml
+Sitemap: https://oovtfddjupyxawzqwqnu.supabase.co/functions/v1/sitemap

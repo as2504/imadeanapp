@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import PublicNavbar from "@/components/layout/PublicNavbar";
 import AppDetailHeader from "@/components/app-detail/AppDetailHeader";
@@ -154,8 +155,38 @@ const AppDetail = () => {
     { type: 'ios', url: appData.appStoreUrl },
   ].filter(link => !!link.url);
 
+  const canonicalUrl = `https://imadeanapp.com/app/${appData.slug || appData.id}`;
+  const seoDescription = (appData.description || `${appData.name} on imadeanapp`).replace(/[#*_`>\[\]]/g, "").slice(0, 160);
+  const appJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": appData.name,
+    "description": seoDescription,
+    "image": appData.icon,
+    "url": canonicalUrl,
+    "applicationCategory": "WebApplication",
+    "operatingSystem": (appData.platforms || []).join(", "),
+    "author": { "@type": "Person", "name": appData.publisher },
+    ...(totalRatings > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": avgRating,
+        "ratingCount": totalRatings,
+      },
+    }),
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${appData.name} – imadeanapp`}
+        description={seoDescription}
+        canonical={canonicalUrl}
+        image={appData.icon}
+        type="article"
+        jsonLd={appJsonLd}
+      />
       {isAuthenticated ? <FeedNavbar /> : <PublicNavbar />}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-16">
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
