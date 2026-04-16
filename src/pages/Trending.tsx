@@ -144,6 +144,11 @@ const Trending = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Trending Apps – imadeanapp (I Made An App)"
+        description="Discover the top trending vibe-coded and AI-crafted apps on imadeanapp. Updated daily based on real engagement."
+        canonical="https://imadeanapp.com/trending"
+      />
       <FeedNavbar />
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<TrendingSidebar />}>

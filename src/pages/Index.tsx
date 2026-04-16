@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import SEO from "@/components/SEO";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
@@ -32,6 +33,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEO
+        title="imadeanapp (I Made An App) – Discover & Publish AI-Crafted Apps"
+        description="imadeanapp (I Made An App) is a curated platform to discover, publish, and showcase vibe-coded and AI-crafted applications. Build your portfolio, gain followers, and get structured feedback."
+        canonical="https://imadeanapp.com/"
+      />
       <Navbar />
       <HeroSection />
       <FeaturesSection />
