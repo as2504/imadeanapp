@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import SEO from "@/components/SEO";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import PublicNavbar from "@/components/layout/PublicNavbar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
@@ -49,6 +50,12 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`Profile – imadeanapp`}
+        description="Creator profile on imadeanapp (I Made An App). Discover their published apps, activity, and portfolio."
+        canonical={typeof window !== "undefined" ? window.location.href : undefined}
+        type="profile"
+      />
       {isAuthenticated ? <FeedNavbar /> : <PublicNavbar />}
       <main className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-20 pb-20">
         <ProfileHeader profileUserId={targetUserId} />

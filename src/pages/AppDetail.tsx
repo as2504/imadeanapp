@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import PublicNavbar from "@/components/layout/PublicNavbar";
 import AppDetailHeader from "@/components/app-detail/AppDetailHeader";
