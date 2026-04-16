@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import SEO from "@/components/SEO";
 import FeedNavbar from "@/components/feed/FeedNavbar";
 import TrendingFilters from "@/components/trending/TrendingFilters";
 import type { TrendingFilterState } from "@/components/trending/TrendingFilters";
