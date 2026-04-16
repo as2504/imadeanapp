@@ -3,26 +3,86 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>imadeanapp – Discover & Publish AI-Crafted Apps</title>
-    <meta name="description" content="A curated platform to discover, publish, and showcase AI-crafted applications. Build your portfolio, gain followers, and get structured feedback." />
+    <title>imadeanapp (I Made An App) – Discover & Publish AI-Crafted Apps</title>
+    <meta name="description" content="imadeanapp (I Made An App) is a curated platform to discover, publish, and showcase vibe-coded and AI-crafted applications. Build your portfolio, gain followers, and get structured feedback." />
+    <meta name="keywords" content="imadeanapp, I Made An App, vibe coded apps, AI apps, indie apps, app discovery, publish app, app portfolio" />
     <meta name="author" content="imadeanapp" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#2563eb" />
+    <link rel="canonical" href="https://imadeanapp.com/" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/logos/IMAAx192x192b.png" />
 
-    <meta property="og:title" content="imadeanapp – Discover & Publish AI-Crafted Apps" />
-    <meta property="og:description" content="A curated platform to discover, publish, and showcase AI-crafted applications." />
+    <meta property="og:site_name" content="imadeanapp" />
+    <meta property="og:title" content="imadeanapp (I Made An App) – Discover & Publish AI-Crafted Apps" />
+    <meta property="og:description" content="A curated platform to discover, publish, and showcase vibe-coded and AI-crafted applications." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://imadeanapp.com" />
     <meta property="og:image" content="https://imadeanapp.com/logos/IMAAx512x512b.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@IMadeAnApp" />
+    <meta name="twitter:title" content="imadeanapp (I Made An App) – Discover & Publish AI-Crafted Apps" />
+    <meta name="twitter:description" content="A curated platform to discover, publish, and showcase vibe-coded and AI-crafted applications." />
     <meta name="twitter:image" content="https://imadeanapp.com/logos/IMAAx512x512b.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "I Made An App",
+      "alternateName": ["imadeanapp", "IMAA"],
+      "url": "https://imadeanapp.com",
+      "description": "A curated platform to discover, publish, and showcase vibe-coded and AI-crafted applications.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://imadeanapp.com/trending?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "imadeanapp",
+      "alternateName": "I Made An App",
+      "url": "https://imadeanapp.com",
+      "logo": "https://imadeanapp.com/logos/IMAAx512x512b.png",
+      "email": "contact@imadeanapp.com",
+      "description": "Discover, publish, and showcase vibe-coded and AI-crafted applications.",
+      "sameAs": [
+        "https://twitter.com/IMadeAnApp",
+        "https://x.com/IMadeAnApp"
+      ]
+    }
+    </script>
+
     <link rel="stylesheet" href="/src/index.css" />
   </head>
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="max-width: 760px; margin: 40px auto; padding: 24px; font-family: -apple-system, system-ui, sans-serif; line-height: 1.6;">
+        <h1>imadeanapp – I Made An App</h1>
+        <p><strong>imadeanapp</strong> (also known as <strong>I Made An App</strong> or <strong>IMAA</strong>) is a curated discovery platform for vibe-coded and AI-crafted applications. Builders publish their apps, collect structured feedback, build a following, and showcase a portfolio.</p>
+        <h2>Explore</h2>
+        <ul>
+          <li><a href="/">Home – Discover apps</a></li>
+          <li><a href="/trending">Trending apps</a></li>
+          <li><a href="/auth">Sign in or sign up</a></li>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms &amp; Conditions</a></li>
+        </ul>
+        <p>Contact: <a href="mailto:contact@imadeanapp.com">contact@imadeanapp.com</a></p>
+        <p>Please enable JavaScript to use the full imadeanapp experience.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
