@@ -75,7 +75,7 @@ const ProfileHeader = ({ profileUserId }: ProfileHeaderProps) => {
             ) : (
               <>
                 <h1 className="text-xl font-semibold text-foreground">{displayName}</h1>
-                <span className="text-xs text-primary flex items-center gap-1"><CheckCircle2 size={12} /> Verified</span>
+                {profile?.is_verified && (<span className="text-xs text-primary flex items-center gap-1" title="Verified builder"><CheckCircle2 size={12} /> Verified</span>)}
               </>
             )}
           </div>

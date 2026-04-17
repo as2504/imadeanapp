@@ -70,7 +70,7 @@ const AppCard = ({ post, actions, onClick }: AppCardProps) => {
           <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
             {post.appName}
           </h3>
-          {post.verified && <CheckCircle2 size={12} className="text-primary shrink-0" />}
+          {post.verified && <CheckCircle2 size={12} className="text-primary shrink-0" aria-label="Verified builder" />}
         </div>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{post.caption}</p>
         <div className="flex items-center gap-2 mt-1">
