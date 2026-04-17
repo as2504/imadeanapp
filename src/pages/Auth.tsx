@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,41 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Capture ?ref=CODE on mount and persist across signup flow
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const ref = url.searchParams.get("ref");
+    if (ref) {
+      localStorage.setItem("imaa_referral_code", ref.toUpperCase().slice(0, 8));
+      // If a ref code is present, default to sign up
+      setIsSignUp(true);
+    }
+  }, []);
+
+  const attachReferral = async (newUserId: string) => {
+    const code = localStorage.getItem("imaa_referral_code");
+    if (!code) return;
+    try {
+      const { data: refProfile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("referral_code", code)
+        .maybeSingle();
+      if (refProfile && refProfile.user_id !== newUserId) {
+        await supabase.from("referrals").insert({
+          referrer_id: refProfile.user_id,
+          referred_user_id: newUserId,
+          referral_code: code,
+          status: "signed_up",
+        });
+      }
+    } catch (e) {
+      console.warn("referral attach failed", e);
+    } finally {
+      localStorage.removeItem("imaa_referral_code");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -31,7 +66,7 @@ const Auth = () => {
       if (isSignUp) {
         if (!agreedToTerms) throw new Error("You must agree to the Terms & Conditions and Privacy Policy");
         await signUp(email, password);
-        // Record consent
+        // Record consent + referral
         const { data: { user: newUser } } = await supabase.auth.getUser();
         if (newUser) {
           await supabase.from("user_consents").insert({
@@ -39,6 +74,7 @@ const Auth = () => {
             terms_version: "1.2",
             privacy_version: "1.2",
           });
+          await attachReferral(newUser.id);
         }
       } else {
         await signIn(email, password);

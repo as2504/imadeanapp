@@ -365,6 +365,7 @@ export type Database = {
           github_url: string | null
           id: string
           instagram_url: string | null
+          is_verified: boolean
           leetcode_url: string | null
           linkedin_url: string | null
           location: string | null
@@ -374,6 +375,8 @@ export type Database = {
           preferred_platforms: string[] | null
           primary_skill: string | null
           professional_title: string | null
+          referral_code: string | null
+          referrals_count: number
           secondary_tools: string[] | null
           social_links: Json | null
           twitter_url: string | null
@@ -396,6 +399,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           instagram_url?: string | null
+          is_verified?: boolean
           leetcode_url?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -405,6 +409,8 @@ export type Database = {
           preferred_platforms?: string[] | null
           primary_skill?: string | null
           professional_title?: string | null
+          referral_code?: string | null
+          referrals_count?: number
           secondary_tools?: string[] | null
           social_links?: Json | null
           twitter_url?: string | null
@@ -427,6 +433,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           instagram_url?: string | null
+          is_verified?: boolean
           leetcode_url?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -436,6 +443,8 @@ export type Database = {
           preferred_platforms?: string[] | null
           primary_skill?: string | null
           professional_title?: string | null
+          referral_code?: string | null
+          referrals_count?: number
           secondary_tools?: string[] | null
           social_links?: Json | null
           twitter_url?: string | null
@@ -482,6 +491,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          qualified_at: string | null
+          referral_code: string
+          referred_user_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          qualified_at?: string | null
+          referral_code: string
+          referred_user_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          qualified_at?: string | null
+          referral_code?: string
+          referred_user_id?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
       }
       saved_apps: {
         Row: {
@@ -630,6 +669,7 @@ export type Database = {
       }
     }
     Functions: {
+      generate_referral_code: { Args: never; Returns: string }
       get_trending_apps: {
         Args: { max_results?: number; time_filter?: string }
         Returns: {

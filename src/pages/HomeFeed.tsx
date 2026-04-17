@@ -10,6 +10,7 @@ import AppCard from "@/components/feed/AppCard";
 import type { AppPost } from "@/components/feed/AppCard";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
 import EmailVerificationBanner from "@/components/feed/EmailVerificationBanner";
+import ReferralBanner from "@/components/feed/ReferralBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTimeAgo } from "@/lib/utils";
@@ -25,7 +26,7 @@ const mapApps = (apps: any[], profileMap: Map<string, any>, ratingsMap: Map<stri
     return {
       id: app.id, slug: app.slug || undefined, appName: app.app_name,
       appIcon: app.app_icon_url || "📱", publisherName: profile?.display_name || profile?.username || "Unknown",
-      publisherAvatar: (profile?.display_name || "U").charAt(0), verified: false,
+      publisherAvatar: (profile?.display_name || "U").charAt(0), verified: !!profile?.is_verified,
       timeAgo: getTimeAgo(app.created_at), caption: app.caption || app.tagline || "",
       tags: app.tags || [], platforms: (app.platforms || []) as ("web" | "android" | "ios")[],
       techStack: app.tech_stack || [], likes: app.likes_count || 0, comments: app.comments_count || 0,
@@ -50,7 +51,7 @@ async function batchFetchRatings(appIds: string[]): Promise<Map<string, number>>
 
 async function fetchProfiles(userIds: string[]) {
   if (userIds.length === 0) return new Map();
-  const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds);
+  const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username, is_verified").in("user_id", userIds);
   return new Map((profiles || []).map(p => [p.user_id, p]));
 }
 
@@ -171,6 +172,7 @@ const HomeFeed = () => {
       <FeedNavbar />
       <EmailVerificationBanner />
       <UsernamePrompt />
+      <ReferralBanner />
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<FeedSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (

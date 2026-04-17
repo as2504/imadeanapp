@@ -25,7 +25,9 @@ import {
   FileText,
   ExternalLink,
   Mail,
+  Gift,
 } from "lucide-react";
+import ReferralSection from "@/components/settings/ReferralSection";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -130,6 +132,7 @@ const Settings = () => {
 
   const sections = [
     { id: "general", label: "General", icon: SettingsIcon, badge: null },
+    { id: "referrals", label: "Invite & Earn", icon: Gift, badge: "New" },
     { id: "feedback", label: "App Feedback", icon: MessageSquare, badge: "Beta" },
     { id: "reviews", label: "App Analytics", icon: BarChart3, badge: "Beta" },
   ];
@@ -449,6 +452,8 @@ const Settings = () => {
                     </div>
                   </div>
                 )}
+
+                {activeSection === "referrals" && <ReferralSection />}
 
                 {activeSection === supportSection.id && (
                   <div className="space-y-4">

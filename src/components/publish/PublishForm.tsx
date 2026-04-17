@@ -340,6 +340,12 @@ const PublishForm = () => {
         await supabase.from("apps").insert(appData);
       }
 
+      // Fire-and-forget: pre-generate OG share card
+      try {
+        const slug = slugify(formData.appName);
+        fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/og-card?slug=${slug}&refresh=1`).catch(() => {});
+      } catch {}
+
       setIsLive(true);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

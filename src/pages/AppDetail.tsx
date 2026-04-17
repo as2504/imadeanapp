@@ -156,13 +156,14 @@ const AppDetail = () => {
   ].filter(link => !!link.url);
 
   const canonicalUrl = `https://imadeanapp.com/app/${appData.slug || appData.id}`;
+  const ogImageUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/og-card?slug=${appData.slug || appData.id}`;
   const seoDescription = (appData.description || `${appData.name} on imadeanapp`).replace(/[#*_`>\[\]]/g, "").slice(0, 160);
   const appJsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": appData.name,
     "description": seoDescription,
-    "image": appData.icon,
+    "image": ogImageUrl,
     "url": canonicalUrl,
     "applicationCategory": "WebApplication",
     "operatingSystem": (appData.platforms || []).join(", "),
@@ -183,7 +184,7 @@ const AppDetail = () => {
         title={`${appData.name} – imadeanapp`}
         description={seoDescription}
         canonical={canonicalUrl}
-        image={appData.icon}
+        image={ogImageUrl}
         type="article"
         jsonLd={appJsonLd}
       />

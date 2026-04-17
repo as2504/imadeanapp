@@ -67,7 +67,7 @@ const TrendingCard = ({ app }: { app: TrendingApp & { slug?: string } }) => {
           <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
             {app.appName}
           </h3>
-          {app.verified && <CheckCircle2 size={12} className="text-primary shrink-0" />}
+          {app.verified && <CheckCircle2 size={12} className="text-primary shrink-0" aria-label="Verified builder" />}
         </div>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{app.caption}</p>
         <div className="flex items-center gap-2 mt-1">
