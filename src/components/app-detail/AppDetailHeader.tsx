@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Star, Share2, Bookmark, Calendar, MoreVertical } from "lucide-react";
+import { Star, Share2, Bookmark, Calendar, MoreVertical, Twitter, Code2, ImageDown, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import EmbedBadgeDialog from "./EmbedBadgeDialog";
 
 interface AppDetailHeaderProps {
   app: { id?: string; name: string; publisher: string; publisherUserId?: string; icon: string; publishedDate: string; platforms: string[]; slug?: string; };
@@ -19,16 +21,29 @@ interface AppDetailHeaderProps {
   isAuthenticated?: boolean;
 }
 
+const FUNCTIONS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+
 const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true }: AppDetailHeaderProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
+  const [publisherVerified, setPublisherVerified] = useState(false);
+
+  const isOwner = !!user && app.publisherUserId === user.id;
+  const slug = app.slug || app.id;
+  const appUrl = `https://imadeanapp.com/app/${slug}`;
 
   useEffect(() => {
     if (!user || !app.id) return;
     supabase.from("saved_apps" as any).select("id").eq("user_id", user.id).eq("app_id", app.id).maybeSingle().then(({ data }) => setSaved(!!data));
   }, [user, app.id]);
+
+  useEffect(() => {
+    if (!app.publisherUserId) return;
+    supabase.from("profiles").select("is_verified").eq("user_id", app.publisherUserId).maybeSingle().then(({ data }) => setPublisherVerified(!!(data as any)?.is_verified));
+  }, [app.publisherUserId]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -40,6 +55,32 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
         toast({ title: "Link Copied!", description: "App link copied to clipboard." });
       }
     } catch (err) { console.error("Error sharing:", err); }
+  };
+
+  const handleTweet = () => {
+    const text = encodeURIComponent(`Check out ${app.name} on imadeanapp 🚀\n\n${appUrl}`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
+  };
+
+  const handleDownloadCard = async () => {
+    if (!slug) return;
+    const cardUrl = `${FUNCTIONS_URL}/og-card?slug=${slug}&refresh=1`;
+    toast({ title: "Generating card…", description: "Your share image will download shortly." });
+    try {
+      const res = await fetch(cardUrl);
+      if (!res.ok) throw new Error("Failed to generate");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slug}-imadeanapp.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast({ title: "Download failed", description: e?.message || "Try again", variant: "destructive" });
+    }
   };
 
   const handleSave = async () => {
@@ -58,12 +99,32 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
 
   const ActionButtons = ({ className }: { className?: string }) => (
     <div className={`flex items-center gap-1 ${className}`}>
+      <Button variant="ghost" size="icon" onClick={handleTweet} className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80" title="Tweet this app">
+        <Twitter size={18} />
+      </Button>
       <Button variant="ghost" size="icon" onClick={handleSave} className={`w-10 h-10 rounded-full hover:bg-secondary/80 ${saved ? "text-primary" : "text-muted-foreground"}`}>
         <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
       </Button>
       <Button variant="ghost" size="icon" onClick={handleShare} className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80">
         <Share2 size={18} />
       </Button>
+      {isOwner && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80" title="More">
+              <MoreVertical size={18} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEmbedOpen(true)} className="gap-2">
+              <Code2 size={16} /> Embed badge
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDownloadCard} className="gap-2">
+              <ImageDown size={16} /> Download share card
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 
@@ -78,9 +139,15 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight truncate">{app.name}</h1>
-              <button onClick={() => app.publisherUserId && navigate(`/profile/${app.publisherUserId}`)} className="text-sm sm:text-base text-primary font-medium mt-0.5 hover:underline cursor-pointer text-left">{app.publisher}</button>
+              <button
+                onClick={() => app.publisherUserId && navigate(`/profile/${app.publisherUserId}`)}
+                className="text-sm sm:text-base text-primary font-medium mt-0.5 hover:underline cursor-pointer text-left inline-flex items-center gap-1"
+              >
+                {app.publisher}
+                {publisherVerified && <CheckCircle2 size={12} className="text-primary" />}
+              </button>
             </div>
-            
+
             {isAuthenticated && (
               <>
                 <ActionButtons className="hidden sm:flex" />
@@ -92,14 +159,27 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleTweet} className="gap-2">
+                        <Twitter size={16} /> Tweet this app
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleSave} className="gap-2">
                         <Bookmark size={16} fill={saved ? "currentColor" : "none"} className={saved ? "text-primary" : ""} />
                         {saved ? "Saved" : "Save"}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleShare} className="gap-2">
-                        <Share2 size={16} />
-                        Share
+                        <Share2 size={16} /> Share
                       </DropdownMenuItem>
+                      {isOwner && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setEmbedOpen(true)} className="gap-2">
+                            <Code2 size={16} /> Embed badge
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleDownloadCard} className="gap-2">
+                            <ImageDown size={16} /> Download share card
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -122,6 +202,8 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
           <span>{app.publishedDate}</span>
         </div>
       </div>
+
+      {slug && <EmbedBadgeDialog open={embedOpen} onOpenChange={setEmbedOpen} slug={slug} />}
     </div>
   );
 };
