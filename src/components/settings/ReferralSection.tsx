@@ -163,38 +163,52 @@ const ReferralSection = () => {
           </div>
         ) : (
           <div className="rounded-xl border border-border/40 divide-y divide-border/40 overflow-hidden">
-            {referrals.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center justify-between px-4 py-2.5 bg-muted/10"
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {r.referred_user_id
-                      ? referredNames[r.referred_user_id] || "User"
-                      : "Pending signup"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    r.status === "qualified"
-                      ? "bg-primary/10 text-primary"
-                      : r.status === "signed_up"
-                      ? "bg-amber-500/10 text-amber-500"
-                      : "bg-muted text-muted-foreground"
-                  }`}
+            {referrals.map((r) => {
+              const prof = r.referred_user_id ? referredProfiles[r.referred_user_id] : null;
+              const handle = prof?.username
+                ? `@${prof.username}`
+                : r.referred_user_id
+                ? `Builder #${r.referred_user_id.slice(0, 6)}`
+                : "Pending signup";
+              const initial = (prof?.username || "B").charAt(0).toUpperCase();
+              return (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between px-4 py-2.5 bg-muted/10 gap-3"
                 >
-                  {r.status === "qualified"
-                    ? "✓ Qualified"
-                    : r.status === "signed_up"
-                    ? "Signed up"
-                    : "Pending"}
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0 text-[11px] font-semibold text-foreground">
+                      {prof?.avatar_url ? (
+                        <img src={prof.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        initial
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate">{handle}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      r.status === "qualified"
+                        ? "bg-primary/10 text-primary"
+                        : r.status === "signed_up"
+                        ? "bg-amber-500/10 text-amber-500"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {r.status === "qualified"
+                      ? "✓ Qualified"
+                      : r.status === "signed_up"
+                      ? "Signed up"
+                      : "Pending"}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
