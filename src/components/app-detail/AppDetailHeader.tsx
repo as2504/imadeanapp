@@ -163,9 +163,6 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleTweet} className="gap-2">
-                        <XIcon size={14} /> Share on X
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleSave} className="gap-2">
                         <Bookmark size={16} fill={saved ? "currentColor" : "none"} className={saved ? "text-primary" : ""} />
                         {saved ? "Saved" : "Save"}
@@ -175,7 +172,6 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
                       </DropdownMenuItem>
                       {isOwner && (
                         <>
-                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => setEmbedOpen(true)} className="gap-2">
                             <Code2 size={16} /> Embed badge
                           </DropdownMenuItem>
@@ -184,6 +180,10 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
                           </DropdownMenuItem>
                         </>
                       )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleTweet} className="gap-2">
+                        <XIcon size={14} /> Share on X
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
