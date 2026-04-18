@@ -24,7 +24,7 @@ const ReferralSection = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [qualified, setQualified] = useState(0);
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
-  const [referredNames, setReferredNames] = useState<Record<string, string>>({});
+  const [referredProfiles, setReferredProfiles] = useState<Record<string, { username: string | null; avatar_url: string | null }>>({});
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
