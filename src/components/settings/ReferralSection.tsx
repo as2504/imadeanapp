@@ -127,7 +127,18 @@ const ReferralSection = () => {
 
       {/* Invite link */}
       <div className="space-y-2">
-        <p className="text-xs font-bold text-foreground">Your invite link</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold text-foreground">Your invite link</p>
+          <button
+            onClick={handleShareTwitter}
+            disabled={!inviteUrl}
+            title="Share on X"
+            aria-label="Share on X"
+            className="w-8 h-8 rounded-full inline-flex items-center justify-center text-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
+          >
+            <XIcon size={14} />
+          </button>
+        </div>
         <div className="flex gap-2">
           <input
             readOnly
@@ -139,15 +150,6 @@ const ReferralSection = () => {
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
-        <Button
-          size="sm"
-          onClick={handleShareTwitter}
-          variant="secondary"
-          className="w-full h-9 text-xs"
-          disabled={!inviteUrl}
-        >
-          Share on Twitter / X
-        </Button>
       </div>
 
       {/* Referrals list */}
