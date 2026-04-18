@@ -171,7 +171,7 @@ const HomeFeed = () => {
       <FeedNavbar />
       <EmailVerificationBanner />
       <UsernamePrompt />
-      <ReferralBanner />
+      
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<FeedSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
