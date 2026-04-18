@@ -7,7 +7,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,52 +38,71 @@ const EmbedBadgeDialog = ({ open, onOpenChange, slug }: EmbedBadgeDialogProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Embed badge</DialogTitle>
-          <DialogDescription>
-            Show off your imadeanapp rating on your personal site or portfolio. Free backlink.
+          <DialogDescription className="text-xs">
+            Show off your imadeanapp rating on your site. Free backlink.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={style} onValueChange={(v) => setStyle(v as "dark" | "light")} className="mt-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="dark">Dark</TabsTrigger>
-            <TabsTrigger value="light">Light</TabsTrigger>
-          </TabsList>
+        <div className="space-y-4">
+          {/* Style toggle */}
+          <div className="inline-flex rounded-lg border border-border/40 p-0.5 bg-muted/30">
+            <button
+              onClick={() => setStyle("dark")}
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                style === "dark"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Dark
+            </button>
+            <button
+              onClick={() => setStyle("light")}
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                style === "light"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Light
+            </button>
+          </div>
 
-          <TabsContent value={style} className="mt-4 space-y-4">
-            <div className="flex items-center justify-center p-6 rounded-xl bg-muted/30 border border-border/40">
-              <img
-                src={badgeUrl}
-                alt="Badge preview"
-                width={320}
-                height={64}
-                key={style}
-              />
-            </div>
+          {/* Preview */}
+          <div className="flex items-center justify-center p-6 rounded-xl bg-muted/30 border border-border/40 min-h-[100px]">
+            <img
+              src={badgeUrl}
+              alt="Badge preview"
+              width={320}
+              height={64}
+              key={style}
+              className="max-w-full h-auto"
+            />
+          </div>
 
-            <div className="relative">
-              <pre className="text-[11px] bg-muted/50 border border-border/40 rounded-lg p-3 overflow-x-auto text-foreground/80 font-mono leading-relaxed">
-                {snippet}
-              </pre>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleCopy}
-                className="absolute top-2 right-2 h-7 gap-1.5 text-xs"
-              >
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            </div>
+          {/* Snippet */}
+          <div className="relative">
+            <pre className="text-[10px] bg-muted/50 border border-border/40 rounded-lg p-3 pr-16 overflow-x-auto text-foreground/80 font-mono leading-relaxed whitespace-pre-wrap break-all">
+              {snippet}
+            </pre>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleCopy}
+              className="absolute top-2 right-2 h-7 gap-1.5 text-xs"
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? "Copied" : "Copy"}
+            </Button>
+          </div>
 
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Paste this anywhere on your portfolio, blog, or app's website.
-              The badge updates automatically as you receive more ratings.
-            </p>
-          </TabsContent>
-        </Tabs>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Paste this on your portfolio, blog, or app's website. The badge updates automatically as you receive more ratings.
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );
