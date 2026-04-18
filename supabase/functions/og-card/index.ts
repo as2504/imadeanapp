@@ -1,9 +1,9 @@
 // Generate per-app OG share card (1200x630 PNG) using Satori + resvg
 // Cached in app-assets/og-cards/{appId}.png. Force fresh with ?refresh=1
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import satori from "https://esm.sh/satori@0.10.13";
-import { Resvg } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
-import initResvg from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
+import satori, { init as satoriInit } from "https://esm.sh/satori@0.10.13/wasm";
+import initYoga from "https://esm.sh/yoga-wasm-web@0.3.3";
+import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,34 +14,40 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-let resvgReady: Promise<void> | null = null;
-async function ensureResvg() {
-  if (!resvgReady) {
-    resvgReady = (async () => {
-      const wasm = await fetch(
-        "https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm",
-      ).then((r) => r.arrayBuffer());
-      // @ts-ignore — initResvg is the default
-      await (initResvg as any)(wasm);
+let initPromise: Promise<void> | null = null;
+async function ensureInit() {
+  if (!initPromise) {
+    initPromise = (async () => {
+      const [yogaWasm, resvgWasm] = await Promise.all([
+        fetch("https://esm.sh/yoga-wasm-web@0.3.3/dist/yoga.wasm").then((r) =>
+          r.arrayBuffer()
+        ),
+        fetch("https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm").then((
+          r,
+        ) => r.arrayBuffer()),
+      ]);
+      const yoga = await initYoga(yogaWasm);
+      satoriInit(yoga);
+      await initWasm(resvgWasm);
     })();
   }
-  await resvgReady;
+  await initPromise;
 }
 
 let interFontPromise: Promise<ArrayBuffer> | null = null;
 async function getInterFont(): Promise<ArrayBuffer> {
   if (!interFontPromise) {
     interFontPromise = fetch(
-      "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Bold.woff",
+      "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/files/inter-latin-700-normal.woff",
     ).then(async (r) => {
-      if (!r.ok) throw new Error("font fetch failed");
+      if (!r.ok) {
+        interFontPromise = null;
+        throw new Error(`font fetch failed: ${r.status}`);
+      }
       return r.arrayBuffer();
-    }).catch(async () => {
-      // Fallback: Inter Regular from Google Fonts CDN
-      const r = await fetch(
-        "https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff",
-      );
-      return r.arrayBuffer();
+    }).catch((e) => {
+      interFontPromise = null;
+      throw e;
     });
   }
   return interFontPromise;
@@ -62,6 +68,7 @@ function jsx(type: string, props: any) {
 }
 
 async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
+  await ensureInit();
   const font = await getInterFont();
   const accent = "#3FB950";
   const bg = "#0D1117";
@@ -85,13 +92,8 @@ async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
       position: "relative",
     },
     children: [
-      // Top row: icon + name
       jsx("div", {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 28,
-        },
+        style: { display: "flex", alignItems: "center", gap: 28 },
         children: [
           app.app_icon_url
             ? jsx("img", {
@@ -143,7 +145,9 @@ async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
                   children: [
                     jsx("span", { children: "★" }),
                     jsx("span", {
-                      children: `${avgRating.toFixed(1)} · ${ratingsCount} ratings`,
+                      children: `${
+                        avgRating.toFixed(1)
+                      } · ${ratingsCount} ratings`,
                     }),
                   ],
                 })
@@ -155,7 +159,6 @@ async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
           }),
         ],
       }),
-      // Tagline
       jsx("div", {
         style: {
           marginTop: 40,
@@ -167,9 +170,7 @@ async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
         },
         children: tagline,
       }),
-      // Spacer
       jsx("div", { style: { flex: 1, display: "flex" } }),
-      // Footer
       jsx("div", {
         style: {
           display: "flex",
@@ -198,11 +199,7 @@ async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
             ],
           }),
           jsx("div", {
-            style: {
-              fontSize: 22,
-              color: muted,
-              fontWeight: 500,
-            },
+            style: { fontSize: 22, color: muted, fontWeight: 500 },
             children: "Featured app",
           }),
         ],
@@ -214,22 +211,15 @@ async function buildSvg(app: AppRow, avgRating: number, ratingsCount: number) {
     width: 1200,
     height: 630,
     fonts: [
-      {
-        name: "Inter",
-        data: font,
-        weight: 700,
-        style: "normal",
-      },
+      { name: "Inter", data: font, weight: 700, style: "normal" },
     ],
   });
   return svg;
 }
 
-async function svgToPng(svg: string): Promise<Uint8Array> {
-  await ensureResvg();
+function svgToPng(svg: string): Uint8Array {
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });
-  const png = resvg.render();
-  return png.asPng();
+  return resvg.render().asPng();
 }
 
 Deno.serve(async (req) => {
@@ -269,14 +259,10 @@ Deno.serve(async (req) => {
       `${SUPABASE_URL}/storage/v1/object/public/app-assets/${cachePath}`;
 
     if (!refresh) {
-      // Try to serve cached
       const head = await fetch(publicUrl, { method: "HEAD" });
-      if (head.ok) {
-        return Response.redirect(publicUrl, 302);
-      }
+      if (head.ok) return Response.redirect(publicUrl, 302);
     }
 
-    // Fetch ratings
     const { data: ratings } = await supabase
       .from("ratings")
       .select("rating")
@@ -287,9 +273,8 @@ Deno.serve(async (req) => {
       : 0;
 
     const svg = await buildSvg(app as any, avg, ratingsArr.length);
-    const png = await svgToPng(svg);
+    const png = svgToPng(svg);
 
-    // Upload to storage (upsert)
     const { error: upErr } = await supabase.storage
       .from("app-assets")
       .upload(cachePath, png, {
@@ -308,7 +293,7 @@ Deno.serve(async (req) => {
       },
     });
   } catch (e: any) {
-    console.error("og-card error", e);
+    console.error("og-card error", e?.stack || e);
     return new Response(JSON.stringify({ error: e?.message || "error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
