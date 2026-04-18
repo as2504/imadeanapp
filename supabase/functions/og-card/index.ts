@@ -38,8 +38,11 @@ let interFontPromise: Promise<ArrayBuffer> | null = null;
 async function getInterFont(): Promise<ArrayBuffer> {
   if (!interFontPromise) {
     interFontPromise = fetch(
-      "https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff",
-    ).then((r) => r.arrayBuffer());
+      "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Bold.otf",
+    ).then(async (r) => {
+      if (!r.ok) throw new Error(`font fetch failed: ${r.status}`);
+      return r.arrayBuffer();
+    });
   }
   return interFontPromise;
 }
