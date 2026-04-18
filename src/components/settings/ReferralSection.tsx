@@ -79,7 +79,7 @@ const ReferralSection = () => {
 
   const handleShareTwitter = () => {
     const text = encodeURIComponent(
-      `I'm publishing my apps on imadeanapp — the home for vibe-coded apps. Join me 👇\n\n${inviteUrl}`,
+      `I'm publishing my apps on imadeanapp, the home for vibe-coded apps. Join me 👇\n\n${inviteUrl}`,
     );
     window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
   };
