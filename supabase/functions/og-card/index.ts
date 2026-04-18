@@ -38,7 +38,7 @@ let interFontPromise: Promise<ArrayBuffer> | null = null;
 async function getInterFont(): Promise<ArrayBuffer> {
   if (!interFontPromise) {
     interFontPromise = fetch(
-      "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Bold.otf",
+      "https://rsms.me/inter/font-files/Inter-Bold.woff",
     ).then(async (r) => {
       if (!r.ok) throw new Error(`font fetch failed: ${r.status}`);
       return r.arrayBuffer();
