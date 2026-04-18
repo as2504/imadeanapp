@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Star, Share2, Bookmark, Calendar, MoreVertical, Twitter, Code2, ImageDown, CheckCircle2 } from "lucide-react";
+import { Star, Share2, Bookmark, Calendar, MoreVertical, Code2, ImageDown, CheckCircle2 } from "lucide-react";
+import XIcon from "@/components/icons/XIcon";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
