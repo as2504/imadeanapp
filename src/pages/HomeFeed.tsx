@@ -10,7 +10,6 @@ import AppCard from "@/components/feed/AppCard";
 import type { AppPost } from "@/components/feed/AppCard";
 import FeedSkeleton from "@/components/feed/FeedSkeleton";
 import EmailVerificationBanner from "@/components/feed/EmailVerificationBanner";
-import ReferralBanner from "@/components/feed/ReferralBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTimeAgo } from "@/lib/utils";
@@ -172,7 +171,7 @@ const HomeFeed = () => {
       <FeedNavbar />
       <EmailVerificationBanner />
       <UsernamePrompt />
-      <ReferralBanner />
+      
       <main className="pt-16 pb-20 md:pb-8">
         <FeedLayout sidebar={<FeedSidebar />}>
           {({ onOpenSidebar }: { onOpenSidebar: () => void }) => (
