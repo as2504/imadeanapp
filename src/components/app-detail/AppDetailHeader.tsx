@@ -100,32 +100,35 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
 
   const ActionButtons = ({ className }: { className?: string }) => (
     <div className={`flex items-center gap-1 ${className}`}>
-      <Button variant="ghost" size="icon" onClick={handleTweet} className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80" title="Tweet this app">
-        <Twitter size={18} />
-      </Button>
       <Button variant="ghost" size="icon" onClick={handleSave} className={`w-10 h-10 rounded-full hover:bg-secondary/80 ${saved ? "text-primary" : "text-muted-foreground"}`}>
         <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
       </Button>
       <Button variant="ghost" size="icon" onClick={handleShare} className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80">
         <Share2 size={18} />
       </Button>
-      {isOwner && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80" title="More">
-              <MoreVertical size={18} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setEmbedOpen(true)} className="gap-2">
-              <Code2 size={16} /> Embed badge
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDownloadCard} className="gap-2">
-              <ImageDown size={16} /> Download share card
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-muted-foreground hover:bg-secondary/80" title="More">
+            <MoreVertical size={18} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {isOwner && (
+            <>
+              <DropdownMenuItem onClick={() => setEmbedOpen(true)} className="gap-2">
+                <Code2 size={16} /> Embed badge
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadCard} className="gap-2">
+                <ImageDown size={16} /> Download share card
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem onClick={handleTweet} className="gap-2">
+            <XIcon size={14} /> Share on X
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 
