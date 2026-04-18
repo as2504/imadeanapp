@@ -38,10 +38,16 @@ let interFontPromise: Promise<ArrayBuffer> | null = null;
 async function getInterFont(): Promise<ArrayBuffer> {
   if (!interFontPromise) {
     interFontPromise = fetch(
-      "https://rsms.me/inter/font-files/Inter-Bold.woff",
+      "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/files/inter-latin-700-normal.woff",
     ).then(async (r) => {
-      if (!r.ok) throw new Error(`font fetch failed: ${r.status}`);
+      if (!r.ok) {
+        interFontPromise = null;
+        throw new Error(`font fetch failed: ${r.status}`);
+      }
       return r.arrayBuffer();
+    }).catch((e) => {
+      interFontPromise = null;
+      throw e;
     });
   }
   return interFontPromise;
