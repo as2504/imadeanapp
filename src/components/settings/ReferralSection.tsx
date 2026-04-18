@@ -53,13 +53,13 @@ const ReferralSection = () => {
       if (ids.length > 0) {
         const { data: profs } = await supabase
           .from("profiles")
-          .select("user_id, display_name, username")
+          .select("user_id, username, avatar_url")
           .in("user_id", ids);
-        const map: Record<string, string> = {};
+        const map: Record<string, { username: string | null; avatar_url: string | null }> = {};
         (profs || []).forEach((p: any) => {
-          map[p.user_id] = p.display_name || p.username || "User";
+          map[p.user_id] = { username: p.username, avatar_url: p.avatar_url };
         });
-        setReferredNames(map);
+        setReferredProfiles(map);
       }
     };
     load();
