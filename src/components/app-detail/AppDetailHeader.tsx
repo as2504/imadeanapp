@@ -164,7 +164,7 @@ const AppDetailHeader = ({ app, avgRating, totalRatings, isAuthenticated = true 
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={handleTweet} className="gap-2">
-                        <Twitter size={16} /> Tweet this app
+                        <XIcon size={14} /> Share on X
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleSave} className="gap-2">
                         <Bookmark size={16} fill={saved ? "currentColor" : "none"} className={saved ? "text-primary" : ""} />
