@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Copy, Check, CheckCircle2, Users, Sparkles } from "lucide-react";
+import XIcon from "@/components/icons/XIcon";
 import { useToast } from "@/hooks/use-toast";
 
 interface ReferralRow {
