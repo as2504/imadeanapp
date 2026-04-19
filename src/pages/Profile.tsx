@@ -11,13 +11,14 @@ import ProfilePublishedApps from "@/components/profile/ProfilePublishedApps";
 import ProfileSavedApps from "@/components/profile/ProfileSavedApps";
 import ProfileDraftApps from "@/components/profile/ProfileDraftApps";
 import ProfileActivity from "@/components/profile/ProfileActivity";
+import ProfileIdeas from "@/components/profile/ProfileIdeas";
 import ProfileStatsStrip from "@/components/profile/ProfileStatsStrip";
 import ProfileSidebar from "@/components/profile/ProfileSidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
 
-const allTabs = ["Published Apps", "Saved Apps", "Drafts", "Activity"] as const;
+const allTabs = ["Published Apps", "Ideas", "Saved Apps", "Drafts", "Activity"] as const;
 type Tab = (typeof allTabs)[number];
 
 const Profile = () => {
@@ -46,7 +47,7 @@ const Profile = () => {
         if (tab === "Saved Apps" || tab === "Drafts") return isOwnProfile;
         return true;
       })
-    : (["Published Apps"] as const);
+    : (["Published Apps", "Ideas"] as const);
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,6 +100,7 @@ const Profile = () => {
             ) : null}
 
             {activeTab === "Published Apps" && <ProfilePublishedApps profileUserId={targetUserId} />}
+            {activeTab === "Ideas" && <ProfileIdeas profileUserId={targetUserId} />}
             {activeTab === "Saved Apps" && isOwnProfile && isAuthenticated && <ProfileSavedApps />}
             {activeTab === "Drafts" && isOwnProfile && isAuthenticated && <ProfileDraftApps />}
             {activeTab === "Activity" && isAuthenticated && <ProfileActivity />}

@@ -11,6 +11,7 @@ interface SearchResult {
   name: string;
   subtitle: string;
   icon?: string;
+  status?: string;
 }
 
 const RECENT_SEARCHES_KEY = "imaa_recent_searches";
@@ -64,11 +65,11 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
       setLoading(true);
       const searchTerm = `%${query.trim()}%`;
       const [appsRes, profilesRes] = await Promise.all([
-        supabase.from("apps").select("id, app_name, slug, app_icon_url, tagline").eq("status", "published").ilike("app_name", searchTerm).limit(5),
+        supabase.from("apps").select("id, app_name, slug, app_icon_url, tagline, status").in("status", ["published", "upcoming"]).ilike("app_name", searchTerm).limit(5),
         supabase.from("profiles").select("user_id, display_name, username, avatar_url, professional_title").or(`display_name.ilike.${searchTerm},username.ilike.${searchTerm}`).limit(5),
       ]);
       const combined: SearchResult[] = [];
-      appsRes.data?.forEach((app) => combined.push({ type: "app", id: app.id, slug: app.slug || undefined, name: app.app_name, subtitle: app.tagline || "App", icon: app.app_icon_url || undefined }));
+      appsRes.data?.forEach((app: any) => combined.push({ type: "app", id: app.id, slug: app.slug || undefined, name: app.app_name, subtitle: app.tagline || (app.status === "upcoming" ? "Upcoming idea" : "App"), icon: app.app_icon_url || undefined, status: app.status }));
       profilesRes.data?.forEach((p) => combined.push({ type: "user", id: p.user_id, name: p.display_name || p.username || "User", subtitle: p.professional_title || "@" + (p.username || "user"), icon: p.avatar_url || undefined }));
       setResults(combined);
       setOpen(true);
@@ -82,7 +83,12 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
     setOpen(false);
     setShowRecent(false);
     setQuery("");
-    navigate(result.type === "app" ? `/app/${result.slug || result.id}` : `/profile/${result.id}`);
+    if (result.type === "app") {
+      const path = result.status === "upcoming" ? `/upcoming/${result.slug || result.id}` : `/app/${result.slug || result.id}`;
+      navigate(path);
+    } else {
+      navigate(`/profile/${result.id}`);
+    }
   };
 
   const handleFocus = () => {
@@ -170,7 +176,7 @@ const SearchBar = ({ className = "", mobile = false }: { className?: string; mob
                 <p className="text-sm font-medium text-foreground truncate">{result.name}</p>
                 <p className="text-[11px] text-muted-foreground truncate">{result.subtitle}</p>
               </div>
-              <span className="text-[10px] text-muted-foreground/50 px-1.5 py-0.5 bg-secondary rounded">{result.type === "app" ? "App" : "Creator"}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${result.status === "upcoming" ? "bg-amber-500/10 text-amber-500" : "text-muted-foreground/50 bg-secondary"}`}>{result.type === "app" ? (result.status === "upcoming" ? "Idea" : "App") : "Creator"}</span>
             </button>
           ))}
         </div>
