@@ -7,24 +7,23 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, Home, TrendingUp, Bell, BellOff, User, Plus, Settings } from "lucide-react";
+import { Search, Home, TrendingUp, Lightbulb, User, Plus, Settings } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
-import { useTheme } from "@/components/ThemeProvider";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import NotificationDropdown from "@/components/notifications/NotificationDropdown";
+import MobilePublishFAB from "@/components/layout/MobilePublishFAB";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/home" },
   { label: "Trending", icon: TrendingUp, href: "/trending" },
+  { label: "Upcoming", icon: Lightbulb, href: "/upcoming", isNew: true },
 ];
 
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { signOut, user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,17 +48,14 @@ const FeedNavbar = () => {
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--navbar))]/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-[1200px] w-full mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
-          {/* Logo */}
           <button onClick={() => navigate("/home")} className="text-lg font-black text-foreground tracking-tighter shrink-0 uppercase">
             <span className="text-primary">I</span>MAA
           </button>
 
-          {/* Search */}
           <div className="hidden md:flex flex-1 max-w-md mx-6">
             <SearchBar className="w-full" />
           </div>
 
-          {/* Right */}
           <div className="flex items-center gap-1">
             <button onClick={() => setSearchOpen(!searchOpen)} className="md:hidden p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors">
               <Search size={20} />
@@ -70,30 +66,20 @@ const FeedNavbar = () => {
                 <button
                   key={item.label}
                   onClick={() => navigate(item.href)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                     location.pathname === item.href ? "text-foreground bg-secondary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <item.icon size={16} />
                   <span>{item.label}</span>
+                  {item.isNew && (
+                    <span className="text-[8px] font-black tracking-wider px-1 py-0.5 rounded bg-primary text-primary-foreground">NEW</span>
+                  )}
                 </button>
               ))}
             </div>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors">
-                  <Bell size={18} />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-0 rounded-xl shadow-xl border-border/40 bg-card">
-                <div className="flex flex-col items-center justify-center py-8 px-4 gap-2">
-                  <BellOff size={24} className="text-muted-foreground/40" />
-                  <p className="text-sm font-medium text-foreground">No new notifications</p>
-                  <p className="text-xs text-muted-foreground">You're all caught up!</p>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <NotificationDropdown />
 
             <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
 
@@ -119,6 +105,10 @@ const FeedNavbar = () => {
                   <Plus size={16} className="text-muted-foreground" />
                   Publish App
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/post-idea")} className="rounded-md py-2 gap-2 cursor-pointer text-sm">
+                  <Lightbulb size={16} className="text-amber-500" />
+                  Post Idea
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/settings")} className="rounded-md py-2 gap-2 cursor-pointer text-sm">
                   <Settings size={16} className="text-muted-foreground" />
                   Settings
@@ -141,7 +131,7 @@ const FeedNavbar = () => {
           {[
             { icon: Home, label: "Home", href: "/home" },
             { icon: TrendingUp, label: "Trending", href: "/trending" },
-            { icon: Plus, label: "Publish", href: "/publish" },
+            { icon: Lightbulb, label: "Upcoming", href: "/upcoming" },
             { icon: User, label: "Account", href: "/account" },
           ].map((item) => (
             <button
@@ -157,6 +147,8 @@ const FeedNavbar = () => {
           ))}
         </div>
       </div>
+
+      <MobilePublishFAB />
     </>
   );
 };
