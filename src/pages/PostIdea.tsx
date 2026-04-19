@@ -187,7 +187,7 @@ const PostIdea = () => {
           </div>
 
           <p className="text-[10px] text-muted-foreground text-center">
-            You can have up to 5 active ideas at once. Convert or delete older ones to post more.
+            Post as many ideas as you want. Convert them to published apps when you're ready to ship.
           </p>
         </div>
       </main>
