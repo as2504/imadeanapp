@@ -25,3 +25,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+deploy.ps1
+.anotes
+supabase/.temp/
