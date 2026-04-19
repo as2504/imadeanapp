@@ -172,6 +172,8 @@ export type Database = {
           github_url: string | null
           id: string
           likes_count: number | null
+          notify_count: number
+          planned_launch: string | null
           platforms: string[] | null
           play_store_url: string | null
           pricing: string | null
@@ -184,6 +186,7 @@ export type Database = {
           tech_stack: string[] | null
           unpublish_reason: string | null
           updated_at: string
+          upvotes_count: number
           user_id: string
           views_count: number | null
           website_url: string | null
@@ -200,6 +203,8 @@ export type Database = {
           github_url?: string | null
           id?: string
           likes_count?: number | null
+          notify_count?: number
+          planned_launch?: string | null
           platforms?: string[] | null
           play_store_url?: string | null
           pricing?: string | null
@@ -212,6 +217,7 @@ export type Database = {
           tech_stack?: string[] | null
           unpublish_reason?: string | null
           updated_at?: string
+          upvotes_count?: number
           user_id: string
           views_count?: number | null
           website_url?: string | null
@@ -228,6 +234,8 @@ export type Database = {
           github_url?: string | null
           id?: string
           likes_count?: number | null
+          notify_count?: number
+          planned_launch?: string | null
           platforms?: string[] | null
           play_store_url?: string | null
           pricing?: string | null
@@ -240,6 +248,7 @@ export type Database = {
           tech_stack?: string[] | null
           unpublish_reason?: string | null
           updated_at?: string
+          upvotes_count?: number
           user_id?: string
           views_count?: number | null
           website_url?: string | null
@@ -328,6 +337,84 @@ export type Database = {
           follower_id?: string
           following_id?: string
           id?: string
+        }
+        Relationships: []
+      }
+      idea_notify_subscriptions: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          notified_at: string | null
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          notified_at?: string | null
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          notified_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      idea_upvotes: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          app_id: string | null
+          body: string | null
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          app_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
