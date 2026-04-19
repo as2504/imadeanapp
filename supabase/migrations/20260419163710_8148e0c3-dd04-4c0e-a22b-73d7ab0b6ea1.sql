@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.enforce_idea_cap() CASCADE;
