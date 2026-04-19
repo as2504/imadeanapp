@@ -30,3 +30,4 @@ dist-ssr
 deploy.ps1
 .anotes
 supabase/.temp/
+.lovable
