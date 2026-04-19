@@ -15,6 +15,9 @@ import EditProfile from "./pages/EditProfile.tsx";
 import Settings from "./pages/Settings.tsx";
 import FeedbackSetup from "./pages/FeedbackSetup.tsx";
 import FeedbackFlow from "./pages/FeedbackFlow.tsx";
+import Upcoming from "./pages/Upcoming.tsx";
+import UpcomingDetail from "./pages/UpcomingDetail.tsx";
+import PostIdea from "./pages/PostIdea.tsx";
 import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import AdminGuard from "./components/admin/AdminGuard.tsx";
@@ -101,6 +104,16 @@ const App = () => (
                 }
               />
               <Route path="/app/:id" element={<AppDetail />} />
+              <Route path="/upcoming" element={<Upcoming />} />
+              <Route path="/upcoming/:id" element={<UpcomingDetail />} />
+              <Route
+                path="/post-idea"
+                element={
+                  <ProtectedRoute>
+                    <PostIdea />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/profile/:userId" element={<Profile />} />
               <Route
                 path="/edit-profile"
