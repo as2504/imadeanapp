@@ -173,10 +173,6 @@ const FeedbackSetup = () => {
     if (editingId === id) setEditingId(null);
   };
 
-  const removeQuestion = (id: string) => {
-    setQuestions(questions.filter((q) => q.id !== id));
-    if (editingId === id) setEditingId(null);
-  };
 
   const addOptionField = () => {
     if (newOptions.length >= 5) return;
@@ -212,6 +208,13 @@ const FeedbackSetup = () => {
 
   const handleDone = async () => {
     if (!user || !appId) return;
+
+    // Force-commit any open draft before saving
+    if (showAddForm) {
+      const ok = commitDraft();
+      const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
+      if (!ok && hasAnyInput) return; // validation failed, stay on form
+    }
 
     const finalQuestions = questions;
     if (finalQuestions.length === 0) {
