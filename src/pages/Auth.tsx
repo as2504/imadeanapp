@@ -293,7 +293,7 @@ const Auth = () => {
                 </label>
               </div>
             )}
-            <Button type="submit" disabled={loading || (isSignUp && !agreedToTerms)} className="w-full h-10 text-sm font-medium mt-2">
+            <Button type="submit" disabled={loading || (isSignUp && (!agreedToTerms || !passwordValid))} className="w-full h-10 text-sm font-medium mt-2">
               {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
             </Button>
           </form>
