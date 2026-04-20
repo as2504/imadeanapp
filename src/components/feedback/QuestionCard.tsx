@@ -16,6 +16,7 @@ interface QuestionCardProps {
   onSelect: (option: string) => void;
   onFollowUp?: (text: string) => void;
   onNext?: () => void;
+  onSkip?: () => void;
   animationState: "entering" | "active" | "exiting";
   isLastQuestion?: boolean;
 }
@@ -28,6 +29,7 @@ const QuestionCard = ({
   onSelect,
   onFollowUp,
   onNext,
+  onSkip,
   animationState,
   isLastQuestion,
 }: QuestionCardProps) => {
@@ -125,6 +127,17 @@ const QuestionCard = ({
           >
             {isLastQuestion ? "Submit" : "Next"} {!isLastQuestion && <ChevronRight size={16} className="ml-1" />}
           </Button>
+        )}
+
+        {onSkip && !showBadFollowUp && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={onSkip}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary/60"
+            >
+              Skip this question →
+            </button>
+          </div>
         )}
       </div>
     </div>

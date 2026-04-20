@@ -157,6 +157,16 @@ const FeedbackFlow = () => {
     }
   };
 
+  const handleSkip = () => {
+    const q = currentQuestion;
+    if (!q) return;
+    // Remove any existing answer for this question
+    const next = { ...answers };
+    delete next[q.id];
+    setAnswers(next);
+    advanceToNext(next);
+  };
+
   useEffect(() => {
     if (!loading && questions.length > 0) {
       setTimeout(() => setAnimState("active"), 500);
@@ -308,6 +318,7 @@ const FeedbackFlow = () => {
             onSelect={handleSelect}
             onFollowUp={setFollowUpText}
             onNext={() => advanceToNext()}
+            onSkip={handleSkip}
             animationState={animState}
             isLastQuestion={isLastQuestion}
           />
