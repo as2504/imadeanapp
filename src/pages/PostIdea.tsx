@@ -103,7 +103,6 @@ const PostIdea = () => {
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tight text-foreground">Post an idea</h1>
-            <p className="text-xs text-muted-foreground">Validate before you build. No URL, no screenshots needed.</p>
           </div>
         </div>
 
