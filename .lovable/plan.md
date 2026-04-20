@@ -2,53 +2,39 @@
 
 ## Plan
 
-### 1. PostIdea — remove tagline
-In `src/pages/PostIdea.tsx`, delete the `<p>` line: *"Validate before you build. No URL, no screenshots needed."* Keep the heading.
+### 1. FeedbackSetup — top-right "+" only, validate required fields
+File: `src/pages/FeedbackSetup.tsx`
 
-### 2. Mobile bottom nav — center the FAB
-Currently the FAB (`MobilePublishFAB`) floats above the bottom-right of the screen, separate from the bottom nav. The request is to embed a circular "+" button **in the middle of the bottom nav bar** itself (like Instagram/X mobile pattern).
+- **Remove the bottom "Add Question" button** (the big secondary button on line ~491). Replace its job with the existing top-right "+" icon, which already exists but is currently hidden when `showAddForm` is true.
+- **Keep the top-right "+" visible always** (when under 10 questions). Clicking it when no add form is open → opens the form. When an add form is open with valid data → commits the question and resets the form (so user can keep adding). When data is invalid → trigger validation highlighting.
+- **Validation highlighting**:
+  - Add state `errors: { question?: boolean; options?: boolean[] }`
+  - On clicking "+" (or attempting to commit current draft): if `newQuestionText` empty → mark question input red ring; if fewer than 2 non-empty options → mark empty option inputs red ring. Show small inline helper text: *"Question text required"* / *"At least 2 options required"*.
+  - Same validation applied during `handleDone` for any open in-progress draft (force commit before save).
+  - Inputs get `aria-invalid` + `border-destructive ring-1 ring-destructive/40` when in error state. Errors clear on input change.
+- Also apply same validation when **saving an inline-edited question** (`saveEditing`) — currently uses `toast.error`; switch to inline red-ring highlighting in addition to toast.
 
-Changes:
-- **`src/components/feed/FeedNavbar.tsx`** — Restructure the mobile bottom bar to 5 slots: `Home · Trending · [+] · Upcoming · Account`. The middle slot is a raised circular primary-colored button that opens a small action sheet (Publish App / Post Idea).
-- **`src/components/layout/MobilePublishFAB.tsx`** — Remove (no longer needed as a separate floating element). The action-sheet logic moves inline into FeedNavbar, OR refactor MobilePublishFAB into a centered inline variant. Simpler: inline the button + popover inside FeedNavbar and delete MobilePublishFAB.
+### 2. FeedbackFlow — add "Skip" option
+Files: `src/pages/FeedbackFlow.tsx`, `src/components/feedback/QuestionCard.tsx`
 
-### 3. Desktop navbar — center the nav links
-Reference image shows: `[IMAA logo]  ······  Home · Trending · Upcoming  ······  [search 🔍 🔔 👤]`
+- Add a small ghost "Skip" link beneath each question (right-aligned, muted text, e.g. *"Skip this question →"*).
+- Clicking "Skip": records `null`/omits the answer for that question id, advances to next or submits.
+- Stored response payload: skipped questions simply absent from `answers` object (already handled by `FeedbackDashboard` via `if (!answer) return false`).
+- Skip button hidden during the satisfaction "Bad" follow-up state to avoid confusion (or it skips the follow-up text only — simpler: keep skip available, leaves followUp empty).
 
-Currently nav links sit on the right next to the icons. Restructure `FeedNavbar.tsx` desktop layout to a 3-column grid:
-- Left: IMAA logo
-- Center: Home / Trending / Upcoming (absolutely centered)
-- Right: Search (mobile toggle hidden on desktop), notifications, avatar
+### 3. Active tab visibility in light mode
+File: `src/components/feed/FeedNavbar.tsx` (desktop nav links lines 64-83)
 
-Use `flex justify-between` with the center group absolutely positioned, OR a 3-column grid (`grid-cols-3`) with center group `justify-center`. Grid is cleaner.
+Current active style: `text-foreground bg-secondary` — in light mode `bg-secondary` is barely visible against the navbar. Change active state to a clearly-distinct treatment:
 
-The desktop search input that currently lives between logo and nav will move into a popover/icon-trigger like the reference (search becomes an icon-button on desktop too, opening an inline expandable input or a command-style modal). Keeping it minimal: convert desktop search to icon-trigger that expands/opens a search popover, matching the reference.
+- Active: `text-primary bg-primary/10` + a 1px `border border-primary/20` (matches the "NEW" pill aesthetic and works in both themes)
+- Inactive: keep `text-muted-foreground hover:text-foreground hover:bg-secondary/60`
 
-### 4. Auth — premium password requirements UI
-Currently `Auth.tsx` shows a giant red error block listing the entire alphabet — looks like a wall of regex output. Replace with a classy inline checklist that lives **below the password field** and updates live as the user types. Pattern used by Stripe, Linear, Vercel:
-
-```
-Password
-[••••••••••••       👁]
-✓ At least 8 characters
-✓ One uppercase letter
-○ One number
-○ One special character
-```
-
-- Each rule renders as a small row: subtle muted icon + text, turns to primary/green check when satisfied
-- No big red error block on submit — instead disable the submit button until all rules pass, OR show a single concise toast
-- Compact, tasteful, no shouty colors
-
-Implementation in `src/pages/Auth.tsx`:
-- Add a `passwordChecks` derived object computed from the current `password` value
-- Render a small `<ul>` below the password input (signup mode only)
-- Remove the existing big red error block for password complexity
-- Keep destructive errors only for actual server errors (wrong credentials, network, etc.)
+This gives an unmistakable blue-tinted pill for the active page in both light and dark modes.
 
 ### Files touched
-- `src/pages/PostIdea.tsx` — remove one line
-- `src/components/feed/FeedNavbar.tsx` — desktop 3-col layout, mobile 5-slot bar with centered "+"
-- `src/components/layout/MobilePublishFAB.tsx` — delete (logic moves inline)
-- `src/pages/Auth.tsx` — replace password error block with live checklist
+- `src/pages/FeedbackSetup.tsx` — remove bottom button, add inline validation/highlighting, make top-right "+" the single add affordance
+- `src/pages/FeedbackFlow.tsx` — wire skip handler
+- `src/components/feedback/QuestionCard.tsx` — render Skip button
+- `src/components/feed/FeedNavbar.tsx` — improve active nav-link style
 
