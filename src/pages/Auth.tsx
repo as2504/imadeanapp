@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Check, Circle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -57,6 +57,15 @@ const Auth = () => {
       localStorage.removeItem("imaa_referral_code");
     }
   };
+
+  const passwordChecks = useMemo(() => ({
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  }), [password]);
+  const passwordValid = Object.values(passwordChecks).every(Boolean);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,6 +247,31 @@ const Auth = () => {
                   </button>
                 </div>
               )}
+              {isSignUp && password.length > 0 && (
+                <ul className="space-y-1 pt-2">
+                  {[
+                    { ok: passwordChecks.length, label: "At least 8 characters" },
+                    { ok: passwordChecks.upper, label: "One uppercase letter" },
+                    { ok: passwordChecks.lower, label: "One lowercase letter" },
+                    { ok: passwordChecks.number, label: "One number" },
+                    { ok: passwordChecks.special, label: "One special character" },
+                  ].map((rule) => (
+                    <li
+                      key={rule.label}
+                      className={`flex items-center gap-2 text-xs transition-colors ${
+                        rule.ok ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {rule.ok ? (
+                        <Check size={12} className="text-primary shrink-0" strokeWidth={3} />
+                      ) : (
+                        <Circle size={12} className="text-muted-foreground/50 shrink-0" />
+                      )}
+                      <span>{rule.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             {isSignUp && (
               <div className="flex items-start gap-2 mt-1">
@@ -259,7 +293,7 @@ const Auth = () => {
                 </label>
               </div>
             )}
-            <Button type="submit" disabled={loading || (isSignUp && !agreedToTerms)} className="w-full h-10 text-sm font-medium mt-2">
+            <Button type="submit" disabled={loading || (isSignUp && (!agreedToTerms || !passwordValid))} className="w-full h-10 text-sm font-medium mt-2">
               {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
             </Button>
           </form>
