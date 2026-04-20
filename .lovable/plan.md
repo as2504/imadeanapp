@@ -1,79 +1,54 @@
 
 
-# Plan: Upcoming Apps + "Notify Me"
+## Plan
 
-Adding "Notify Me" to the previously approved plan. Decisions locked in from prior discussion: 1 upvote per user, anonymous viewing allowed, 5 active ideas max per builder.
+### 1. PostIdea — remove tagline
+In `src/pages/PostIdea.tsx`, delete the `<p>` line: *"Validate before you build. No URL, no screenshots needed."* Keep the heading.
 
-## Navigation
+### 2. Mobile bottom nav — center the FAB
+Currently the FAB (`MobilePublishFAB`) floats above the bottom-right of the screen, separate from the bottom nav. The request is to embed a circular "+" button **in the middle of the bottom nav bar** itself (like Instagram/X mobile pattern).
 
-Desktop: **Home · Trending · Upcoming** (with NEW pill for 30 days)
-Mobile bottom: **Home · Trending · Upcoming · Account** + floating "+" FAB for Publish/Post Idea
+Changes:
+- **`src/components/feed/FeedNavbar.tsx`** — Restructure the mobile bottom bar to 5 slots: `Home · Trending · [+] · Upcoming · Account`. The middle slot is a raised circular primary-colored button that opens a small action sheet (Publish App / Post Idea).
+- **`src/components/layout/MobilePublishFAB.tsx`** — Remove (no longer needed as a separate floating element). The action-sheet logic moves inline into FeedNavbar, OR refactor MobilePublishFAB into a centered inline variant. Simpler: inline the button + popover inside FeedNavbar and delete MobilePublishFAB.
 
-## Database changes (single migration)
+### 3. Desktop navbar — center the nav links
+Reference image shows: `[IMAA logo]  ······  Home · Trending · Upcoming  ······  [search 🔍 🔔 👤]`
 
-1. Allow `'upcoming'` as a valid `apps.status` value
-2. Add columns: `apps.upvotes_count int default 0`, `apps.planned_launch text`, `apps.notify_count int default 0`
-3. New table `idea_upvotes (id, app_id, user_id, created_at)` — unique `(app_id, user_id)`
-4. New table `idea_notify_subscriptions (id, app_id, user_id, created_at, notified_at)` — unique `(app_id, user_id)`
-5. New table `notifications (id, user_id, type, app_id, title, body, read, created_at)` — for in-app notification bell
-6. Triggers:
-   - Sync `upvotes_count` and `notify_count` on insert/delete
-   - On `apps.status` change `upcoming → published`: insert a `notifications` row for every subscriber, mark `notified_at`
-7. RLS:
-   - Public can SELECT apps where `status IN ('published','upcoming')`
-   - `idea_upvotes` / `idea_notify_subscriptions`: insert/delete by self, public read counts
-   - `notifications`: SELECT/UPDATE only by `user_id`
-8. Enforce 5-active-ideas cap via insert trigger on `apps`
+Currently nav links sit on the right next to the icons. Restructure `FeedNavbar.tsx` desktop layout to a 3-column grid:
+- Left: IMAA logo
+- Center: Home / Trending / Upcoming (absolutely centered)
+- Right: Search (mobile toggle hidden on desktop), notifications, avatar
 
-## Pages & components
+Use `flex justify-between` with the center group absolutely positioned, OR a 3-column grid (`grid-cols-3`) with center group `justify-center`. Grid is cleaner.
 
-**New pages**
-- `src/pages/Upcoming.tsx` — list with sort tabs (Top Voted · Most Recent · Most Discussed · Launching Soon)
-- `src/pages/UpcomingDetail.tsx` — idea detail (upvote + notify-me + comments + owner "Convert to Published" banner)
-- `src/pages/PostIdea.tsx` — single-step lightweight form
+The desktop search input that currently lives between logo and nav will move into a popover/icon-trigger like the reference (search becomes an icon-button on desktop too, opening an inline expandable input or a command-style modal). Keeping it minimal: convert desktop search to icon-trigger that expands/opens a search popover, matching the reference.
 
-**New components**
-- `src/components/upcoming/IdeaCard.tsx` — row card, upvote on left
-- `src/components/upcoming/UpvoteButton.tsx` — optimistic toggle
-- `src/components/upcoming/NotifyMeButton.tsx` — bell-icon toggle, shows count
-- `src/components/upcoming/ConvertToPublishedBanner.tsx` — owner CTA
-- `src/components/profile/ProfileIdeas.tsx` — new "Ideas" profile tab
-- `src/components/layout/MobilePublishFAB.tsx` — floating "+" with menu (Publish App / Post Idea)
-- `src/components/notifications/NotificationDropdown.tsx` — replaces empty bell popover in `FeedNavbar`
+### 4. Auth — premium password requirements UI
+Currently `Auth.tsx` shows a giant red error block listing the entire alphabet — looks like a wall of regex output. Replace with a classy inline checklist that lives **below the password field** and updates live as the user types. Pattern used by Stripe, Linear, Vercel:
 
-## Files to modify
+```
+Password
+[••••••••••••       👁]
+✓ At least 8 characters
+✓ One uppercase letter
+○ One number
+○ One special character
+```
 
-| File | Change |
-|---|---|
-| `src/App.tsx` | Add routes `/upcoming`, `/upcoming/:slug`, `/post-idea` |
-| `src/components/feed/FeedNavbar.tsx` | Add Upcoming link + NEW pill, rebuild mobile bar, wire notification dropdown |
-| `src/pages/HomeFeed.tsx` | Verify `status='published'` filter, mount FAB |
-| `src/pages/Trending.tsx` | Verify exclusion of upcoming |
-| `src/pages/Profile.tsx` | Add "Ideas" tab |
-| `src/components/feed/SearchBar.tsx` | Tag upcoming results with "Idea" badge |
-| `src/components/publish/PublishForm.tsx` | When converting from upcoming, prefill from existing app row |
+- Each rule renders as a small row: subtle muted icon + text, turns to primary/green check when satisfied
+- No big red error block on submit — instead disable the submit button until all rules pass, OR show a single concise toast
+- Compact, tasteful, no shouty colors
 
-## "Notify Me" flow
+Implementation in `src/pages/Auth.tsx`:
+- Add a `passwordChecks` derived object computed from the current `password` value
+- Render a small `<ul>` below the password input (signup mode only)
+- Remove the existing big red error block for password complexity
+- Keep destructive errors only for actual server errors (wrong credentials, network, etc.)
 
-1. On `/upcoming/:slug`, anyone (logged in) can click bell → row in `idea_notify_subscriptions`
-2. Owner converts idea → publish (status update)
-3. Trigger fans out: one `notifications` row per subscriber + marks `notified_at`
-4. Bell icon in navbar shows unread badge; dropdown lists notifications; clicking deep-links to `/app/:slug`
-5. Email notifications: deferred to v2 (would require email infra setup)
-
-## Implementation order
-
-1. Migration (tables, columns, triggers, RLS, 5-idea cap)
-2. Routes + navbar (Upcoming link, mobile bar, FAB, notification dropdown shell)
-3. PostIdea page → ideas in DB
-4. Upcoming list + IdeaCard + UpvoteButton + NotifyMeButton
-5. UpcomingDetail + comments + ConvertToPublishedBanner
-6. Notification fan-out trigger + dropdown wiring
-7. Profile "Ideas" tab
-
-## Open confirmations
-
-- **Notification scope**: in-app only for v1 (email later)? Recommend yes.
-- **Notify Me requires login**: yes (need user_id to notify). Guests get a tooltip "Sign in to get notified".
-- **Show notify count publicly on idea card** (e.g. "🔔 47 waiting")? Recommend yes — strong social proof for the builder.
+### Files touched
+- `src/pages/PostIdea.tsx` — remove one line
+- `src/components/feed/FeedNavbar.tsx` — desktop 3-col layout, mobile 5-slot bar with centered "+"
+- `src/components/layout/MobilePublishFAB.tsx` — delete (logic moves inline)
+- `src/pages/Auth.tsx` — replace password error block with live checklist
 
