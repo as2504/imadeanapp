@@ -247,6 +247,31 @@ const Auth = () => {
                   </button>
                 </div>
               )}
+              {isSignUp && password.length > 0 && (
+                <ul className="space-y-1 pt-2">
+                  {[
+                    { ok: passwordChecks.length, label: "At least 8 characters" },
+                    { ok: passwordChecks.upper, label: "One uppercase letter" },
+                    { ok: passwordChecks.lower, label: "One lowercase letter" },
+                    { ok: passwordChecks.number, label: "One number" },
+                    { ok: passwordChecks.special, label: "One special character" },
+                  ].map((rule) => (
+                    <li
+                      key={rule.label}
+                      className={`flex items-center gap-2 text-xs transition-colors ${
+                        rule.ok ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {rule.ok ? (
+                        <Check size={12} className="text-primary shrink-0" strokeWidth={3} />
+                      ) : (
+                        <Circle size={12} className="text-muted-foreground/50 shrink-0" />
+                      )}
+                      <span>{rule.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             {isSignUp && (
               <div className="flex items-start gap-2 mt-1">
