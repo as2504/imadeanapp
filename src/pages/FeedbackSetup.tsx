@@ -518,18 +518,22 @@ const FeedbackSetup = () => {
                   <Sparkles size={14} className="text-primary" />
                   <p className="text-xs font-bold text-foreground uppercase tracking-wider">New Question</p>
                 </div>
-                <button onClick={() => { setShowAddForm(false); setNewQuestionText(""); setNewOptions(["", ""]); }} className="text-muted-foreground/60 hover:text-foreground">
+                <button onClick={() => { setShowAddForm(false); setNewQuestionText(""); setNewOptions(["", ""]); setNewErrors({}); }} className="text-muted-foreground/60 hover:text-foreground">
                   <X size={16} />
                 </button>
               </div>
 
               <Input
                 value={newQuestionText}
-                onChange={(e) => setNewQuestionText(e.target.value)}
+                onChange={(e) => { setNewQuestionText(e.target.value); if (newErrors.question) setNewErrors({ ...newErrors, question: false }); }}
                 placeholder="Enter your question..."
-                className="rounded-xl bg-background/50 border-border/40"
+                className={cn("rounded-xl bg-background/50 border-border/40", newErrors.question && "border-destructive ring-1 ring-destructive/40")}
+                aria-invalid={!!newErrors.question}
                 autoFocus
               />
+              {newErrors.question && (
+                <p className="text-[10px] font-medium text-destructive -mt-2">Question text required</p>
+              )}
 
               {feedbackType === "qna" && (
                 <>
@@ -543,21 +547,35 @@ const FeedbackSetup = () => {
 
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                    {newOptions.map((opt, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          value={opt}
-                          onChange={(e) => updateOption(i, e.target.value)}
-                          placeholder={`Option ${i + 1}`}
-                          className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
-                        />
-                        {newOptions.length > 2 && (
-                          <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {newOptions.map((opt, i) => {
+                      const optErr = !!newErrors.options?.[i];
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <Input
+                            value={opt}
+                            onChange={(e) => {
+                              updateOption(i, e.target.value);
+                              if (newErrors.options?.[i]) {
+                                const next = [...(newErrors.options || [])];
+                                next[i] = false;
+                                setNewErrors({ ...newErrors, options: next });
+                              }
+                            }}
+                            placeholder={`Option ${i + 1}`}
+                            className={cn("rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm", optErr && "border-destructive ring-1 ring-destructive/40")}
+                            aria-invalid={optErr}
+                          />
+                          {newOptions.length > 2 && (
+                            <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {newErrors.options && (
+                      <p className="text-[10px] font-medium text-destructive">At least 2 options required</p>
+                    )}
                     {newOptions.length < 5 && (
                       <button
                         onClick={addOptionField}
@@ -576,9 +594,9 @@ const FeedbackSetup = () => {
                 </p>
               )}
 
-              <Button onClick={handleAddQuestion} variant="secondary" className="w-full rounded-xl h-10 font-bold text-xs">
-                <Plus size={14} className="mr-1" /> Add Question
-              </Button>
+              <p className="text-[10px] text-muted-foreground text-center italic">
+                Tap the <Plus size={10} className="inline -mt-0.5" /> in the top right to save and add another question.
+              </p>
             </div>
           )}
 
