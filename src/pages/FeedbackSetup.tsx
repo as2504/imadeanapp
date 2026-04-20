@@ -42,12 +42,14 @@ const FeedbackSetup = () => {
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionType, setNewQuestionType] = useState<"single" | "multi">("single");
   const [newOptions, setNewOptions] = useState<string[]>(["", ""]);
+  const [newErrors, setNewErrors] = useState<{ question?: boolean; options?: boolean[] }>({});
 
   // Editing existing question
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [editType, setEditType] = useState<"single" | "multi">("single");
   const [editOptions, setEditOptions] = useState<string[]>([]);
+  const [editErrors, setEditErrors] = useState<{ question?: boolean; options?: boolean[] }>({});
 
   useEffect(() => {
     fetchAppAndConfig();
