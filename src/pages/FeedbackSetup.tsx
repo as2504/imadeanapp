@@ -79,62 +79,98 @@ const FeedbackSetup = () => {
     setEditText(q.text);
     setEditType(q.type);
     setEditOptions([...q.options]);
+    setEditErrors({});
   };
 
   const saveEditing = () => {
-    if (!editText.trim()) {
-      toast.error("Question text is required");
+    const errs: { question?: boolean; options?: boolean[] } = {};
+    if (!editText.trim()) errs.question = true;
+    if (feedbackType !== "satisfaction") {
+      const optErrs = editOptions.map((o) => !o.trim());
+      const validCount = editOptions.filter((o) => o.trim()).length;
+      if (validCount < 2) errs.options = optErrs;
+    }
+    if (errs.question || errs.options) {
+      setEditErrors(errs);
+      toast.error(errs.question ? "Question text required" : "At least 2 options required");
       return;
     }
     const validOpts = feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : editOptions.filter(o => o.trim());
-    if (feedbackType !== "satisfaction" && validOpts.length < 2) {
-      toast.error("At least 2 options required");
-      return;
-    }
     setQuestions(questions.map(q =>
       q.id === editingId ? { ...q, text: editText.trim(), type: feedbackType === "satisfaction" ? "single" : editType, options: validOpts } : q
     ));
     setEditingId(null);
+    setEditErrors({});
   };
 
   const cancelEditing = () => {
     setEditingId(null);
+    setEditErrors({});
   };
 
-  const handleAddQuestion = () => {
+  /**
+   * Commit current draft. Returns true if committed (or nothing to commit), false if validation failed.
+   */
+  const commitDraft = (): boolean => {
+    if (!showAddForm) return true;
+    // If form is completely empty, treat as no draft
+    const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
+    if (!hasAnyInput && feedbackType === "qna") {
+      // empty form — silently discard
+      setShowAddForm(false);
+      setNewErrors({});
+      return true;
+    }
+
+    const errs: { question?: boolean; options?: boolean[] } = {};
+    if (!newQuestionText.trim()) errs.question = true;
+    if (feedbackType === "qna") {
+      const optErrs = newOptions.map((o) => !o.trim());
+      const validCount = newOptions.filter((o) => o.trim()).length;
+      if (validCount < 2) errs.options = optErrs;
+    }
+    if (errs.question || errs.options) {
+      setNewErrors(errs);
+      toast.error(errs.question ? "Question text required" : "At least 2 options required");
+      return false;
+    }
+
+    if (questions.length >= 10) {
+      toast.error("Maximum 10 questions allowed");
+      return false;
+    }
+
+    const q: Question = {
+      id: `q-${Date.now()}`,
+      text: newQuestionText.trim(),
+      type: feedbackType === "satisfaction" ? "single" : newQuestionType,
+      options: feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : newOptions.filter((o) => o.trim()),
+    };
+    setQuestions([...questions, q]);
+    setNewQuestionText("");
+    setNewOptions(["", ""]);
+    setNewQuestionType("single");
+    setNewErrors({});
+    return true;
+  };
+
+  const handleTopRightAdd = () => {
     if (questions.length >= 10) {
       toast.error("Maximum 10 questions allowed");
       return;
     }
-    if (!newQuestionText.trim()) {
-      toast.error("Please enter a question");
+    if (!showAddForm) {
+      setShowAddForm(true);
+      setNewErrors({});
       return;
     }
-    if (feedbackType === "qna") {
-      const validOptions = newOptions.filter((o) => o.trim());
-      if (validOptions.length < 2) {
-        toast.error("Add at least 2 options");
-        return;
-      }
-      const q: Question = {
-        id: `q-${Date.now()}`,
-        text: newQuestionText.trim(),
-        type: newQuestionType,
-        options: validOptions,
-      };
-      setQuestions([...questions, q]);
-    } else {
-      const q: Question = {
-        id: `q-${Date.now()}`,
-        text: newQuestionText.trim(),
-        type: "single",
-        options: SATISFACTION_OPTIONS,
-      };
-      setQuestions([...questions, q]);
-    }
-    setNewQuestionText("");
-    setNewOptions(["", ""]);
-    setNewQuestionType("single");
+    // Form is open — try to commit and keep open for next question
+    commitDraft();
+  };
+
+  const removeQuestion = (id: string) => {
+    setQuestions(questions.filter((q) => q.id !== id));
+    if (editingId === id) setEditingId(null);
   };
 
   const removeQuestion = (id: string) => {
