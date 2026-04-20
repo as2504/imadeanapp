@@ -68,8 +68,10 @@ const FeedNavbar = () => {
                 <button
                   key={item.label}
                   onClick={() => navigate(item.href)}
-                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    active ? "text-foreground bg-secondary" : "text-muted-foreground hover:text-foreground"
+                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                    active
+                      ? "text-primary bg-primary/10 border-primary/20"
+                      : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary/60"
                   }`}
                 >
                   <item.icon size={16} />

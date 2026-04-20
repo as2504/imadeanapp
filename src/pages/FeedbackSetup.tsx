@@ -42,12 +42,14 @@ const FeedbackSetup = () => {
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionType, setNewQuestionType] = useState<"single" | "multi">("single");
   const [newOptions, setNewOptions] = useState<string[]>(["", ""]);
+  const [newErrors, setNewErrors] = useState<{ question?: boolean; options?: boolean[] }>({});
 
   // Editing existing question
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [editType, setEditType] = useState<"single" | "multi">("single");
   const [editOptions, setEditOptions] = useState<string[]>([]);
+  const [editErrors, setEditErrors] = useState<{ question?: boolean; options?: boolean[] }>({});
 
   useEffect(() => {
     fetchAppAndConfig();
@@ -77,68 +79,100 @@ const FeedbackSetup = () => {
     setEditText(q.text);
     setEditType(q.type);
     setEditOptions([...q.options]);
+    setEditErrors({});
   };
 
   const saveEditing = () => {
-    if (!editText.trim()) {
-      toast.error("Question text is required");
+    const errs: { question?: boolean; options?: boolean[] } = {};
+    if (!editText.trim()) errs.question = true;
+    if (feedbackType !== "satisfaction") {
+      const optErrs = editOptions.map((o) => !o.trim());
+      const validCount = editOptions.filter((o) => o.trim()).length;
+      if (validCount < 2) errs.options = optErrs;
+    }
+    if (errs.question || errs.options) {
+      setEditErrors(errs);
+      toast.error(errs.question ? "Question text required" : "At least 2 options required");
       return;
     }
     const validOpts = feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : editOptions.filter(o => o.trim());
-    if (feedbackType !== "satisfaction" && validOpts.length < 2) {
-      toast.error("At least 2 options required");
-      return;
-    }
     setQuestions(questions.map(q =>
       q.id === editingId ? { ...q, text: editText.trim(), type: feedbackType === "satisfaction" ? "single" : editType, options: validOpts } : q
     ));
     setEditingId(null);
+    setEditErrors({});
   };
 
   const cancelEditing = () => {
     setEditingId(null);
+    setEditErrors({});
   };
 
-  const handleAddQuestion = () => {
+  /**
+   * Commit current draft. Returns true if committed (or nothing to commit), false if validation failed.
+   */
+  const commitDraft = (): boolean => {
+    if (!showAddForm) return true;
+    // If form is completely empty, treat as no draft
+    const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
+    if (!hasAnyInput && feedbackType === "qna") {
+      // empty form — silently discard
+      setShowAddForm(false);
+      setNewErrors({});
+      return true;
+    }
+
+    const errs: { question?: boolean; options?: boolean[] } = {};
+    if (!newQuestionText.trim()) errs.question = true;
+    if (feedbackType === "qna") {
+      const optErrs = newOptions.map((o) => !o.trim());
+      const validCount = newOptions.filter((o) => o.trim()).length;
+      if (validCount < 2) errs.options = optErrs;
+    }
+    if (errs.question || errs.options) {
+      setNewErrors(errs);
+      toast.error(errs.question ? "Question text required" : "At least 2 options required");
+      return false;
+    }
+
+    if (questions.length >= 10) {
+      toast.error("Maximum 10 questions allowed");
+      return false;
+    }
+
+    const q: Question = {
+      id: `q-${Date.now()}`,
+      text: newQuestionText.trim(),
+      type: feedbackType === "satisfaction" ? "single" : newQuestionType,
+      options: feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : newOptions.filter((o) => o.trim()),
+    };
+    setQuestions([...questions, q]);
+    setNewQuestionText("");
+    setNewOptions(["", ""]);
+    setNewQuestionType("single");
+    setNewErrors({});
+    return true;
+  };
+
+  const handleTopRightAdd = () => {
     if (questions.length >= 10) {
       toast.error("Maximum 10 questions allowed");
       return;
     }
-    if (!newQuestionText.trim()) {
-      toast.error("Please enter a question");
+    if (!showAddForm) {
+      setShowAddForm(true);
+      setNewErrors({});
       return;
     }
-    if (feedbackType === "qna") {
-      const validOptions = newOptions.filter((o) => o.trim());
-      if (validOptions.length < 2) {
-        toast.error("Add at least 2 options");
-        return;
-      }
-      const q: Question = {
-        id: `q-${Date.now()}`,
-        text: newQuestionText.trim(),
-        type: newQuestionType,
-        options: validOptions,
-      };
-      setQuestions([...questions, q]);
-    } else {
-      const q: Question = {
-        id: `q-${Date.now()}`,
-        text: newQuestionText.trim(),
-        type: "single",
-        options: SATISFACTION_OPTIONS,
-      };
-      setQuestions([...questions, q]);
-    }
-    setNewQuestionText("");
-    setNewOptions(["", ""]);
-    setNewQuestionType("single");
+    // Form is open — try to commit and keep open for next question
+    commitDraft();
   };
 
   const removeQuestion = (id: string) => {
     setQuestions(questions.filter((q) => q.id !== id));
     if (editingId === id) setEditingId(null);
   };
+
 
   const addOptionField = () => {
     if (newOptions.length >= 5) return;
@@ -175,7 +209,42 @@ const FeedbackSetup = () => {
   const handleDone = async () => {
     if (!user || !appId) return;
 
-    const finalQuestions = questions;
+    let finalQuestions = questions;
+
+    // Force-commit any open draft before saving
+    if (showAddForm) {
+      const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
+      if (hasAnyInput) {
+        const errs: { question?: boolean; options?: boolean[] } = {};
+        if (!newQuestionText.trim()) errs.question = true;
+        if (feedbackType === "qna") {
+          const optErrs = newOptions.map((o) => !o.trim());
+          const validCount = newOptions.filter((o) => o.trim()).length;
+          if (validCount < 2) errs.options = optErrs;
+        }
+        if (errs.question || errs.options) {
+          setNewErrors(errs);
+          toast.error(errs.question ? "Question text required" : "At least 2 options required");
+          return;
+        }
+        const draftQ: Question = {
+          id: `q-${Date.now()}`,
+          text: newQuestionText.trim(),
+          type: feedbackType === "satisfaction" ? "single" : newQuestionType,
+          options: feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : newOptions.filter((o) => o.trim()),
+        };
+        finalQuestions = [...questions, draftQ];
+        setQuestions(finalQuestions);
+        setNewQuestionText("");
+        setNewOptions(["", ""]);
+        setNewQuestionType("single");
+        setNewErrors({});
+        setShowAddForm(false);
+      } else {
+        setShowAddForm(false);
+      }
+    }
+
     if (finalQuestions.length === 0) {
       toast.error("Add at least one question");
       return;
@@ -313,10 +382,11 @@ const FeedbackSetup = () => {
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Questions ({questions.length}/10)
               </Label>
-              {questions.length < 10 && !showAddForm && !editingId && (
+              {questions.length < 10 && !editingId && (
                 <button
-                  onClick={() => setShowAddForm(true)}
+                  onClick={handleTopRightAdd}
                   className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  aria-label={showAddForm ? "Save question and add another" : "Add question"}
                 >
                   <Plus size={14} />
                 </button>
@@ -333,10 +403,14 @@ const FeedbackSetup = () => {
                     </div>
                     <Input
                       value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="rounded-xl bg-background/50 border-border/40"
+                      onChange={(e) => { setEditText(e.target.value); if (editErrors.question) setEditErrors({ ...editErrors, question: false }); }}
+                      className={cn("rounded-xl bg-background/50 border-border/40", editErrors.question && "border-destructive ring-1 ring-destructive/40")}
                       placeholder="Question text..."
+                      aria-invalid={!!editErrors.question}
                     />
+                    {editErrors.question && (
+                      <p className="text-[10px] font-medium text-destructive">Question text required</p>
+                    )}
                     {feedbackType === "qna" && (
                       <>
                         <div className="flex items-center gap-3">
@@ -348,21 +422,35 @@ const FeedbackSetup = () => {
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                          {editOptions.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <Input
-                                value={opt}
-                                onChange={(e) => updateEditOption(i, e.target.value)}
-                                placeholder={`Option ${i + 1}`}
-                                className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
-                              />
-                              {editOptions.length > 2 && (
-                                <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                                  <X size={14} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                          {editOptions.map((opt, i) => {
+                            const optErr = !!editErrors.options?.[i];
+                            return (
+                              <div key={i} className="flex items-center gap-2">
+                                <Input
+                                  value={opt}
+                                  onChange={(e) => {
+                                    updateEditOption(i, e.target.value);
+                                    if (editErrors.options?.[i]) {
+                                      const next = [...(editErrors.options || [])];
+                                      next[i] = false;
+                                      setEditErrors({ ...editErrors, options: next });
+                                    }
+                                  }}
+                                  placeholder={`Option ${i + 1}`}
+                                  className={cn("rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm", optErr && "border-destructive ring-1 ring-destructive/40")}
+                                  aria-invalid={optErr}
+                                />
+                                {editOptions.length > 2 && (
+                                  <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {editErrors.options && (
+                            <p className="text-[10px] font-medium text-destructive">At least 2 options required</p>
+                          )}
                           {editOptions.length < 5 && (
                             <button
                               onClick={addEditOptionField}
@@ -430,18 +518,22 @@ const FeedbackSetup = () => {
                   <Sparkles size={14} className="text-primary" />
                   <p className="text-xs font-bold text-foreground uppercase tracking-wider">New Question</p>
                 </div>
-                <button onClick={() => { setShowAddForm(false); setNewQuestionText(""); setNewOptions(["", ""]); }} className="text-muted-foreground/60 hover:text-foreground">
+                <button onClick={() => { setShowAddForm(false); setNewQuestionText(""); setNewOptions(["", ""]); setNewErrors({}); }} className="text-muted-foreground/60 hover:text-foreground">
                   <X size={16} />
                 </button>
               </div>
 
               <Input
                 value={newQuestionText}
-                onChange={(e) => setNewQuestionText(e.target.value)}
+                onChange={(e) => { setNewQuestionText(e.target.value); if (newErrors.question) setNewErrors({ ...newErrors, question: false }); }}
                 placeholder="Enter your question..."
-                className="rounded-xl bg-background/50 border-border/40"
+                className={cn("rounded-xl bg-background/50 border-border/40", newErrors.question && "border-destructive ring-1 ring-destructive/40")}
+                aria-invalid={!!newErrors.question}
                 autoFocus
               />
+              {newErrors.question && (
+                <p className="text-[10px] font-medium text-destructive -mt-2">Question text required</p>
+              )}
 
               {feedbackType === "qna" && (
                 <>
@@ -455,21 +547,35 @@ const FeedbackSetup = () => {
 
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                    {newOptions.map((opt, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          value={opt}
-                          onChange={(e) => updateOption(i, e.target.value)}
-                          placeholder={`Option ${i + 1}`}
-                          className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
-                        />
-                        {newOptions.length > 2 && (
-                          <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {newOptions.map((opt, i) => {
+                      const optErr = !!newErrors.options?.[i];
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <Input
+                            value={opt}
+                            onChange={(e) => {
+                              updateOption(i, e.target.value);
+                              if (newErrors.options?.[i]) {
+                                const next = [...(newErrors.options || [])];
+                                next[i] = false;
+                                setNewErrors({ ...newErrors, options: next });
+                              }
+                            }}
+                            placeholder={`Option ${i + 1}`}
+                            className={cn("rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm", optErr && "border-destructive ring-1 ring-destructive/40")}
+                            aria-invalid={optErr}
+                          />
+                          {newOptions.length > 2 && (
+                            <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {newErrors.options && (
+                      <p className="text-[10px] font-medium text-destructive">At least 2 options required</p>
+                    )}
                     {newOptions.length < 5 && (
                       <button
                         onClick={addOptionField}
@@ -488,9 +594,9 @@ const FeedbackSetup = () => {
                 </p>
               )}
 
-              <Button onClick={handleAddQuestion} variant="secondary" className="w-full rounded-xl h-10 font-bold text-xs">
-                <Plus size={14} className="mr-1" /> Add Question
-              </Button>
+              <p className="text-[10px] text-muted-foreground text-center italic">
+                Tap the <Plus size={10} className="inline -mt-0.5" /> in the top right to save and add another question.
+              </p>
             </div>
           )}
 
