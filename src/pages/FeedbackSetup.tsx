@@ -209,14 +209,42 @@ const FeedbackSetup = () => {
   const handleDone = async () => {
     if (!user || !appId) return;
 
+    let finalQuestions = questions;
+
     // Force-commit any open draft before saving
     if (showAddForm) {
-      const ok = commitDraft();
       const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
-      if (!ok && hasAnyInput) return; // validation failed, stay on form
+      if (hasAnyInput) {
+        const errs: { question?: boolean; options?: boolean[] } = {};
+        if (!newQuestionText.trim()) errs.question = true;
+        if (feedbackType === "qna") {
+          const optErrs = newOptions.map((o) => !o.trim());
+          const validCount = newOptions.filter((o) => o.trim()).length;
+          if (validCount < 2) errs.options = optErrs;
+        }
+        if (errs.question || errs.options) {
+          setNewErrors(errs);
+          toast.error(errs.question ? "Question text required" : "At least 2 options required");
+          return;
+        }
+        const draftQ: Question = {
+          id: `q-${Date.now()}`,
+          text: newQuestionText.trim(),
+          type: feedbackType === "satisfaction" ? "single" : newQuestionType,
+          options: feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : newOptions.filter((o) => o.trim()),
+        };
+        finalQuestions = [...questions, draftQ];
+        setQuestions(finalQuestions);
+        setNewQuestionText("");
+        setNewOptions(["", ""]);
+        setNewQuestionType("single");
+        setNewErrors({});
+        setShowAddForm(false);
+      } else {
+        setShowAddForm(false);
+      }
     }
 
-    const finalQuestions = questions;
     if (finalQuestions.length === 0) {
       toast.error("Add at least one question");
       return;
