@@ -3,9 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -14,8 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { X, Plus, Trash2, Sparkles, TestTube, Pencil, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, Plus, Trash2, TestTube, Pencil } from "lucide-react";
+import QuestionEditorDialog, { type QuestionDraft } from "@/components/feedback/QuestionEditorDialog";
 
 interface Question {
   id: string;
@@ -37,19 +35,9 @@ const FeedbackSetup = () => {
   const [saving, setSaving] = useState(false);
   const [existingConfigId, setExistingConfigId] = useState<string | null>(null);
 
-  // New question form
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newQuestionText, setNewQuestionText] = useState("");
-  const [newQuestionType, setNewQuestionType] = useState<"single" | "multi">("single");
-  const [newOptions, setNewOptions] = useState<string[]>(["", ""]);
-  const [newErrors, setNewErrors] = useState<{ question?: boolean; options?: boolean[] }>({});
-
-  // Editing existing question
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
-  const [editType, setEditType] = useState<"single" | "multi">("single");
-  const [editOptions, setEditOptions] = useState<string[]>([]);
-  const [editErrors, setEditErrors] = useState<{ question?: boolean; options?: boolean[] }>({});
 
   useEffect(() => {
     fetchAppAndConfig();
@@ -74,178 +62,48 @@ const FeedbackSetup = () => {
     }
   };
 
-  const startEditing = (q: Question) => {
+  const openCreate = () => {
+    if (questions.length >= 10) {
+      toast.error("Maximum 10 questions allowed");
+      return;
+    }
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (q: Question) => {
     setEditingId(q.id);
-    setEditText(q.text);
-    setEditType(q.type);
-    setEditOptions([...q.options]);
-    setEditErrors({});
+    setModalOpen(true);
   };
 
-  const saveEditing = () => {
-    const errs: { question?: boolean; options?: boolean[] } = {};
-    if (!editText.trim()) errs.question = true;
-    if (feedbackType !== "satisfaction") {
-      const optErrs = editOptions.map((o) => !o.trim());
-      const validCount = editOptions.filter((o) => o.trim()).length;
-      if (validCount < 2) errs.options = optErrs;
+  const handleCommit = (draft: QuestionDraft) => {
+    if (editingId) {
+      setQuestions(questions.map((q) =>
+        q.id === editingId
+          ? { ...q, text: draft.text, type: draft.type, options: draft.options }
+          : q
+      ));
+    } else {
+      const q: Question = {
+        id: `q-${Date.now()}`,
+        text: draft.text,
+        type: draft.type,
+        options: draft.options,
+      };
+      setQuestions([...questions, q]);
     }
-    if (errs.question || errs.options) {
-      setEditErrors(errs);
-      toast.error(errs.question ? "Question text required" : "At least 2 options required");
-      return;
-    }
-    const validOpts = feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : editOptions.filter(o => o.trim());
-    setQuestions(questions.map(q =>
-      q.id === editingId ? { ...q, text: editText.trim(), type: feedbackType === "satisfaction" ? "single" : editType, options: validOpts } : q
-    ));
+    setModalOpen(false);
     setEditingId(null);
-    setEditErrors({});
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditErrors({});
-  };
-
-  /**
-   * Commit current draft. Returns true if committed (or nothing to commit), false if validation failed.
-   */
-  const commitDraft = (): boolean => {
-    if (!showAddForm) return true;
-    // If form is completely empty, treat as no draft
-    const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
-    if (!hasAnyInput && feedbackType === "qna") {
-      // empty form — silently discard
-      setShowAddForm(false);
-      setNewErrors({});
-      return true;
-    }
-
-    const errs: { question?: boolean; options?: boolean[] } = {};
-    if (!newQuestionText.trim()) errs.question = true;
-    if (feedbackType === "qna") {
-      const optErrs = newOptions.map((o) => !o.trim());
-      const validCount = newOptions.filter((o) => o.trim()).length;
-      if (validCount < 2) errs.options = optErrs;
-    }
-    if (errs.question || errs.options) {
-      setNewErrors(errs);
-      toast.error(errs.question ? "Question text required" : "At least 2 options required");
-      return false;
-    }
-
-    if (questions.length >= 10) {
-      toast.error("Maximum 10 questions allowed");
-      return false;
-    }
-
-    const q: Question = {
-      id: `q-${Date.now()}`,
-      text: newQuestionText.trim(),
-      type: feedbackType === "satisfaction" ? "single" : newQuestionType,
-      options: feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : newOptions.filter((o) => o.trim()),
-    };
-    setQuestions([...questions, q]);
-    setNewQuestionText("");
-    setNewOptions(["", ""]);
-    setNewQuestionType("single");
-    setNewErrors({});
-    return true;
-  };
-
-  const handleTopRightAdd = () => {
-    if (questions.length >= 10) {
-      toast.error("Maximum 10 questions allowed");
-      return;
-    }
-    if (!showAddForm) {
-      setShowAddForm(true);
-      setNewErrors({});
-      return;
-    }
-    // Form is open — try to commit and keep open for next question
-    commitDraft();
   };
 
   const removeQuestion = (id: string) => {
     setQuestions(questions.filter((q) => q.id !== id));
-    if (editingId === id) setEditingId(null);
-  };
-
-
-  const addOptionField = () => {
-    if (newOptions.length >= 5) return;
-    setNewOptions([...newOptions, ""]);
-  };
-
-  const updateOption = (index: number, value: string) => {
-    const updated = [...newOptions];
-    updated[index] = value;
-    setNewOptions(updated);
-  };
-
-  const removeOption = (index: number) => {
-    if (newOptions.length <= 2) return;
-    setNewOptions(newOptions.filter((_, i) => i !== index));
-  };
-
-  const addEditOptionField = () => {
-    if (editOptions.length >= 5) return;
-    setEditOptions([...editOptions, ""]);
-  };
-
-  const updateEditOption = (index: number, value: string) => {
-    const updated = [...editOptions];
-    updated[index] = value;
-    setEditOptions(updated);
-  };
-
-  const removeEditOption = (index: number) => {
-    if (editOptions.length <= 2) return;
-    setEditOptions(editOptions.filter((_, i) => i !== index));
   };
 
   const handleDone = async () => {
     if (!user || !appId) return;
 
-    let finalQuestions = questions;
-
-    // Force-commit any open draft before saving
-    if (showAddForm) {
-      const hasAnyInput = newQuestionText.trim() || newOptions.some((o) => o.trim());
-      if (hasAnyInput) {
-        const errs: { question?: boolean; options?: boolean[] } = {};
-        if (!newQuestionText.trim()) errs.question = true;
-        if (feedbackType === "qna") {
-          const optErrs = newOptions.map((o) => !o.trim());
-          const validCount = newOptions.filter((o) => o.trim()).length;
-          if (validCount < 2) errs.options = optErrs;
-        }
-        if (errs.question || errs.options) {
-          setNewErrors(errs);
-          toast.error(errs.question ? "Question text required" : "At least 2 options required");
-          return;
-        }
-        const draftQ: Question = {
-          id: `q-${Date.now()}`,
-          text: newQuestionText.trim(),
-          type: feedbackType === "satisfaction" ? "single" : newQuestionType,
-          options: feedbackType === "satisfaction" ? SATISFACTION_OPTIONS : newOptions.filter((o) => o.trim()),
-        };
-        finalQuestions = [...questions, draftQ];
-        setQuestions(finalQuestions);
-        setNewQuestionText("");
-        setNewOptions(["", ""]);
-        setNewQuestionType("single");
-        setNewErrors({});
-        setShowAddForm(false);
-      } else {
-        setShowAddForm(false);
-      }
-    }
-
-    if (finalQuestions.length === 0) {
+    if (questions.length === 0) {
       toast.error("Add at least one question");
       return;
     }
@@ -256,7 +114,7 @@ const FeedbackSetup = () => {
       user_id: user.id,
       feedback_type: feedbackType,
       is_enabled: true,
-      questions: finalQuestions,
+      questions,
       updated_at: new Date().toISOString(),
     };
 
@@ -321,6 +179,8 @@ const FeedbackSetup = () => {
     Bad: "text-rose-500",
   };
 
+  const editingQuestion = editingId ? questions.find((q) => q.id === editingId) : null;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-40 bg-navbar/95 backdrop-blur-xl border-b border-border/40">
@@ -375,230 +235,86 @@ const FeedbackSetup = () => {
           </div>
         )}
 
-        {/* Existing questions */}
+        {/* Questions list */}
         <div className="space-y-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Questions ({questions.length}/10)
               </Label>
-              {questions.length < 10 && !editingId && (
+              {questions.length < 10 && (
                 <button
-                  onClick={handleTopRightAdd}
+                  onClick={openCreate}
                   className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
-                  aria-label={showAddForm ? "Save question and add another" : "Add question"}
+                  aria-label="Add question"
                 >
                   <Plus size={14} />
                 </button>
               )}
             </div>
-            {questions.map((q, idx) => (
-              <div key={q.id} className="bg-card border border-border/40 rounded-2xl p-4 group/q">
-                {editingId === q.id ? (
-                  /* Inline edit mode */
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Q{idx + 1}</span>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase">Editing</span>
-                    </div>
-                    <Input
-                      value={editText}
-                      onChange={(e) => { setEditText(e.target.value); if (editErrors.question) setEditErrors({ ...editErrors, question: false }); }}
-                      className={cn("rounded-xl bg-background/50 border-border/40", editErrors.question && "border-destructive ring-1 ring-destructive/40")}
-                      placeholder="Question text..."
-                      aria-invalid={!!editErrors.question}
-                    />
-                    {editErrors.question && (
-                      <p className="text-[10px] font-medium text-destructive">Question text required</p>
-                    )}
-                    {feedbackType === "qna" && (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
-                          <Switch
-                            checked={editType === "multi"}
-                            onCheckedChange={(c) => setEditType(c ? "multi" : "single")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                          {editOptions.map((opt, i) => {
-                            const optErr = !!editErrors.options?.[i];
-                            return (
-                              <div key={i} className="flex items-center gap-2">
-                                <Input
-                                  value={opt}
-                                  onChange={(e) => {
-                                    updateEditOption(i, e.target.value);
-                                    if (editErrors.options?.[i]) {
-                                      const next = [...(editErrors.options || [])];
-                                      next[i] = false;
-                                      setEditErrors({ ...editErrors, options: next });
-                                    }
-                                  }}
-                                  placeholder={`Option ${i + 1}`}
-                                  className={cn("rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm", optErr && "border-destructive ring-1 ring-destructive/40")}
-                                  aria-invalid={optErr}
-                                />
-                                {editOptions.length > 2 && (
-                                  <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                                    <X size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {editErrors.options && (
-                            <p className="text-[10px] font-medium text-destructive">At least 2 options required</p>
-                          )}
-                          {editOptions.length < 5 && (
-                            <button
-                              onClick={addEditOptionField}
-                              className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
-                            >
-                              <Plus size={12} /> Add Option
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                    <div className="flex gap-2 pt-1">
-                      <Button size="sm" onClick={saveEditing} className="rounded-xl h-8 text-xs font-bold gap-1">
-                        <Check size={12} /> Save
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEditing} className="rounded-xl h-8 text-xs font-bold">
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  /* View mode */
+
+            {questions.length === 0 ? (
+              <button
+                onClick={openCreate}
+                className="w-full bg-card border border-dashed border-border/60 rounded-2xl py-10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Plus size={16} />
+                </div>
+                <p className="text-xs font-bold">Add your first question</p>
+              </button>
+            ) : (
+              questions.map((q, idx) => (
+                <div
+                  key={q.id}
+                  className="bg-card border border-border/40 rounded-2xl p-4 group/q animate-in fade-in slide-in-from-top-2 duration-300"
+                >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Q{idx + 1}</span>
                         <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase">
                           {q.type === "single" ? "Single" : "Multi"}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-foreground">{q.text}</p>
+                      <p className="text-sm font-medium text-foreground break-words">{q.text}</p>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {q.options.map((o) => (
-                          <span key={o} className={`px-2.5 py-1 rounded-lg bg-background text-[11px] font-medium border border-border/30 ${feedbackType === "satisfaction" ? satisfactionColors[o] || "text-muted-foreground" : "text-muted-foreground"}`}>
-                            {feedbackType === "satisfaction" && satisfactionIcons[o] ? `${satisfactionIcons[o]} ` : ""}{o}
+                          <span
+                            key={o}
+                            className={`px-2.5 py-1 rounded-lg bg-background text-[11px] font-medium border border-border/30 ${
+                              feedbackType === "satisfaction"
+                                ? satisfactionColors[o] || "text-muted-foreground"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {feedbackType === "satisfaction" && satisfactionIcons[o] ? `${satisfactionIcons[o]} ` : ""}
+                            {o}
                           </span>
                         ))}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
-                        onClick={() => startEditing(q)}
-                        className="text-muted-foreground/40 hover:text-primary transition-colors p-1 opacity-0 group-hover/q:opacity-100"
+                        onClick={() => openEdit(q)}
+                        className="text-muted-foreground/60 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-secondary/60"
+                        aria-label="Edit question"
                       >
                         <Pencil size={14} />
                       </button>
                       <button
                         onClick={() => removeQuestion(q.id)}
-                        className="text-muted-foreground/40 hover:text-destructive transition-colors p-1 opacity-0 group-hover/q:opacity-100"
+                        className="text-muted-foreground/60 hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-secondary/60"
+                        aria-label="Delete question"
                       >
                         <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Add new question form — collapsible */}
-          {showAddForm && questions.length < 10 && (
-            <div className="bg-card border border-border/40 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-primary" />
-                  <p className="text-xs font-bold text-foreground uppercase tracking-wider">New Question</p>
                 </div>
-                <button onClick={() => { setShowAddForm(false); setNewQuestionText(""); setNewOptions(["", ""]); setNewErrors({}); }} className="text-muted-foreground/60 hover:text-foreground">
-                  <X size={16} />
-                </button>
-              </div>
-
-              <Input
-                value={newQuestionText}
-                onChange={(e) => { setNewQuestionText(e.target.value); if (newErrors.question) setNewErrors({ ...newErrors, question: false }); }}
-                placeholder="Enter your question..."
-                className={cn("rounded-xl bg-background/50 border-border/40", newErrors.question && "border-destructive ring-1 ring-destructive/40")}
-                aria-invalid={!!newErrors.question}
-                autoFocus
-              />
-              {newErrors.question && (
-                <p className="text-[10px] font-medium text-destructive -mt-2">Question text required</p>
-              )}
-
-              {feedbackType === "qna" && (
-                <>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Multi-choice</Label>
-                    <Switch
-                      checked={newQuestionType === "multi"}
-                      onCheckedChange={(c) => setNewQuestionType(c ? "multi" : "single")}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                    {newOptions.map((opt, i) => {
-                      const optErr = !!newErrors.options?.[i];
-                      return (
-                        <div key={i} className="flex items-center gap-2">
-                          <Input
-                            value={opt}
-                            onChange={(e) => {
-                              updateOption(i, e.target.value);
-                              if (newErrors.options?.[i]) {
-                                const next = [...(newErrors.options || [])];
-                                next[i] = false;
-                                setNewErrors({ ...newErrors, options: next });
-                              }
-                            }}
-                            placeholder={`Option ${i + 1}`}
-                            className={cn("rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm", optErr && "border-destructive ring-1 ring-destructive/40")}
-                            aria-invalid={optErr}
-                          />
-                          {newOptions.length > 2 && (
-                            <button onClick={() => removeOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                              <X size={14} />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {newErrors.options && (
-                      <p className="text-[10px] font-medium text-destructive">At least 2 options required</p>
-                    )}
-                    {newOptions.length < 5 && (
-                      <button
-                        onClick={addOptionField}
-                        className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wider hover:opacity-80"
-                      >
-                        <Plus size={12} /> Add Option
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {feedbackType === "satisfaction" && (
-                <p className="text-[10px] text-muted-foreground italic">
-                  Options will be: Great, Good, Okay, Bad (fixed for satisfaction type)
-                </p>
-              )}
-
-              <p className="text-[10px] text-muted-foreground text-center italic">
-                Tap the <Plus size={10} className="inline -mt-0.5" /> in the top right to save and add another question.
-              </p>
-            </div>
-          )}
+              ))
+            )}
+          </div>
 
           <p className="text-[10px] text-muted-foreground text-center italic">
             Maximum 10 questions allowed.
@@ -620,6 +336,20 @@ const FeedbackSetup = () => {
           </div>
         )}
       </main>
+
+      <QuestionEditorDialog
+        open={modalOpen}
+        mode={editingId ? "edit" : "create"}
+        feedbackType={feedbackType}
+        initial={editingQuestion ? {
+          id: editingQuestion.id,
+          text: editingQuestion.text,
+          type: editingQuestion.type,
+          options: editingQuestion.options,
+        } : undefined}
+        onClose={() => { setModalOpen(false); setEditingId(null); }}
+        onCommit={handleCommit}
+      />
     </div>
   );
 };
