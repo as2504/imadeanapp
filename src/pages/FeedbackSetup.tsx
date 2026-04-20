@@ -382,10 +382,11 @@ const FeedbackSetup = () => {
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Questions ({questions.length}/10)
               </Label>
-              {questions.length < 10 && !showAddForm && !editingId && (
+              {questions.length < 10 && !editingId && (
                 <button
-                  onClick={() => setShowAddForm(true)}
+                  onClick={handleTopRightAdd}
                   className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  aria-label={showAddForm ? "Save question and add another" : "Add question"}
                 >
                   <Plus size={14} />
                 </button>
@@ -402,10 +403,14 @@ const FeedbackSetup = () => {
                     </div>
                     <Input
                       value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="rounded-xl bg-background/50 border-border/40"
+                      onChange={(e) => { setEditText(e.target.value); if (editErrors.question) setEditErrors({ ...editErrors, question: false }); }}
+                      className={cn("rounded-xl bg-background/50 border-border/40", editErrors.question && "border-destructive ring-1 ring-destructive/40")}
                       placeholder="Question text..."
+                      aria-invalid={!!editErrors.question}
                     />
+                    {editErrors.question && (
+                      <p className="text-[10px] font-medium text-destructive">Question text required</p>
+                    )}
                     {feedbackType === "qna" && (
                       <>
                         <div className="flex items-center gap-3">
@@ -417,21 +422,35 @@ const FeedbackSetup = () => {
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Options</Label>
-                          {editOptions.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <Input
-                                value={opt}
-                                onChange={(e) => updateEditOption(i, e.target.value)}
-                                placeholder={`Option ${i + 1}`}
-                                className="rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm"
-                              />
-                              {editOptions.length > 2 && (
-                                <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
-                                  <X size={14} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                          {editOptions.map((opt, i) => {
+                            const optErr = !!editErrors.options?.[i];
+                            return (
+                              <div key={i} className="flex items-center gap-2">
+                                <Input
+                                  value={opt}
+                                  onChange={(e) => {
+                                    updateEditOption(i, e.target.value);
+                                    if (editErrors.options?.[i]) {
+                                      const next = [...(editErrors.options || [])];
+                                      next[i] = false;
+                                      setEditErrors({ ...editErrors, options: next });
+                                    }
+                                  }}
+                                  placeholder={`Option ${i + 1}`}
+                                  className={cn("rounded-xl bg-background/50 border-border/40 flex-1 h-9 text-sm", optErr && "border-destructive ring-1 ring-destructive/40")}
+                                  aria-invalid={optErr}
+                                />
+                                {editOptions.length > 2 && (
+                                  <button onClick={() => removeEditOption(i)} className="text-muted-foreground/40 hover:text-destructive">
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {editErrors.options && (
+                            <p className="text-[10px] font-medium text-destructive">At least 2 options required</p>
+                          )}
                           {editOptions.length < 5 && (
                             <button
                               onClick={addEditOptionField}
