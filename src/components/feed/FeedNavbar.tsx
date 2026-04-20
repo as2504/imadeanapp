@@ -9,11 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Home, TrendingUp, Lightbulb, User, Plus, Settings } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, Home, TrendingUp, Lightbulb, User, Plus, Settings, Rocket, X } from "lucide-react";
 import SearchBar from "@/components/feed/SearchBar";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
-import MobilePublishFAB from "@/components/layout/MobilePublishFAB";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/home" },
@@ -23,6 +23,8 @@ const navItems = [
 
 const FeedNavbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,30 +46,30 @@ const FeedNavbar = () => {
 
   const initial = profile?.display_name?.charAt(0)?.toUpperCase() || profile?.username?.charAt(0)?.toUpperCase() || "";
 
+  const goCreate = (path: string) => {
+    setCreateOpen(false);
+    navigate(path);
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--navbar))]/90 backdrop-blur-xl border-b border-border/40">
-        <div className="max-w-[1200px] w-full mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
-          <button onClick={() => navigate("/home")} className="text-lg font-black text-foreground tracking-tighter shrink-0 uppercase">
+        <div className="max-w-[1200px] w-full mx-auto grid grid-cols-[auto_1fr_auto] md:grid-cols-3 items-center h-14 px-4 sm:px-6 gap-2">
+          {/* Left: Logo */}
+          <button onClick={() => navigate("/home")} className="text-lg font-black text-foreground tracking-tighter shrink-0 uppercase justify-self-start">
             <span className="text-primary">I</span>MAA
           </button>
 
-          <div className="hidden md:flex flex-1 max-w-md mx-6">
-            <SearchBar className="w-full" />
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button onClick={() => setSearchOpen(!searchOpen)} className="md:hidden p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors">
-              <Search size={20} />
-            </button>
-
-            <div className="hidden lg:flex items-center gap-1">
-              {navItems.map((item) => (
+          {/* Center: Nav links (desktop only) */}
+          <div className="hidden md:flex items-center justify-center gap-1">
+            {navItems.map((item) => {
+              const active = location.pathname === item.href;
+              return (
                 <button
                   key={item.label}
                   onClick={() => navigate(item.href)}
                   className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    location.pathname === item.href ? "text-foreground bg-secondary" : "text-muted-foreground hover:text-foreground"
+                    active ? "text-foreground bg-secondary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <item.icon size={16} />
@@ -76,8 +78,28 @@ const FeedNavbar = () => {
                     <span className="text-[8px] font-black tracking-wider px-1 py-0.5 rounded bg-primary text-primary-foreground">NEW</span>
                   )}
                 </button>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+
+          {/* Right: actions */}
+          <div className="flex items-center gap-1 justify-self-end">
+            {/* Mobile search toggle */}
+            <button onClick={() => setSearchOpen(!searchOpen)} className="md:hidden p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors" aria-label="Search">
+              <Search size={20} />
+            </button>
+
+            {/* Desktop search popover */}
+            <Popover open={desktopSearchOpen} onOpenChange={setDesktopSearchOpen}>
+              <PopoverTrigger asChild>
+                <button className="hidden md:flex p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors" aria-label="Search">
+                  <Search size={18} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={8} className="w-[360px] p-2 rounded-xl border-border/40 bg-card shadow-xl">
+                <SearchBar className="w-full" />
+              </PopoverContent>
+            </Popover>
 
             <NotificationDropdown />
 
@@ -125,31 +147,83 @@ const FeedNavbar = () => {
         )}
       </nav>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav with centered FAB */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/40">
-        <div className="flex items-center justify-around h-14">
-          {[
-            { icon: Home, label: "Home", href: "/home" },
-            { icon: TrendingUp, label: "Trending", href: "/trending" },
-            { icon: Lightbulb, label: "Upcoming", href: "/upcoming" },
-            { icon: User, label: "Account", href: "/account" },
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={() => navigate(item.href)}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 ${
-                location.pathname === item.href ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <item.icon size={20} />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </button>
-          ))}
+        <div className="relative grid grid-cols-5 items-end h-14">
+          {/* Slot 1: Home */}
+          <BottomNavItem icon={Home} label="Home" href="/home" location={location} navigate={navigate} />
+          {/* Slot 2: Trending */}
+          <BottomNavItem icon={TrendingUp} label="Trending" href="/trending" location={location} navigate={navigate} />
+
+          {/* Slot 3: Center FAB */}
+          <div className="flex items-start justify-center -mt-6">
+            <Popover open={createOpen} onOpenChange={setCreateOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={`w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center transition-transform active:scale-95 ${createOpen ? "rotate-45" : ""}`}
+                  aria-label="Create"
+                >
+                  {createOpen ? <X size={20} /> : <Plus size={22} />}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="center"
+                sideOffset={12}
+                className="w-48 p-1 rounded-xl border-border/40 bg-card shadow-xl"
+              >
+                <button
+                  onClick={() => goCreate("/publish")}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Rocket size={16} className="text-primary" />
+                  Publish app
+                </button>
+                <button
+                  onClick={() => goCreate("/post-idea")}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Lightbulb size={16} className="text-amber-500" />
+                  Post idea
+                </button>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Slot 4: Upcoming */}
+          <BottomNavItem icon={Lightbulb} label="Upcoming" href="/upcoming" location={location} navigate={navigate} />
+          {/* Slot 5: Account */}
+          <BottomNavItem icon={User} label="Account" href="/account" location={location} navigate={navigate} />
         </div>
       </div>
-
-      <MobilePublishFAB />
     </>
+  );
+};
+
+const BottomNavItem = ({
+  icon: Icon,
+  label,
+  href,
+  location,
+  navigate,
+}: {
+  icon: any;
+  label: string;
+  href: string;
+  location: ReturnType<typeof useLocation>;
+  navigate: ReturnType<typeof useNavigate>;
+}) => {
+  const active = location.pathname === href;
+  return (
+    <button
+      onClick={() => navigate(href)}
+      className={`flex flex-col items-center gap-0.5 px-3 py-1 h-14 justify-center ${
+        active ? "text-primary" : "text-muted-foreground"
+      }`}
+    >
+      <Icon size={20} />
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
   );
 };
 
