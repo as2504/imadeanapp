@@ -50,8 +50,19 @@ async function batchFetchRatings(appIds: string[]): Promise<Map<string, number>>
 
 async function fetchProfiles(userIds: string[]) {
   if (userIds.length === 0) return new Map();
-  const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username, is_verified").in("user_id", userIds);
-  return new Map((profiles || []).map(p => [p.user_id, p]));
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, username, is_verified")
+    .in("user_id", userIds);
+  if (error || !profiles || profiles.length === 0) {
+    // Fallback: retry without is_verified in case prod RLS restricts that column
+    const { data: fallback } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, username")
+      .in("user_id", userIds);
+    return new Map((fallback || []).map(p => [p.user_id, p]));
+  }
+  return new Map(profiles.map(p => [p.user_id, p]));
 }
 
 const HomeFeed = () => {
